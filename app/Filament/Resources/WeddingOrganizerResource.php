@@ -110,7 +110,7 @@ class WeddingOrganizerResource extends Resource
                             ->collection('videos')
                             ->multiple()
                             ->acceptedFileTypes(['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'])
-                            ->maxSize(107374182400) // 100GB
+                            ->maxSize(102400000) // 100GB
                             ->maxFiles(3)
                             ->helperText('Upload video profil/showreel studio. Format: MP4, WebM, MOV. Maks 100GB per file.')
                             ->columnSpanFull(),

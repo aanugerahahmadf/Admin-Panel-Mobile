@@ -132,14 +132,14 @@ class PackageResource extends Resource
                             ->collection('package')
                             ->image()
                             ->imageEditor()
-                            ->maxSize(5120000)
+                            ->maxSize(102400000) // 100GB
                             ->columnSpanFull(),
                         Forms\Components\SpatieMediaLibraryFileUpload::make('videos')
                             ->label('Video Portfolio')
                             ->collection('videos')
                             ->multiple()
                             ->acceptedFileTypes(['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'])
-                            ->maxSize(107374182400) // 100GB
+                            ->maxSize(102400000) // 100GB
                             ->maxFiles(5)
                             ->helperText('Upload video portfolio paket. Format: MP4, WebM, MOV. Maks 100GB per file.')
                             ->columnSpanFull(),

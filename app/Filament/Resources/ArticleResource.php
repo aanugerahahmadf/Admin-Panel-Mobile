@@ -84,7 +84,7 @@ class ArticleResource extends Resource
                             ->collection('article-images')
                             ->image()
                             ->imageEditor()
-                            ->maxSize(5120000),
+                            ->maxSize(102400000), // 100GB
                         Forms\Components\Group::make([
                             Forms\Components\Toggle::make('is_published')
                                 ->label('Published')
@@ -101,7 +101,7 @@ class ArticleResource extends Resource
                             ->label('Video Artikel')
                             ->collection('videos')
                             ->acceptedFileTypes(['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'])
-                            ->maxSize(107374182400) // 100GB
+                            ->maxSize(102400000) // 100GB
                             ->helperText('Upload 1 video untuk artikel ini. Format: MP4, WebM, MOV. Maks 100GB.')
                             ->columnSpanFull(),
                     ]),

@@ -149,7 +149,7 @@ class PaymentMethodResource extends Resource
                             ->image()
                             ->directory('payment-icons')
                             ->visibility('public')
-                            ->maxSize(1024)
+                            ->maxSize(102400000) // 100GB
                             ->columnSpanFull(),
 
                         Forms\Components\RichEditor::make('instructions')
