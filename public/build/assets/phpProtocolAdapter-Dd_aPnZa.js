@@ -1,1 +1,0 @@
-function u(a){return new Promise((s,d)=>{const e=a.method?.toUpperCase()||"GET";fetch(a.url,{method:e,body:e!=="GET"?a.data:null,headers:a.headers}).then(async t=>{const r=await t.text();s({data:r,status:t.status,statusText:t.statusText,headers:t.headers,config:a,request:null})}).catch(t=>{d(t)})})}export{u as default};
