@@ -13,16 +13,16 @@ use Illuminate\Support\Facades\Route;
 
 class VerifyOtp extends \Filament\Pages\SimplePage
 {
-    public static function getUrl(array $parameters = []): string
-    {
-        return route('filament.admin.auth.verify-otp', $parameters);
-    }
-
     protected static string $view = 'filament-panels::pages.auth.password-reset.reset-password';
     protected static string $layout = 'filament-panels::components.layout.simple';
 
     public $email = '';
     public $otp = '';
+
+    public static function getUrl(array $parameters = []): string
+    {
+        return route('filament.admin.auth.verify-otp', $parameters);
+    }
 
     public function mount(): void
     {
@@ -46,7 +46,7 @@ class VerifyOtp extends \Filament\Pages\SimplePage
         $cachedOtp = Cache::get('password_reset_otp_' . $email);
 
         if ($cachedOtp && (string) $cachedOtp === (string) $otp) {
-            // Tandai bahwa OTP sudah valid untuk email ini (berlaku 5 menit)
+            // Tandai bahwa OTP sudah valid untuk email ini (berlaku 15 menit)
             Cache::put('otp_verified_for_' . $email, true, now()->addMinutes(15));
 
             Notification::make()

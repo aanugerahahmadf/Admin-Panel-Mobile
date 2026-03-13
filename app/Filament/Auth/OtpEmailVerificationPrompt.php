@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Mail;
 use Filament\Notifications\Notification;
 use Filament\Actions\Action;
 use Illuminate\Contracts\Support\Htmlable;
+use App\Models\User;
 
 class OtpEmailVerificationPrompt extends BasePrompt
 {
@@ -41,6 +42,7 @@ class OtpEmailVerificationPrompt extends BasePrompt
             return;
         }
 
+        /** @var User $user */
         $otp = random_int(100000, 999999);
         Cache::put('otp_' . $user->id, $otp, now()->addMinutes(15));
 
@@ -56,6 +58,7 @@ class OtpEmailVerificationPrompt extends BasePrompt
     public function verify(): void
     {
         $data = $this->form->getState();
+        /** @var User $user */
         $user = $this->getVerifiable();
 
         $cachedOtp = Cache::get('otp_' . $user->id);

@@ -11,7 +11,6 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Form;
 use App\Models\User;
-use Illuminate\Validation\Rules\Password as PasswordRule;
 
 class OtpResetPassword extends BaseResetPassword
 {

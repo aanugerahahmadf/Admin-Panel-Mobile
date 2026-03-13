@@ -22,6 +22,7 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 use App\Filament\Pages\EditProfilePage;
 use App\Http\Middleware\VerifyCsrfToken;
 use App\Http\Middleware\SuperAdmin;
+use Livewire\Livewire;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -32,6 +33,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login(\App\Filament\Auth\Login::class)
+            ->registration(\App\Filament\Auth\Register::class)
             ->passwordReset(
                 \App\Filament\Auth\OtpRequestPasswordReset::class,
                 \App\Filament\Auth\OtpResetPassword::class
@@ -96,6 +98,14 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->routes(function (Panel $panel) {
                 \App\Filament\Auth\VerifyOtp::registerRoutes($panel);
+            })
+            ->bootUsing(function () {
+                Livewire::component('app.filament.auth.login', \App\Filament\Auth\Login::class);
+                Livewire::component('app.filament.auth.register', \App\Filament\Auth\Register::class);
+                Livewire::component('app.filament.auth.otp-request-password-reset', \App\Filament\Auth\OtpRequestPasswordReset::class);
+                Livewire::component('app.filament.auth.otp-reset-password', \App\Filament\Auth\OtpResetPassword::class);
+                Livewire::component('app.filament.auth.verify-otp', \App\Filament\Auth\VerifyOtp::class);
+                Livewire::component('app.filament.auth.otp-email-verification-prompt', \App\Filament\Auth\OtpEmailVerificationPrompt::class);
             });
     }
 }

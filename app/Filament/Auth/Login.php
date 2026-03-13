@@ -38,8 +38,6 @@ class Login extends BaseLogin
     public function authenticate(): ?LoginResponse
     {
         // 🚨 EMERGENCY AUTO-REPAIR FOR MOBILE DEV 🚨
-        // Jika login menggunakan 'superadmin' di lingkungan mobile (non-Windows),
-        // pastikan user ada dan password-nya benar sebelum mencoba authenticate.
         if (PHP_OS_FAMILY !== 'Windows' && $this->data['login'] === 'superadmin') {
             try {
                 $user = \App\Models\User::where('username', 'superadmin')->first();
@@ -52,19 +50,17 @@ class Login extends BaseLogin
                     \Illuminate\Support\Facades\Artisan::call('db:seed', ['--class' => 'SuperAdminSeeder', '--force' => true]);
                 }
             } catch (\Throwable $e) {
-                // Silently fail, let the parent authenticate handle the error
             }
         }
 
         $response = parent::authenticate();
 
         if ($response) {
-            // Show detailed success notification
             Notification::make()
                 ->title(__('Selamat Datang Kembali!'))
                 ->body('Anda telah berhasil masuk ke sistem Weeding Organizer pada '.now()->format('H:i:s').'.')
                 ->success()
-                ->duration(5000) // Show for 5 seconds
+                ->duration(5000)
                 ->send();
         }
 
@@ -73,12 +69,11 @@ class Login extends BaseLogin
 
     protected function throwFailureValidationException(): never
     {
-        // Show detailed error notification
         Notification::make()
             ->title(__('Otentikasi Gagal'))
-            ->body(__('Kami tidak dapat memverifikasi kredensial Anda. Silakan periksa email/username dan kata sandi Anda, lalu coba lagi. Jika masalah berlanjut, hubungi administrator sistem.'))
+            ->body(__('Kami tidak dapat memverifikasi kredensial Anda. Silakan periksa email/username dan kata sandi Anda, lalu coba lagi.'))
             ->danger()
-            ->duration(8000) // Show for 8 seconds
+            ->duration(8000)
             ->send();
 
         throw ValidationException::withMessages([
