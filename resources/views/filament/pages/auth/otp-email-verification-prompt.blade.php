@@ -19,10 +19,11 @@
              
              startTimer() {
                  clearInterval(this.interval);
-                 let btn = this.$el.querySelector('button');
-                 let labelEl = this.$el.querySelector('.fi-btn-label');
                  
                  let updateText = () => {
+                     let btn = this.$el.querySelector('button');
+                     let labelEl = this.$el.querySelector('.fi-btn-label');
+                     
                      if (labelEl) {
                          if (this.timeLeft > 0) {
                              let m = Math.floor(this.timeLeft / 60);
