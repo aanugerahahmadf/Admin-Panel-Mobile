@@ -24,6 +24,8 @@ class OtpEmailVerificationPrompt extends EmailVerificationPrompt
 
     public ?array $data = [];
 
+    public int $resendCooldown = 0;
+
     public function mount(): void
     {
         if (Filament::auth()->check() && $this->getVerifiable()->hasVerifiedEmail()) {
@@ -35,9 +37,19 @@ class OtpEmailVerificationPrompt extends EmailVerificationPrompt
         $this->form->fill();
 
         $userId = Filament::auth()->id();
+        $lastSent = Cache::get('otp_last_sent_'.$userId);
+        if ($lastSent) {
+            $diff = now()->timestamp - $lastSent;
+            if ($diff < 300) {
+                $this->resendCooldown = 300 - $diff;
+            }
+        }
+
         if ($userId && ! Cache::has('otp_sent_'.$userId)) {
             $this->sendEmailVerificationNotification($this->getVerifiable());
             Cache::put('otp_sent_'.$userId, true, now()->addMinutes(30));
+            Cache::put('otp_last_sent_'.$userId, now()->timestamp, now()->addMinutes(5));
+            $this->resendCooldown = 300;
         }
     }
 
@@ -128,15 +140,30 @@ class OtpEmailVerificationPrompt extends EmailVerificationPrompt
     public function resendNotificationAction(): Action
     {
         return Action::make('resendNotification')
-            ->label(__('Kirim ulang kode'))
+            ->label(__('Resend code'))
             ->color('gray')
             ->action(function (): void {
+                $userId = Filament::auth()->id();
+                
+                $lastSent = Cache::get('otp_last_sent_'.$userId);
+                if ($lastSent && (now()->timestamp - $lastSent) < 300) {
+                    Notification::make()
+                        ->title(__('Harap tunggu sebelum meminta kode baru.'))
+                        ->danger()
+                        ->send();
+                    return;
+                }
+
                 $this->sendEmailVerificationNotification($this->getVerifiable());
+                Cache::put('otp_last_sent_'.$userId, now()->timestamp, now()->addMinutes(5));
+                $this->resendCooldown = 300;
 
                 Notification::make()
                     ->title(__('Kode verifikasi baru telah dikirim.'))
                     ->success()
                     ->send();
+                    
+                $this->dispatch('otp-resent');
             });
     }
 

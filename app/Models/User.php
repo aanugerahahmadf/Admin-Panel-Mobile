@@ -35,6 +35,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property string|null $first_name
+ * @property string|null $mid_name
  * @property string|null $last_name
  * @property string|null $username
  * @property string|null $avatar_url
@@ -93,6 +94,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereEmailVerifiedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereEventConcept($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereFirstName($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereMidName($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereFullName($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User whereLastName($value)
@@ -119,6 +121,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property \Illuminate\Support\Carbon|null $createdAt
  * @property \Illuminate\Support\Carbon|null $updatedAt
  * @property string|null $firstName
+ * @property string|null $midName
  * @property string|null $lastName
  * @property string|null $avatarUrl
  * @property \Illuminate\Support\Carbon|null $weddingDate
@@ -190,6 +193,7 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
     protected $fillable = [
         'full_name',
         'first_name',
+        'mid_name',
         'last_name',
         'username',
         'email',

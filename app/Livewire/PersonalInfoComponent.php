@@ -39,6 +39,7 @@ class PersonalInfoComponent extends Component implements HasForms
                 'avatar_url' => $user->avatar_url,
                 'full_name' => $user->full_name,
                 'first_name' => $user->first_name,
+                'mid_name' => $user->mid_name,
                 'last_name' => $user->last_name,
                 'email' => $user->email,
                 'phone' => $user->phone,
@@ -75,12 +76,17 @@ class PersonalInfoComponent extends Component implements HasForms
                                 if (blank($state)) return;
                                 $parts = explode(' ', trim($state));
                                 $firstName = array_shift($parts);
-                                $lastName = count($parts) > 0 ? implode(' ', $parts) : '';
+                                $lastName = count($parts) > 0 ? array_pop($parts) : '';
+                                $midName = count($parts) > 0 ? implode(' ', $parts) : '';
                                 $set('first_name', $firstName);
+                                $set('mid_name', $midName);
                                 $set('last_name', $lastName);
                             }),
                         TextInput::make('first_name')
                             ->label(__('Nama Depan'))
+                            ->maxLength(255),
+                        TextInput::make('mid_name')
+                            ->label(__('Nama Tengah'))
                             ->maxLength(255),
                         TextInput::make('last_name')
                             ->label(__('Nama Belakang'))

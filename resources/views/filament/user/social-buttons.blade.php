@@ -7,14 +7,20 @@
 
     <div class="flex flex-wrap items-center justify-center w-full gap-4">
         <x-filament::button 
-            :href="route('auth.redirect', 'google')" 
-            tag="a" 
+            tag="button"
+            type="button"
             color="gray" 
             outlined
             class="flex-1 w-full transition-all duration-100 transform active:scale-[0.98] shadow-sm hover:shadow-md"
-            x-data="{ loading: false }"
-            x-on:mousedown="loading = true"
-            x-on:click="loading = true"
+            x-data="{ 
+                loading: false,
+                login() {
+                    this.loading = true;
+                    window.location.href = '{{ route('auth.redirect', 'google') }}';
+                }
+            }"
+            x-on:mousedown="login()"
+            x-on:keydown.enter="login()"
             x-bind:class="{ 'opacity-50 pointer-events-none': loading }"
         >
             <div class="flex items-center justify-center gap-3">

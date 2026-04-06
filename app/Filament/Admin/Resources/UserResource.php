@@ -91,13 +91,18 @@ class UserResource extends Resource
                                         if (blank($state)) return;
                                         $parts = explode(' ', trim($state));
                                         $firstName = array_shift($parts);
-                                        $lastName = count($parts) > 0 ? implode(' ', $parts) : '';
+                                        $lastName = count($parts) > 0 ? array_pop($parts) : '';
+                                        $midName = count($parts) > 0 ? implode(' ', $parts) : '';
                                         $set('first_name', $firstName);
+                                        $set('mid_name', $midName);
                                         $set('last_name', $lastName);
                                     })
                                     ->columnSpanFull(),
                                 Forms\Components\TextInput::make('first_name')
                                     ->label(__('Nama Depan'))
+                                    ->maxLength(255),
+                                Forms\Components\TextInput::make('mid_name')
+                                    ->label(__('Nama Tengah'))
                                     ->maxLength(255),
                                 Forms\Components\TextInput::make('last_name')
                                     ->label(__('Nama Belakang'))
@@ -184,6 +189,9 @@ class UserResource extends Resource
 
                 Tables\Columns\TextColumn::make('first_name')
                     ->label(__('Nama Depan')),
+
+                Tables\Columns\TextColumn::make('mid_name')
+                    ->label(__('Nama Tengah')),
 
                 Tables\Columns\TextColumn::make('last_name')
                     ->label(__('Nama Belakang')),
