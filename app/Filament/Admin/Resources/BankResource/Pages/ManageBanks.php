@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\BankResource\Pages;
 use App\Filament\Admin\Exports\BankExporter;
 use App\Filament\Admin\Resources\BankResource;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ManageRecords;
 
 class ManageBanks extends ManageRecords
@@ -19,7 +20,15 @@ class ManageBanks extends ManageRecords
                 ->label(__('Ekspor Data'))
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('success'),
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->label(__('Tambah Bank'))
+                ->icon('heroicon-o-plus')
+                ->successNotification(
+                    Notification::make()
+                        ->success()
+                        ->title(__('Bank Ditambahkan'))
+                        ->body(__('Bank baru telah berhasil ditambahkan.'))
+                ),
         ];
     }
 }

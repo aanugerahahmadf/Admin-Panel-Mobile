@@ -22,7 +22,7 @@
     <div class="wrapper">
         <div class="content">
             <div class="header">
-                <h1>{{ config('app.name', __('Panel Admin')) }}</h1>
+                <h1>{{ config('app.name', __('Wedding Organizer')) }}</h1>
             </div>
             
             <div class="body">

@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources\TermsOfServiceResource\Pages;
 
 use App\Filament\Admin\Resources\TermsOfServiceResource;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ManageRecords;
 
 class ManageTermsOfServices extends ManageRecords
@@ -13,7 +14,15 @@ class ManageTermsOfServices extends ManageRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            Actions\CreateAction::make()
+                ->label(__('Tambah Ketentuan Layanan'))
+                ->icon('heroicon-o-plus')
+                ->successNotification(
+                    Notification::make()
+                        ->success()
+                        ->title(__('Ketentuan Layanan Ditambahkan'))
+                        ->body(__('Ketentuan layanan baru telah berhasil ditambahkan.'))
+                ),
         ];
     }
 }

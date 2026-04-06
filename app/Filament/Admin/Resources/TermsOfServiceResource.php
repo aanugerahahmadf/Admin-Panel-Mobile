@@ -6,6 +6,7 @@ use App\Filament\Admin\Resources\TermsOfServiceResource\Pages;
 use App\Models\TermsOfService;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -75,11 +76,32 @@ class TermsOfServiceResource extends Resource
             ])
             ->filters([])
             ->actions([
+               Tables\Actions\ViewAction::make()
+                    ->slideOver()
+                    ->button()
+                    ->color('info')
+                    ->size('lg'),
                 Tables\Actions\EditAction::make()
-                    ->modalWidth('4xl')
-                    ->label('Edit Konten')
-                    ->icon('heroicon-m-pencil-square'),
-                Tables\Actions\DeleteAction::make(),
+                    ->slideOver()
+                    ->button()
+                    ->color('warning')
+                    ->size('lg')
+                    ->successNotification(
+                        Notification::make()
+                            ->success()
+                            ->title(__('Ketentuan Layanan diperbarui'))
+                            ->body(__('Ketentuan Layanan telah berhasil diperbarui.'))
+                    ),
+                Tables\Actions\DeleteAction::make()
+                    ->button()
+                    ->color('danger')
+                    ->size('lg')
+                    ->successNotification(
+                        Notification::make()
+                            ->success()
+                            ->title(__('Ketentuan Layanan dihapus'))
+                            ->body(__('Ketentuan Layanan telah berhasil dihapus.'))
+                    ),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
