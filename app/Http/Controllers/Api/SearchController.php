@@ -49,13 +49,14 @@ class SearchController extends Controller
             'image' => 'required|image|max:10240', // 10MB max
         ]);
 
-        $results = $cbirService->searchByImage($request->file('image'));
+        $apiResponse = $cbirService->searchByImage($request->file('image'));
+        $results = $apiResponse['results'] ?? [];
 
-        if (empty($results)) {
+        if (isset($apiResponse['error']) || ! ($apiResponse['success'] ?? false)) {
             return response()->json([
-                'status' => 'success',
+                'status' => 'error',
                 'data' => [],
-                'message' => __('Rekomendasi gambar belum ditemukan.'),
+                'message' => $apiResponse['message'] ?? __('Rekomendasi gambar belum ditemukan.'),
             ]);
         }
 
@@ -68,9 +69,9 @@ class SearchController extends Controller
             return [
                 'organizer' => $wo,
                 'package' => $wo->packages()->first(['*']),
-                'score' => $result['score'],
-                'similarity' => $result['similarity'],
-                'matched_image' => $result['image_url'],
+                'score' => (float) ($result['score'] ?? 0),
+                'similarity' => (float) ($result['similarity'] ?? 0),
+                'matched_image' => $result['image_url'] ?? null,
             ];
         })->filter()->values();
 

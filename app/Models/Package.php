@@ -94,7 +94,7 @@ class Package extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('package')->singleFile();
+        $this->addMediaCollection('package_image')->singleFile();
         $this->addMediaCollection('videos');
     }
 
@@ -112,6 +112,7 @@ class Package extends Model implements HasMedia
         'color',
         'min_capacity',
         'max_capacity',
+        'stock',
         'article_id',
     ];
 
@@ -120,6 +121,7 @@ class Package extends Model implements HasMedia
         'price' => 'decimal:2',
         'discount_price' => 'decimal:2',
         'is_featured' => 'boolean',
+        'stock' => 'integer',
     ];
 
     protected $appends = [
@@ -130,9 +132,9 @@ class Package extends Model implements HasMedia
 
     public function getImageUrlAttribute()
     {
-        $fallback = asset('images/placeholders/image-placeholder.svg');
+        $fallback = asset('images/placeholders/image-placeholder.png');
 
-        $url = $this->getValidMediaUrl($this->getFirstMedia('package'))
+        $url = $this->getValidMediaUrl($this->getFirstMedia('package_image'))
             ?: $this->getValidMediaUrl($this->weddingOrganizer?->getFirstMedia('gallery'))
             ?: null;
 
@@ -144,13 +146,24 @@ class Package extends Model implements HasMedia
         return $this->getFirstMediaUrl('videos') ?: null;
     }
 
+    public function getIsOutOfStockAttribute(): bool
+    {
+        return $this->stock <= 0;
+    }
+
     public function getIsWishlistedAttribute(): bool
     {
-        if (! auth('sanctum')->check()) {
-            return false;
+        // Try Filament (Web/Native)
+        if (class_exists(\Filament\Facades\Filament::class) && \Filament\Facades\Filament::auth()->check()) {
+            return $this->wishlists()->where('user_id', \Filament\Facades\Filament::auth()->id())->exists();
         }
 
-        return $this->wishlists()->where('user_id', auth('sanctum')->id())->exists();
+        // Try Sanctum (Mobile API)
+        if (auth('sanctum')->check()) {
+            return $this->wishlists()->where('user_id', auth('sanctum')->id())->exists();
+        }
+
+        return false;
     }
 
     public function category()
@@ -210,11 +223,18 @@ class Package extends Model implements HasMedia
             return $fallback;
         }
 
-        if (Str::startsWith($url, ['http://', 'https://', 'data:image', '/'])) {
+        // If it's already a full URL or a data URI, return it
+        if (Str::startsWith($url, ['http://', 'https://', 'data:image'])) {
             return $url;
         }
 
-        return \Illuminate\Support\Facades\Storage::disk('public')->url(ltrim($url, '/'));
+        // If it starts with a slash, check if it's already a public path
+        if (Str::startsWith($url, '/')) {
+            return $url;
+        }
+
+        // Otherwise, resolve via the public storage disk using asset() helper for maximum compatibility
+        return asset('storage/' . ltrim($url, '/'));
     }
 
     private function getValidMediaUrl(?Media $media): ?string

@@ -126,19 +126,19 @@ class NativeServiceProvider extends ServiceProvider
         $reverbHost = env('REVERB_HOST', 'localhost');
         $appUrl = env('APP_URL', 'http://127.0.0.1');
 
-        // Dynamic Host Detection: If accessed via LAN IP or emulator IP,
-        // we MUST use THAT host in APP_URL for redirections (like login) to work.
+        // Dynamic Host Detection: If accessed via LAN IP, emulator IP, or ngrok
         if (! app()->runningInConsole() && isset($_SERVER['HTTP_HOST'])) {
-            $currentHost = parse_url('http://'.$_SERVER['HTTP_HOST'], PHP_URL_HOST);
-            $currentPort = parse_url('http://'.$_SERVER['HTTP_HOST'], PHP_URL_PORT) ?: $serverPort;
-
-            // If the request isn't coming from localhost, it's effectively "mobile-like"
-            // (either a device on LAN or emulator bridge)
-            if ($currentHost !== '127.0.0.1' && $currentHost !== 'localhost') {
-                $hostIp = $currentHost;
-                $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
-                $portSuffix = ($currentPort == 80 || $currentPort == 443) ? '' : ":$currentPort";
-                $appUrl = "{$scheme}://{$currentHost}{$portSuffix}";
+            $currentHost = $_SERVER['HTTP_HOST'];
+            
+            // Handle X-Forwarded headers from ngrok/proxies
+            $proto = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http');
+            $host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'];
+            
+            // If the request isn't coming from standard localhost
+            if (!in_array(parse_url('http://'.$host, PHP_URL_HOST), ['127.0.0.1', 'localhost'])) {
+                $appUrl = "{$proto}://{$host}";
+                $hostIp = parse_url($appUrl, PHP_URL_HOST);
+                $currentHost = $host;
             }
         }
 
@@ -167,9 +167,16 @@ class NativeServiceProvider extends ServiceProvider
 
         // ── 3. APPLY RUNTIME CONFIG ───────────────────────────────────────
         $runtimeConfig = [
+            'app.url' => $appUrl,
+            'sanctum.stateful' => array_unique(array_merge(
+                explode(',', env('SANCTUM_STATEFUL_DOMAINS', 'localhost,127.0.0.1')),
+                [$currentHost ?? '']
+            )),
+
+            // Database
             'database.connections.mysql.host' => $dbHost,
             'database.connections.mysql.port' => env('DB_PORT', '3306'),
-            'database.connections.mysql.database' => env('DB_DATABASE', 'admin_panel_cbir'),
+            'database.connections.mysql.database' => env('DB_DATABASE', config('database.connections.mysql.database', 'Wedding_organizer')),
             'database.connections.mysql.username' => env('DB_USERNAME', 'root'),
             'database.connections.mysql.password' => env('DB_PASSWORD', ''),
 
@@ -179,20 +186,24 @@ class NativeServiceProvider extends ServiceProvider
             'broadcasting.connections.pusher.options.host' => $reverbHost,
 
             // AI / CBIR Service Synchronization
-            'services.ai_core_url' => str_replace(['127.0.0.1', 'localhost'], $hostIp, env('AI_CORE_URL', 'http://127.0.0.1:5000')),
-            'services.cbir_api_url' => str_replace(['127.0.0.1', 'localhost'], $hostIp, env('CBIR_API_URL', 'http://127.0.0.1:5000')),
+            // Optimization: Web/Native should use 127.0.0.1, Mobile Emulator should use $hostIp
+            'services.ai_core_url' => $isMobile ? str_replace(['127.0.0.1', 'localhost'], $hostIp, env('AI_CORE_URL', 'http://127.0.0.1:5000')) : env('AI_CORE_URL', 'http://127.0.0.1:5000'),
+            'services.cbir_api_url' => $isMobile ? str_replace(['127.0.0.1', 'localhost'], $hostIp, env('CBIR_API_URL', 'http://127.0.0.1:5000')) : env('CBIR_API_URL', 'http://127.0.0.1:5000'),
         ];
+
+        $proxyUrl = "{$hostServerUrl}/nativephp-db-proxy";
 
         if ($isMobile) {
             $runtimeConfig['database.default'] = 'mysql_proxy';
             $runtimeConfig['database.connections.mysql_proxy.proxy_url'] = $proxyUrl;
             $runtimeConfig['database.connections.mysql_proxy.proxy_secret'] = env('NATIVE_DB_PROXY_SECRET', 'nativephp-db-proxy-secret-2024');
-            $runtimeConfig['database.connections.mysql_proxy.database'] = env('DB_DATABASE', 'admin_panel_cbir');
+            $runtimeConfig['database.connections.mysql_proxy.database'] = env('DB_DATABASE', config('database.connections.mysql.database', 'Wedding_organizer'));
         }
 
         config($runtimeConfig);
 
         if ($isMobile) {
+            $dbConnection = config('database.default');
             error_log(sprintf(
                 '[NativePHP] Environment: %s | OS: %s | Host IP: %s | DB via: %s | Proxy URL: %s',
                 PHP_OS_FAMILY,

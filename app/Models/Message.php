@@ -77,6 +77,7 @@ class Message extends Model implements HasMedia
         'read_by',
         'read_at',
         'notified',
+        'meta',
     ];
 
     protected function casts(): array
@@ -85,6 +86,7 @@ class Message extends Model implements HasMedia
             'read_by' => 'array',
             'read_at' => 'array',
             'notified' => 'array',
+            'meta' => 'array',
         ];
     }
 

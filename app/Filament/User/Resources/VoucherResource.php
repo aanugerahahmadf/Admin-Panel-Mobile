@@ -3,6 +3,7 @@
 namespace App\Filament\User\Resources;
 
 use App\Models\Voucher;
+use App\Filament\User\Pages\MessagesPage;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Resources\Resource;
@@ -30,7 +31,17 @@ class VoucherResource extends Resource
 
     public static function getNavigationLabel(): string
     {
-        return __('Deals & Coupons');
+        return __('Voucher Promo');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Voucher Promo');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('Voucher Promo');
     }
 
 
@@ -46,7 +57,7 @@ class VoucherResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $userId = auth()->id();
+        $userId = \Filament\Facades\Filament::auth()->id();
 
         return parent::getEloquentQuery()
             ->with(['users' => fn ($q) => $q->where('users.id', $userId)])
@@ -67,6 +78,7 @@ class VoucherResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->description(new \Illuminate\Support\HtmlString('<style>.fi-ta-ctn, .fi-ta-content, .fi-ta-header-toolbar, .fi-ta-pagination { background-color: transparent !important; box-shadow: none !important; border-color: transparent !important; }</style>'))
             ->emptyStateHeading(__('Belum ada promo baru'))
             ->emptyStateDescription(__('Voucher spesial dari kami akan otomatis muncul di sini. Coba tanyakan admin untuk promo menarik!'))
             ->emptyStateIcon('heroicon-o-ticket')
@@ -82,7 +94,8 @@ class VoucherResource extends Resource
             ->contentGrid([
                 'sm' => 1,
                 'md' => 2,
-                'xl' => 3,
+                'lg' => 3,
+                'xl' => 4,
             ])
             ->columns([
                 Tables\Columns\Layout\Stack::make([
@@ -102,7 +115,7 @@ class VoucherResource extends Resource
                         
                     // -- JENIS VOUCHER & MIN BELANJA DI TENGAH --
                     Tables\Columns\TextColumn::make('type_label')
-                        ->state(fn (\App\Models\Voucher $record) => $record->discount_type === \App\Enums\DiscountType::PERCENTAGE ? 'VOUCHER DISKON' : 'VOUCHER CASHBACK')
+                        ->state(fn (\App\Models\Voucher $record) => $record->discount_type === \App\Enums\DiscountType::PERCENTAGE ? __('VOUCHER DISKON') : __('VOUCHER CASHBACK'))
                         ->weight(FontWeight::Bold)
                         ->size(Tables\Columns\TextColumn\TextColumnSize::ExtraSmall)
                         ->color('primary')
@@ -110,7 +123,7 @@ class VoucherResource extends Resource
                         ->extraAttributes(['class' => 'tracking-widest opacity-80 mt-2']),
                         
                     Tables\Columns\TextColumn::make('min_purchase')
-                        ->formatStateUsing(fn ($state) => $state > 0 ? 'Min. Blj Rp' . number_format((float) $state, 2, ',', '.') : 'Tanpa Minimum Belanja')
+                        ->formatStateUsing(fn ($state) => $state > 0 ? __('Min. Blj') . ' Rp' . number_format((float) $state, 2, ',', '.') : __('Tanpa Minimum Belanja'))
                         ->size(Tables\Columns\TextColumn\TextColumnSize::ExtraSmall)
                         ->color('gray')
                         ->alignCenter(),
@@ -122,6 +135,7 @@ class VoucherResource extends Resource
 
                     // -- DESKRIPSI DAN TANGGAL --
                     Tables\Columns\TextColumn::make('description')
+                        ->formatStateUsing(fn ($state) => __($state))
                         ->weight(FontWeight::Bold)
                         ->size(Tables\Columns\TextColumn\TextColumnSize::Medium)
                         ->color('gray')
@@ -130,7 +144,7 @@ class VoucherResource extends Resource
                         ->extraAttributes(['class' => 'text-center mb-1 text-gray-900 dark:text-gray-100']),
                         
                     Tables\Columns\TextColumn::make('expires_at')
-                        ->formatStateUsing(fn ($state) => $state ? 'Berlaku s/d ' . \Carbon\Carbon::parse($state)->translatedFormat('d M Y') : 'Berlaku Selamanya')
+                        ->formatStateUsing(fn ($state) => $state ? __('Berlaku s/d') . ' ' . \Carbon\Carbon::parse($state)->translatedFormat('d M Y') : __('Berlaku Selamanya'))
                         ->size(Tables\Columns\TextColumn\TextColumnSize::ExtraSmall)
                         ->color(fn ($state) => $state && \Carbon\Carbon::parse($state)->diffInDays(now()) <= 3 ? 'danger' : 'gray')
                         ->icon('heroicon-o-clock')
@@ -142,12 +156,12 @@ class VoucherResource extends Resource
                         ->size(Tables\Columns\TextColumn\TextColumnSize::Small)
                         ->color('warning')
                         ->copyable()
-                        ->copyMessage('Kode Disalin!')
+                        ->copyMessage(__('Kode Disalin!'))
                         ->icon('heroicon-m-clipboard-document')
                         ->alignCenter()
                         ->searchable()
                         ->extraAttributes([
-                            'class' => 'mt-4 bg-warning-50 flex dark:bg-warning-950/40 text-warning-600 dark:text-warning-400 px-4 py-2 rounded-xl border border-warning-200 dark:border-warning-800/60 justify-center items-center w-full mx-auto transition hover:bg-warning-100 dark:hover:bg-warning-900/60 cursor-pointer',
+                            'class' => 'mt-4 bg-warning-50 flex dark:bg-warning-950/40 text-warning-600 dark:text-warning-400 px-4 py-2 rounded-xl border border-warning-200 dark:border-warning-800/60 justify-center products-center w-full mx-auto transition hover:bg-warning-100 dark:hover:bg-warning-900/60 cursor-pointer',
                         ]),
                         
                 ])->space(0),
@@ -158,15 +172,14 @@ class VoucherResource extends Resource
                     ->icon('heroicon-m-plus-circle')
                     ->color('primary')
                     ->button()
-                    ->size('lg')
-                    ->visible(fn ($record) => ! $record->users->contains(auth()->id()))
+                    ->size('sm')
+                    ->visible(fn ($record) => ! $record->users->contains(\Filament\Facades\Filament::auth()->id()))
                     ->extraAttributes([
-                        'class' => 'w-full justify-center shadow-md font-bold mx-auto ring-1 ring-white/10',
-                        'style' => 'width: 100%; max-width: 100%; display: flex; align-items: center; justify-content: center;',
+                        'class' => 'flex-1 justify-center rounded-lg shadow-sm font-bold',
                     ])
                     ->action(function ($record) {
-                        if (! $record->users->contains(auth()->id())) {
-                            $record->users()->attach(auth()->id(), [
+                        if (! $record->users->contains(\Filament\Facades\Filament::auth()->id())) {
+                            $record->users()->attach(\Filament\Facades\Filament::auth()->id(), [
                                 'claimed_at' => now(), 
                                 'created_at' => now(), 
                                 'updated_at' => now()
@@ -186,13 +199,16 @@ class VoucherResource extends Resource
                     ->icon('heroicon-m-shopping-bag')
                     ->color('warning')
                     ->button()
-                    ->size('lg')
-                    ->visible(fn ($record) => $record->users->contains(auth()->id()))
+                    ->size('sm')
+                    ->visible(fn ($record) => $record->users->contains(\Filament\Facades\Filament::auth()->id()))
                     ->url(fn () => \App\Filament\User\Resources\PackageResource::getUrl('index'))
                     ->extraAttributes([
-                        'class' => 'w-full justify-center shadow-md font-bold mx-auto ring-1 ring-white/10',
-                        'style' => 'width: 100%; max-width: 100%; display: flex; align-items: center; justify-content: center;',
+                        'class' => 'flex-1 justify-center rounded-lg shadow-sm font-bold',
                     ])
+            ])
+            ->actionsAlignment('center')
+            ->extraAttributes([
+                'class' => 'filament-table-actions-container !flex !flex-row !gap-1 !p-3 !bg-gray-50/50 dark:!bg-white/5 !border-t dark:!border-gray-800'
             ])
             ->paginated(false);
     }

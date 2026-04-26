@@ -17,7 +17,7 @@ class MessagesPage extends Page
 
     public static function getSlug(): string
     {
-        return config('messages.slug', 'messages').'/{id?}';
+        return 'inbox/messages/{id?}';
     }
 
     public static function shouldRegisterNavigation(): bool

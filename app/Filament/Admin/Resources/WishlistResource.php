@@ -67,7 +67,7 @@ class WishlistResource extends Resource
         return $form
             ->schema([
                 Forms\Components\Section::make(__('Detail Wishlist'))
-                    ->description(__('Informasi pelanggan dan paket rias yang diinginkan.'))
+                    ->description(__('Informasi pelanggan dan paket dekorasi yang diinginkan.'))
                     ->schema([
                         Forms\Components\Select::make('user_id')
                             ->searchable()
@@ -77,7 +77,7 @@ class WishlistResource extends Resource
                             ->required(),
                         Forms\Components\Select::make('package_id')
                             ->searchable()
-                            ->label(__('Paket Rias'))
+                            ->label(__('Paket Dekorasi'))
                             ->relationship('package', 'name')
                             ->preload()
                             ->required(),
@@ -94,7 +94,7 @@ class WishlistResource extends Resource
                     ->label(__('Pelanggan')),
                 Tables\Columns\TextColumn::make('package.name')
                     ->searchable()
-                    ->label(__('Paket Rias')),
+                    ->label(__('Paket Dekorasi')),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Ditambahkan Pada'))
                     ->dateTime()

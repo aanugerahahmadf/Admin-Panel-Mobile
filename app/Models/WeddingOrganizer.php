@@ -92,7 +92,7 @@ class WeddingOrganizer extends Model implements HasMedia
 
         static::creating(function ($model) {
             if (self::query()->count() >= 1) {
-                throw new \Exception(__('Aplikasi ini eksklusif untuk satu perusahan (Devi Make Up Wedding Organizer). Tidak dizinkan membuat profil baru.'));
+                throw new \Exception(__('Aplikasi ini eksklusif untuk satu perusahan (Dekorasi Bunga Pernikahan). Tidak dizinkan membuat profil baru.'));
             }
         });
 
@@ -131,6 +131,11 @@ class WeddingOrganizer extends Model implements HasMedia
         'latitude',
         'longitude',
         'is_verified',
+        'phone',
+        'whatsapp',
+        'email',
+        'instagram',
+        'operational_hours',
     ];
 
     protected $appends = [
@@ -138,7 +143,6 @@ class WeddingOrganizer extends Model implements HasMedia
         'city',
         'logo_url',
         'cover_image_url',
-        'phone',
         'total_reviews',
         'video_url',
         'location',
@@ -167,7 +171,7 @@ class WeddingOrganizer extends Model implements HasMedia
     }
 
     /**
-     * Get the superadmin user (Devi Make Up owner)
+     * Get the superadmin user (Dekorasi Bunga Pernikahan owner)
      */
     public static function getOwner()
     {
@@ -178,7 +182,7 @@ class WeddingOrganizer extends Model implements HasMedia
 
     public static function getBrand(): ?self
     {
-        // Hanya mencari record utama Devi Make Up
+        // Hanya mencari record utama Dekorasi Bunga Pernikahan
         return self::query()
             ->where('id', 1)
             ->first() ?? self::query()->first();
@@ -219,16 +223,33 @@ class WeddingOrganizer extends Model implements HasMedia
 
     public function getPhoneAttribute()
     {
-        $owner = self::getOwner();
+        // Use DB column first, fallback to owner user
+        if (!empty($this->attributes['phone'])) {
+            return $this->attributes['phone'];
+        }
+        return self::getOwner()?->phone ?? '';
+    }
 
-        return $owner?->phone ?? '';
+    public function getWhatsappAttribute()
+    {
+        if (!empty($this->attributes['whatsapp'])) {
+            return $this->attributes['whatsapp'];
+        }
+        // fallback to phone
+        return $this->getPhoneAttribute();
     }
 
     public function getEmailAttribute()
     {
-        $owner = self::getOwner();
+        if (!empty($this->attributes['email'])) {
+            return $this->attributes['email'];
+        }
+        return self::getOwner()?->email ?? '';
+    }
 
-        return $owner?->email ?? '';
+    public function getOperationalHoursAttribute()
+    {
+        return $this->attributes['operational_hours'] ?? 'Senin - Minggu: 09:00 - 18:00';
     }
 
     public function getLogoUrlAttribute()
@@ -254,6 +275,11 @@ class WeddingOrganizer extends Model implements HasMedia
     public function packages()
     {
         return $this->hasMany(Package::class);
+    }
+
+    public function products()
+    {
+        return $this->hasMany(Product::class);
     }
 
     public function reviews()

@@ -21,6 +21,7 @@ return new class extends Migration
                 $table->string('slug')->unique();
                 $table->text('description')->nullable();
                 $table->decimal('price', 15, 2);
+                $table->integer('stock')->default(10);
                 $table->decimal('discount_price', 15, 2)->nullable();
                 $table->boolean('is_featured')->default(false);
                 $table->json('features')->nullable();

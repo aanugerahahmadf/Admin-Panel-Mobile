@@ -38,8 +38,8 @@ class WeddingOrganizerResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         $count = \App\Models\Message::query()
-            ->whereJsonDoesntContain('read_by', auth()->id())
-            ->where('user_id', '!=', auth()->id())
+            ->whereJsonDoesntContain('read_by', \Filament\Facades\Filament::auth()->id())
+            ->where('user_id', '!=', \Filament\Facades\Filament::auth()->id())
             ->count();
 
         return $count > 0 ? (string) $count : null;
@@ -57,7 +57,17 @@ class WeddingOrganizerResource extends Resource
 
     public static function getNavigationLabel(): string
     {
-        return __('Beranda');
+        return __('Home');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Home');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('Home');
     }
 
     public static function getEloquentQuery(): Builder
@@ -104,7 +114,8 @@ class WeddingOrganizerResource extends Resource
                     Tables\Columns\Layout\Stack::make([
                         // Studio name
                         Tables\Columns\TextColumn::make('name')
-                            ->weight(FontWeight::Bold)
+                            ->formatStateUsing(fn ($state) => __($state))
+                            ->weight('bold')
                             ->size('sm')
                             ->icon('heroicon-s-sparkles')
                             ->color('primary')
@@ -138,7 +149,7 @@ class WeddingOrganizerResource extends Resource
                     ->extraAttributes(['class' => 'w-full justify-center !rounded-lg'])
                     ->slideOver()
                     ->modalWidth('2xl')
-                    ->modalHeading(__('Detail Wedding Organizer')),
+                    ->modalHeading(__('Detail Dekorasi Bunga Pernikahan')),
             ])
             ->actionsAlignment('center');
     }
@@ -167,7 +178,7 @@ class WeddingOrganizerResource extends Resource
                                 \Filament\Infolists\Components\TextEntry::make('name')
                                     ->label('')
                                     ->hiddenLabel()
-                                    ->weight(\Filament\Support\Enums\FontWeight::Bold)
+                                    ->weight('bold')
                                     ->size('3xl'),
 
                                 \Filament\Infolists\Components\Grid::make(1)
@@ -184,6 +195,7 @@ class WeddingOrganizerResource extends Resource
                                         \Filament\Infolists\Components\TextEntry::make('city')
                                             ->label('')
                                             ->hiddenLabel()
+                                            ->formatStateUsing(fn ($state) => __($state))
                                             ->icon('heroicon-m-map-pin')
                                             ->color('gray')
                                             ->size('sm'),
@@ -201,7 +213,7 @@ class WeddingOrganizerResource extends Resource
                                     ->openUrlInNewTab(false),
                             ])->grow(false),
                         ])
-                        ->extraAttributes(['class' => 'items-center gap-6 p-6']),
+                        ->extraAttributes(['class' => 'products-center gap-6 p-6']),
                     ])
                     ->compact()
                     ->extraAttributes(['class' => 'shadow-md border-gray-100 dark:border-gray-800 rounded-3xl overflow-hidden mb-4']),
@@ -215,6 +227,7 @@ class WeddingOrganizerResource extends Resource
                             ->schema([
                                 TextEntry::make('description')
                                     ->hiddenLabel()
+                                    ->formatStateUsing(fn ($state) => __($state))
                                     ->prose()
                                     ->extraAttributes(['class' => 'leading-loose text-lg text-gray-700 dark:text-gray-300']),
                                 Section::make(__('Lokasi'))
@@ -240,7 +253,7 @@ class WeddingOrganizerResource extends Resource
 
                         // PACKAGES CATALOG TAB
                         Tabs\Tab::make(__('Pilihan Paket'))
-                            ->icon('heroicon-o-camera')
+                            ->icon('ri-gift-line')
                             ->schema([
                                 RepeatableEntry::make('packages')
                                     ->hiddenLabel()
@@ -255,14 +268,15 @@ class WeddingOrganizerResource extends Resource
                                                 
                                                 Group::make([
                                                     TextEntry::make('name')
-                                                        ->weight(FontWeight::Bold)
+                                                        ->formatStateUsing(fn ($state) => __($state))
+                                                        ->weight('bold')
                                                         ->size('lg')
                                                         ->lineClamp(1),
                                                     
                                                     TextEntry::make('price')
                                                         ->money('idr')
                                                         ->color('primary')
-                                                        ->weight(FontWeight::ExtraBold)
+                                                        ->weight('extrabold')
                                                         ->size('lg'),
                                                 ]),
 
@@ -280,6 +294,49 @@ class WeddingOrganizerResource extends Resource
                                     ]),
                             ]),
 
+                        // PRODUCTS CATALOG TAB
+                        Tabs\Tab::make(__('Katalog Bunga'))
+                            ->icon('ri-flower-line')
+                            ->schema([
+                                RepeatableEntry::make('products')
+                                    ->hiddenLabel()
+                                    ->grid(3)
+                                    ->schema([
+                                        Section::make()
+                                            ->schema([
+                                                ImageEntry::make('image_url')
+                                                    ->hiddenLabel()
+                                                    ->alignCenter()
+                                                    ->extraImgAttributes(['class' => 'h-40 object-contain mx-auto rounded-xl shadow-md border border-gray-100 dark:border-gray-800 bg-white']),
+
+                                                Group::make([
+                                                    TextEntry::make('name')
+                                                        ->formatStateUsing(fn ($state) => __($state))
+                                                        ->weight('bold')
+                                                        ->size('lg')
+                                                        ->lineClamp(1),
+
+                                                    TextEntry::make('final_price')
+                                                        ->money('idr')
+                                                        ->color('success')
+                                                        ->weight('extrabold')
+                                                        ->size('lg'),
+                                                ]),
+
+                                                \Filament\Infolists\Components\Actions::make([
+                                                    \Filament\Infolists\Components\Actions\Action::make('view_product_detail')
+                                                        ->label(__('Lihat Detail'))
+                                                        ->icon('heroicon-m-eye')
+                                                        ->button()
+                                                        ->color('success')
+                                                        ->url(fn ($record) => \App\Filament\User\Resources\ProductResource::getUrl('view', ['record' => $record->id]))
+                                                ])->fullWidth(),
+                                            ])
+                                            ->collapsible()
+                                            ->extraAttributes(['class' => 'dark:bg-white/5 border border-gray-200 dark:border-gray-800 rounded-3xl overflow-hidden hover:border-green-500 shadow-sm transition-all']),
+                                    ]),
+                            ]),
+
                         // CONTACTS TAB
                         Tabs\Tab::make(__('Informasi Kontak'))
                             ->icon('heroicon-o-phone')
@@ -288,30 +345,55 @@ class WeddingOrganizerResource extends Resource
                                     ->schema([
                                         Section::make(__('Saluran Komunikasi'))
                                             ->schema([
+                                                TextEntry::make('whatsapp')
+                                                    ->label(__('WhatsApp'))
+                                                    ->icon('ri-whatsapp-line')
+                                                    ->getStateUsing(fn ($record) => $record->whatsapp ?: ($record->phone ?: '-')),
+
+                                                TextEntry::make('email')
+                                                    ->label(__('Email'))
+                                                    ->icon('heroicon-o-envelope')
+                                                    ->getStateUsing(fn ($record) => $record->email ?: '-'),
+
+                                                TextEntry::make('instagram')
+                                                    ->label(__('Instagram'))
+                                                    ->icon('ri-instagram-line')
+                                                    ->getStateUsing(fn ($record) => $record->instagram ? "@{$record->instagram}" : '-'),
+
                                                 \Filament\Infolists\Components\Actions::make([
                                                     \Filament\Infolists\Components\Actions\Action::make('whatsapp_contact')
                                                         ->label(__('Chat via WhatsApp'))
                                                         ->icon('heroicon-m-chat-bubble-left-right')
                                                         ->button()
                                                         ->color('success')
-                                                        ->url(fn ($record) => "https://wa.me/" . preg_replace('/[^0-9]/', '', $record->phone))
-                                                        ->openUrlInNewTab(),
+                                                        ->url(fn ($record) => "https://wa.me/" . preg_replace('/[^0-9]/', '', $record->whatsapp ?: $record->phone))
+                                                        ->openUrlInNewTab()
+                                                        ->visible(fn ($record) => filled($record->whatsapp) || filled($record->phone)),
                                                     \Filament\Infolists\Components\Actions\Action::make('email_contact')
                                                         ->label(__('Kirim Email'))
                                                         ->icon('heroicon-m-envelope')
                                                         ->button()
                                                         ->color('info')
                                                         ->url(fn ($record) => "mailto:{$record->email}")
-                                                        ->openUrlInNewTab(),
+                                                        ->openUrlInNewTab()
+                                                        ->visible(fn ($record) => filled($record->email)),
+                                                    \Filament\Infolists\Components\Actions\Action::make('instagram_contact')
+                                                        ->label(__('Lihat Instagram'))
+                                                        ->icon('ri-instagram-line')
+                                                        ->button()
+                                                        ->color('danger')
+                                                        ->url(fn ($record) => "https://instagram.com/{$record->instagram}")
+                                                        ->openUrlInNewTab()
+                                                        ->visible(fn ($record) => filled($record->instagram)),
                                                 ])->fullWidth(),
                                             ]),
-                                        
+
                                         Section::make(__('Waktu Operasional'))
                                             ->schema([
                                                 TextEntry::make('operational_hours')
                                                     ->label(__('Jam Kerja'))
                                                     ->icon('heroicon-o-clock')
-                                                    ->getStateUsing(fn() => 'Senin - Minggu: 09:00 - 18:00'),
+                                                    ->getStateUsing(fn ($record) => $record->operational_hours ?: 'Senin - Minggu: 09:00 - 18:00'),
                                             ]),
                                     ]),
                             ]),

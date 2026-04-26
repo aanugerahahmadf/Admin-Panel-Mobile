@@ -13,19 +13,11 @@ class ListHistories extends ListRecords
     {
         return [
             'all' => \Filament\Resources\Components\Tab::make(__('Semua'))
-                ->badge(\App\Models\History::where('user_id', auth()->id())->count()),
+                ->badge(fn() => \App\Models\History::where('user_id', \Filament\Facades\Filament::auth()->id())->count()),
             'order' => \Filament\Resources\Components\Tab::make(__('Pembelian'))
                 ->modifyQueryUsing(fn ($query) => $query->where('type', 'order'))
-                ->badge(\App\Models\History::where('user_id', auth()->id())->where('type', 'order')->count())
+                ->badge(fn() => \App\Models\History::where('user_id', \Filament\Facades\Filament::auth()->id())->where('type', 'order')->count())
                 ->badgeColor('info'),
-            'topup' => \Filament\Resources\Components\Tab::make(__('Deposit'))
-                ->modifyQueryUsing(fn ($query) => $query->where('type', 'topup'))
-                ->badge(\App\Models\History::where('user_id', auth()->id())->where('type', 'topup')->count())
-                ->badgeColor('success'),
-            'withdrawal' => \Filament\Resources\Components\Tab::make(__('Penarikan'))
-                ->modifyQueryUsing(fn ($query) => $query->where('type', 'withdrawal'))
-                ->badge(\App\Models\History::where('user_id', auth()->id())->where('type', 'withdrawal')->count())
-                ->badgeColor('danger'),
         ];
     }
 

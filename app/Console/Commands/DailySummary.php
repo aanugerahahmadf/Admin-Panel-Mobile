@@ -3,12 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Models\Order;
-use App\Models\Payment;
-use App\Models\Topup;
+use App\Models\Transaction;
 use App\Models\Withdrawal;
 use App\Enums\OrderStatus;
-use App\Enums\PaymentStatus;
-use App\Enums\TopupStatus;
 use App\Enums\WithdrawalStatus;
 use Illuminate\Console\Command;
 use Carbon\Carbon;
@@ -46,15 +43,15 @@ class DailySummary extends Command
         ]);
         $this->newLine();
 
-        $this->sectionTitle('PAYMENTS (Diterima Hari Ini)');
-        $successPaymentsCount = Payment::whereDate('paid_at', $today)->where('status', PaymentStatus::SUCCESS)->count();
-        $successPaymentsTotal = Payment::whereDate('paid_at', $today)->where('status', PaymentStatus::SUCCESS)->sum('total_amount');
-        $this->info("Total Pembayaran Berhasil: {$successPaymentsCount} (Rp " . number_format($successPaymentsTotal, 2) . ")");
+        $this->sectionTitle('TRANSACTIONS (Selesai Hari Ini)');
+        $successCount = Transaction::whereDate('paid_at', $today)->where('status', 'success')->count();
+        $successTotal = Transaction::whereDate('paid_at', $today)->where('status', 'success')->sum('total_amount');
+        $this->info("Total Transaksi Berhasil: {$successCount} (Rp " . number_format($successTotal, 2) . ")");
         $this->newLine();
 
         $this->sectionTitle('TOPUPS & WITHDRAWALS');
         $this->table(['Type', 'Count', 'Total (Rp)'], [
-            ['Topup (Berhasil)', Topup::whereDate('paid_at', $today)->where('status', TopupStatus::SUCCESS)->count(), number_format(Topup::whereDate('paid_at', $today)->where('status', TopupStatus::SUCCESS)->sum('total_amount'), 2)],
+            ['Topup (Berhasil)', Transaction::where('type', 'topup')->whereDate('paid_at', $today)->where('status', 'success')->count(), number_format(Transaction::where('type', 'topup')->whereDate('paid_at', $today)->where('status', 'success')->sum('total_amount'), 2)],
             ['Withdrawal (Selesai)', Withdrawal::whereDate('updated_at', $today)->where('status', WithdrawalStatus::COMPLETED)->count(), number_format(Withdrawal::whereDate('updated_at', $today)->where('status', WithdrawalStatus::COMPLETED)->sum('amount'), 2)],
         ]);
     }

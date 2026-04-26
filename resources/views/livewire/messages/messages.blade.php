@@ -1,25 +1,42 @@
 @php
-    use Jeddsaliba\FilamentMessages\Enums\MediaCollectionType;
+    use App\Enums\Messages\MediaCollectionType;
 @endphp
 @props(['selectedConversation'])
 <!-- Right Section (Chat Box) -->
-<div style="--col-span-default: span 3 / span 3;"
-    class="col-[--col-span-default] bg-white shadow-sm rounded-xl ring-1 ring-gray-950/5 dark:divide-white/10 dark:bg-gray-900 dark:ring-white/10 overflow-hidden flex flex-col">
+<div class="w-full h-full bg-white rounded-xl dark:divide-white/10 dark:bg-gray-900 overflow-hidden flex flex-col">
     @if ($selectedConversation)
         <!-- Chat Header : Start -->
         <div class="grid grid-cols-[--cols-default] lg:grid-cols-[--cols-lg] p-6"
             style="--cols-default: repeat(1, minmax(0, 1fr)); --cols-lg: repeat(1, minmax(0, 1fr));">
             <div style="--col-span-default: 1 / -1;" class="col-[--col-span-default]">
-                <div class="flex gap-6 items-center">
+                <div class="flex gap-4 items-center">
+                @if ($this->panelId === 'admin')
+                    <x-filament::icon-button
+                        icon="heroicon-o-chevron-left"
+                        color="gray"
+                        size="md"
+                        class="-ms-2"
+                        href="{{ \App\Filament\Admin\Pages\MessagesPage::getUrl() }}"
+                        tag="a"
+                        wire:navigate
+                    />
+                @endif
+
+
                     @php
-                        $avatar = 'https://ui-avatars.com/api/?name=' . urlencode($selectedConversation->inbox_title);
+                        $avatar = $selectedConversation->primary_avatar;
                         $alt = urlencode($selectedConversation->inbox_title);
                     @endphp
+
                     <x-filament::avatar src="{{ $avatar }}" alt="{{ $alt }}" size="lg" />
-                    <div class="overflow-hidden">
-                        <p class="text-base font-bold truncate text-gray-900 dark:text-white">{{ $selectedConversation->inbox_title }}</p>
+
+                    <div class="flex-1 overflow-hidden">
+                        <div class="flex justify-between items-center gap-2">
+                            <p class="text-base font-bold truncate text-gray-900 dark:text-white">{{ $selectedConversation->inbox_title }}</p>
+                        </div>
+
                         @if ($selectedConversation->title)
-                            <p class="text-base truncate text-gray-600 dark:text-gray-400">
+                            <p class="text-sm truncate text-gray-600 dark:text-gray-400">
                                 {{ $selectedConversation->other_users->pluck('name')->implode(', ') }}</p>
                         @endif
                     </div>
@@ -28,8 +45,8 @@
         </div>
         <!-- Chat Header : End -->
         <!-- Chat Box : Start -->
-        <div wire:poll.visible.{{ $pollInterval }}="pollMessages" id="chatContainer"
-            class="flex flex-col-reverse flex-1 p-5 overflow-y-auto border-t">
+        <div wire:poll.visible.{{ $pollInterval }}="pollMessages()" id="chatContainer"
+            class="flex flex-col-reverse flex-1 p-5 overflow-y-auto">
             @foreach ($conversationMessages as $index => $message)
                 <div @class([
                     'flex mb-2 px-2 items-end gap-2',
@@ -38,10 +55,11 @@
                 ]) wire:key="{{ $message->id }}">
                     @if ($message->user_id !== auth()->id())
                         @php
-                            $avatar = 'https://ui-avatars.com/api/?name=' . urlencode($message->sender->name);
+                            $avatar = $message->sender->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($message->sender->name);
                             $alt = urlencode($message->sender->name);
                         @endphp
                         <x-filament::avatar src="{{ $avatar }}" alt="{{ $alt }}" size="sm" />
+
                     @endif
                     <div>
                         @if ($message->user_id !== auth()->id())
@@ -58,71 +76,162 @@
                             'border-bottom-left-radius: 0' => $message->user_id !== auth()->id(),
                         ])>
                             <div class="px-1">
+                                @if ($message->meta && isset($message->meta['type']))
+                                    @php
+                                        $meta = $message->meta;
+                                        $itemImage = $meta['image'] ?? null;
+                                        
+                                        // If image is missing or broken, try to fetch it from the model
+                                        if (!$itemImage || str_contains($itemImage, 'placeholder')) {
+                                            $modelClass = $meta['type'] === 'product' ? \App\Models\Product::class : \App\Models\Package::class;
+                                            $item = $modelClass::find($meta['id']);
+                                            if ($item) {
+                                                $itemImage = $item->image_url;
+                                            }
+                                        }
+
+                                        if (!$itemImage || $itemImage === '') {
+                                            $itemImage = 'https://ui-avatars.com/api/?name=' . urlencode($meta['name']) . '&background=f3f4f6&color=a1a1aa&size=128';
+                                        }
+                                    @endphp
+                                    <div class="mb-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden group max-w-sm">
+                                        <div class="flex items-center p-3 gap-3">
+                                            <div class="relative w-16 h-16 flex-shrink-0">
+                                                <img src="{{ $itemImage }}" 
+                                                     class="w-full h-full rounded-lg object-cover border border-gray-100 dark:border-gray-600" 
+                                                     alt="{{ $meta['name'] }}"
+                                                     onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($meta['name']) }}&background=f3f4f6&color=a1a1aa&size=128'">
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex justify-between items-start gap-2">
+                                                    <div class="flex-1 min-w-0">
+                                                        <p class="text-[9px] text-primary-600 dark:text-primary-400 font-black uppercase tracking-tighter mb-0.5">
+                                                            @if(isset($meta['is_order']) && $meta['is_order'])
+                                                                {{ __('Pesanan') }} #{{ $meta['order_number'] }}
+                                                            @else
+                                                                {{ __($meta['type'] == 'product' ? 'Produk' : 'Paket') }}
+                                                            @endif
+                                                        </p>
+                                                        <p class="text-sm font-bold text-gray-900 dark:text-white truncate">
+                                                            {{ $meta['name'] }}
+                                                        </p>
+                                                        <p class="text-xs font-black text-orange-600 dark:text-orange-400 mt-0.5">
+                                                            Rp {{ number_format($meta['price'], 0, ',', '.') }}
+                                                        </p>
+                                                    </div>
+                                                    <div class="flex-shrink-0 self-center">
+                                                        <a href="{{ $meta['url'] }}" 
+                                                           wire:navigate
+                                                           class="inline-flex items-center px-3 py-1.5 text-[11px] bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-bold transition-all shadow-sm active:scale-95 whitespace-nowrap">
+                                                            {{ isset($meta['is_order']) && $meta['is_order'] ? __('Ubah Pesanan') : __('Detail') }}
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+
                                 @if ($message->message)
-                                    <p class="text-sm">{!! nl2br($message->message) !!}</p>
+                                    <p class="text-sm">
+                                        {!! nl2br($message->message) !!}
+                                    </p>
                                 @endif
                                 @if (
                                     $message->getMedia(MediaCollectionType::FILAMENT_MESSAGES->value) &&
                                         count($message->getMedia(MediaCollectionType::FILAMENT_MESSAGES->value)) > 0)
                                     @foreach ($message->getMedia(MediaCollectionType::FILAMENT_MESSAGES->value) as $index => $media)
-                                        <div wire:click="downloadAttachment('{{ $media->getPath() }}', '{{ $media->file_name }}')"
-                                            @class([
-                                                'flex items-center gap-2 p-2 my-2 rounded-lg group cursor-pointer',
-                                                'bg-gray-200 dark:bg-gray-600' => $message->user_id !== auth()->id(),
-                                                'bg-primary-500 dark:bg-primary-400' => $message->user_id === auth()->id(),
-                                            ])>
-                                            <div @class([
-                                                'p-2 rounded-full',
-                                                'bg-gray-100 dark:bg-gray-500' => $message->user_id !== auth()->id(),
-                                                'bg-primary-600 group-hover:bg-primary-700 group-hover:dark:bg-primary-900' =>
-                                                    $message->user_id === auth()->id(),
-                                            ])>
-                                                @php
-                                                    $icon = 'heroicon-o-x-circle';
-                                                    if ($this->validateImage($media->getFullUrl())) {
-                                                        $icon = 'heroicon-o-photo';
-                                                    }
-
-                                                    if ($this->validateDocument($media->getFullUrl())) {
-                                                        $icon = 'heroicon-o-paper-clip';
-                                                    }
-
-                                                    if ($this->validateVideo($media->getFullUrl())) {
-                                                        $icon = 'heroicon-o-video-camera';
-                                                    }
-
-                                                    if ($this->validateAudio($media->getFullUrl())) {
-                                                        $icon = 'heroicon-o-speaker-wave';
-                                                    }
-                                                @endphp
-                                                <x-filament::icon icon="{{ $icon }}" class="w-4 h-4" />
+                                        @php
+                                            $isImage = $this->validateImage($media->file_name);
+                                        @endphp
+                                        
+                                        @if($isImage)
+                                            <div class="my-2 relative group">
+                                                <img src="{{ $media->getUrl() }}" 
+                                                     class="rounded-lg max-w-full h-auto cursor-pointer border border-white/20 shadow-sm"
+                                                     wire:click="downloadAttachment({{ $media->id }})" />
+                                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg pointer-events-none">
+                                                     <x-filament::icon icon="heroicon-o-arrow-down-tray" class="w-6 h-6 text-white" />
+                                                </div>
                                             </div>
-                                            <p class="text-sm">
-                                                {{ $media->file_name }}
-                                            </p>
-                                        </div>
+                                        @else
+                                            <div wire:click="downloadAttachment({{ $media->id }})"
+                                                @class([
+                                                    'flex items-center gap-2 p-2 my-2 rounded-lg group cursor-pointer',
+                                                    'bg-gray-200 dark:bg-gray-600' => $message->user_id !== auth()->id(),
+                                                    'bg-primary-500 dark:bg-primary-400' => $message->user_id === auth()->id(),
+                                                ])>
+                                                <div @class([
+                                                    'p-2 rounded-full',
+                                                    'bg-gray-100 dark:bg-gray-500' => $message->user_id !== auth()->id(),
+                                                    'bg-primary-600 group-hover:bg-primary-700 group-hover:dark:bg-primary-900' =>
+                                                        $message->user_id === auth()->id(),
+                                                ])>
+                                                    @php
+                                                        $icon = 'heroicon-o-document';
+                                                        if ($this->validateDocument($media->file_name)) {
+                                                            $icon = 'heroicon-o-paper-clip';
+                                                        }
+
+                                                        if ($this->validateVideo($media->file_name)) {
+                                                            $icon = 'heroicon-o-video-camera';
+                                                        }
+
+                                                        if ($this->validateAudio($media->file_name)) {
+                                                            $icon = 'heroicon-o-speaker-wave';
+                                                        }
+                                                    @endphp
+                                                    <x-filament::icon icon="{{ $icon }}" class="w-4 h-4" />
+                                                </div>
+                                                <p class="text-sm">
+                                                    {{ $media->file_name }}
+                                                </p>
+                                            </div>
+                                        @endif
                                     @endforeach
                                 @endif
                             </div>
                         </div>
-                        <p @class([
-                            'text-[10px] opacity-70',
-                            'text-end text-white/80' => $message->user_id === auth()->id(),
-                            'text-start text-gray-500 dark:text-gray-400' => $message->user_id !== auth()->id(),
+                        <div @class([
+                            'flex items-center gap-1.5 mt-1',
+                            'justify-end' => $message->user_id === auth()->id(),
+                            'justify-start' => $message->user_id !== auth()->id(),
                         ])>
-                            @php
-                                $createdAt = \Carbon\Carbon::parse($message->created_at)->setTimezone(
-                                    config('messages.timezone', 'app.timezone'),
-                                );
+                            <p @class([
+                                'text-[10px] opacity-70',
+                                'text-white/80' => $message->user_id === auth()->id(),
+                                'text-gray-500 dark:text-gray-400' => $message->user_id !== auth()->id(),
+                            ])>
+                                @php
+                                    $createdAt = \Carbon\Carbon::parse($message->created_at)->setTimezone(
+                                        config('messages.timezone', 'app.timezone'),
+                                    );
 
-                                if ($createdAt->isToday()) {
-                                    $date = $createdAt->format('g:i A');
-                                } else {
-                                    $date = $createdAt->format('M d, Y g:i A');
-                                }
-                            @endphp
-                            {{ $date }}
-                        </p>
+                                    if ($createdAt->isToday()) {
+                                        $date = $createdAt->format('H:i');
+                                    } else {
+                                        $date = $createdAt->format('d/m/y H:i');
+                                    }
+                                @endphp
+                                {{ $date }}
+                            </p>
+
+                            @if($message->user_id === auth()->id())
+                                @php
+                                    // Check if anyone else has read it (excluding the sender)
+                                    $isRead = !empty($message->read_by) && count(array_filter($message->read_by, fn($id) => $id !== auth()->id())) > 0;
+                                @endphp
+                                <div class="flex items-center">
+                                    @if($isRead)
+                                        <x-filament::icon icon="heroicon-m-check-badge" class="w-3 h-3 text-white" />
+                                        <span class="text-[9px] text-white/70 ml-1">{{ __('Dilihat') }}</span>
+                                    @else
+                                        <x-filament::icon icon="heroicon-m-check" class="w-3 h-3 text-white/50" />
+                                        <span class="text-[9px] text-white/50 ml-1">{{ __('Terkirim') }}</span>
+                                    @endif
+                                </div>
+                            @endif
+                        </div>
                     </div>
                 </div>
                 @php
@@ -146,20 +255,20 @@
                 @endif
             @endforeach
             @if ($this->paginator->hasMorePages())
-                <div x-intersect="$wire.loadMessages">
+                <div x-intersect="$wire.loadMessages()">
                     <div class="w-full py-6 text-center text-gray-900 dark:text-gray-200">{{ __('Getting more messages...') }}</div>
                 </div>
             @endif
         </div>
         <!-- Chat Box : End -->
         <!-- Chat Input : Start -->
-        <div class="w-full p-4 border-t relative">
-            <form wire:submit="sendMessage" class="flex items-end justify-between w-full gap-4">
+        <div class="w-full p-4 relative">
+            <form wire:submit="sendMessage()" class="flex items-end justify-between w-full gap-4">
                 <div class="w-full max-h-96 overflow-y-auto p-1">
                     {{ $this->form }}
                 </div>
                 <div class="p-1">
-                    <x-filament::button wire:click="sendMessage" icon="heroicon-o-paper-airplane"
+                    <x-filament::button wire:click="sendMessage()" icon="heroicon-o-paper-airplane"
                         wire:loading.attr="disabled">{{ __('Kirim') }}</x-filament::button>
                 </div>
             </form>

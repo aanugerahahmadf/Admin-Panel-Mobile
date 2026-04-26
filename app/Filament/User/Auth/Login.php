@@ -62,7 +62,7 @@ class Login extends BaseLogin
     protected function getAuthenticateFormAction(): \Filament\Actions\Action
     {
         return parent::getAuthenticateFormAction()
-            ->label(__('Masuk'));
+            ->label(__('Log In'));
     }
 
     protected function getCredentialsFromFormData(array $data): array

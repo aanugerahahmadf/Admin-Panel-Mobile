@@ -63,10 +63,9 @@ class Register extends BaseRegister
                                 ->directory('avatars')
                                 ->alignCenter()
                                 ->columnSpanFull()
-                                ->extraAttributes(['class' => 'flex flex-col items-center justify-center']),
+                                ->extraAttributes(['class' => 'flex flex-col products-center justify-center']),
                             TextInput::make('username')
                                 ->label(__('Username'))
-                                ->placeholder(__('Masukkan username Anda'))
                                 ->required()
                                 ->minLength(3)
                                 ->maxLength(255)

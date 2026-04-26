@@ -106,7 +106,6 @@ class CategoryResource extends Resource
                             ->schema([
                                 Forms\Components\TextInput::make('icon')
                                     ->label(__('Ikon Representasi (Class Name)'))
-                                    ->placeholder('heroicon-o-tag')
                                     ->maxLength(255)
                                     ->prefixIcon('heroicon-o-star')
                                     ->helperText(__('Gunakan Heroicons (contoh: heroicon-o-camera).')),
@@ -122,9 +121,11 @@ class CategoryResource extends Resource
                 Tables\Columns\TextColumn::make('name')->searchable()
                     ->label(__('Nama Kategori')),
                 Tables\Columns\TextColumn::make('slug')
-                    ->label(__('Slug URL')),
+                    ->label(__('Slug URL'))
+,
                 Tables\Columns\TextColumn::make('icon')
-                    ->label(__('Ikon'))
+                    ->label(__('Ikon'))
+
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Dibuat Pada'))

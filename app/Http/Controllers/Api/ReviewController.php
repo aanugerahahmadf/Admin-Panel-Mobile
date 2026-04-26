@@ -106,7 +106,7 @@ class ReviewController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $reviews->items(),
+                'data' => $reviews->products(),
                 'pagination' => [
                     'current_page' => $reviews->currentPage(),
                     'last_page' => $reviews->lastPage(),
@@ -150,7 +150,7 @@ class ReviewController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $reviews->items(),
+                'data' => $reviews->products(),
                 'pagination' => [
                     'current_page' => $reviews->currentPage(),
                     'last_page' => $reviews->lastPage(),
@@ -182,7 +182,7 @@ class ReviewController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $reviews->items(),
+                'data' => $reviews->products(),
                 'pagination' => [
                     'current_page' => $reviews->currentPage(),
                     'last_page' => $reviews->lastPage(),

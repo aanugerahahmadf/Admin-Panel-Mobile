@@ -43,8 +43,13 @@ $app = Application::configure(basePath: dirname(__DIR__))
 
         $middleware->replace(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, VerifyCsrfToken::class);
 
-        // Cuma trust proxies kalau di Vercel/Production
-        if (env('VERCEL') || env('APP_ENV') === 'production') {
+        // Trust proxies for Vercel, Production, or ngrok development
+        if (env('VERCEL') || 
+            env('APP_ENV') === 'production' || 
+            str_contains((string) env('APP_URL'), 'ngrok-free.dev') ||
+            (isset($_SERVER['HTTP_X_FORWARDED_HOST']) && str_contains($_SERVER['HTTP_X_FORWARDED_HOST'], 'ngrok')) ||
+            (isset($_SERVER['HTTP_HOST']) && str_contains($_SERVER['HTTP_HOST'], 'ngrok'))
+        ) {
             $middleware->trustProxies('*');
         }
     })

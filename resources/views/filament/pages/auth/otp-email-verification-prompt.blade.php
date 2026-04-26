@@ -14,47 +14,20 @@
          x-data="{
              timeLeft: @js($resendCooldown),
              interval: null,
-             resendInText: @js(__('Resend in')),
-             resendCodeText: @js(__('Resend code')),
              
+             formatTime(seconds) {
+                 let m = Math.floor(seconds / 60);
+                 let s = seconds % 60;
+                 return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+             },
              startTimer() {
                  clearInterval(this.interval);
-                 
-                 let updateText = () => {
-                     let btn = this.$el.querySelector('button');
-                     let labelEl = this.$el.querySelector('.fi-btn-label');
-                     
-                     if (labelEl) {
-                         if (this.timeLeft > 0) {
-                             let m = Math.floor(this.timeLeft / 60);
-                             let s = this.timeLeft % 60;
-                             let timeStr = String(m).padStart(2, '0') + '.' + String(s).padStart(2, '0');
-                             labelEl.innerText = this.resendInText + ' ' + timeStr;
-                         } else {
-                             labelEl.innerText = this.resendCodeText;
-                         }
-                     }
-                     
-                     if (btn) {
-                         if (this.timeLeft > 0) {
-                             btn.classList.add('pointer-events-none', 'opacity-50');
-                             btn.disabled = true;
-                         } else {
-                             btn.classList.remove('pointer-events-none', 'opacity-50');
-                             btn.disabled = false;
-                         }
-                     }
-                 };
-                 
-                 updateText();
                  if (this.timeLeft > 0) {
                      this.interval = setInterval(() => {
                          if (this.timeLeft > 0) {
                              this.timeLeft--;
-                             updateText();
                          } else {
                              clearInterval(this.interval);
-                             updateText();
                          }
                      }, 1000);
                  }
@@ -65,7 +38,17 @@
          }"
          x-on:otp-resent.window="timeLeft = 300; startTimer();"
     >
-        {{ __('Tidak menerima email?') }} <br><br>
-        {{ $this->resendNotificationAction }}
+        <p class="mb-4">{{ __('Tidak menerima email?') }}</p>
+
+        <template x-if="timeLeft > 0">
+            <div class="flex items-center justify-center gap-2 text-primary-600 font-medium">
+                <x-filament::loading-indicator class="h-4 w-4" />
+                <span>{{ __('Kirim ulang tersedia dalam') }} <span x-text="formatTime(timeLeft)"></span></span>
+            </div>
+        </template>
+
+        <div x-show="timeLeft <= 0">
+            {{ $this->resendNotificationAction }}
+        </div>
     </div>
 </x-filament-panels::page.simple>

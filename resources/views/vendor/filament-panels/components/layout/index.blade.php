@@ -23,10 +23,11 @@
                     'fi-main-ctn-sidebar-open': $store.sidebar.isOpen,
                 }"
                 x-bind:style="'display: flex; opacity:1;'" {{-- Mimics `x-cloak`, as using `x-cloak` causes visual issues with chart widgets --}}
-            @elseif (! (filament()->isSidebarCollapsibleOnDesktop() || filament()->isSidebarFullyCollapsibleOnDesktop() || filament()->hasTopNavigation() || (! filament()->hasNavigation())))
+            @elseif (filament()->hasTopNavigation() || (! filament()->hasNavigation()))
                 x-data="{}"
-                x-bind:style="'display: flex; opacity:1;'" {{-- Mimics `x-cloak`, as using `x-cloak` causes visual issues with chart widgets --}}
+                x-bind:style="'display: flex; opacity:1;'"
             @endif
+
             @class([
                 'fi-main-ctn w-screen flex-1 flex-col',
                 'h-full opacity-0 transition-all' => filament()->isSidebarCollapsibleOnDesktop() || filament()->isSidebarFullyCollapsibleOnDesktop(),

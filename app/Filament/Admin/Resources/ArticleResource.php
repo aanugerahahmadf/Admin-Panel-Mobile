@@ -114,7 +114,7 @@ class ArticleResource extends Resource
                                     ->label(__('Ringkasan (Snippet)'))
                                     ->rows(3)
                                     ->columnSpanFull()
-                                    ->placeholder(__('Tulis ringkasan singkat artikel...'))
+
                                     ->helperText(__('Ringkasan ini akan tampil pada daftar artikel.')),
                             ])->columns(2),
 

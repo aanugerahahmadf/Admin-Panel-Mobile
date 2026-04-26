@@ -45,6 +45,7 @@ Route::get('/packages/public', [PackageController::class, 'index']);
 
 // Webhooks (No auth required)
 Route::post('/webhooks/midtrans', [PaymentWebhookController::class, 'handleMidtransNotification']);
+Route::post('/v1.0/payment/notify', [PaymentWebhookController::class, 'handleSnapBiNotification']);
 
 // CBIR - AI Visual Search Public Probing
 Route::get('/cbir/stats', [CBIRController::class, 'getStats']);
@@ -159,7 +160,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     // CBIR - AI Visual Search
     Route::post('/cbir/search', [CBIRController::class, 'searchSimilar']);
-    Route::post('/cbir/index/package', [CBIRController::class, 'indexPackage']);
+    Route::post('/cbir/index/product', [CBIRController::class, 'indexItem']);
     Route::post('/cbir/index/build', [CBIRController::class, 'buildIndex']);
     Route::get('/cbir/stats', [CBIRController::class, 'getStats']);
     Route::get('/cbir/health', [CBIRController::class, 'healthCheck']);

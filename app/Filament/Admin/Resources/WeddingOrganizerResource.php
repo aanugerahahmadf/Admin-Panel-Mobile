@@ -10,6 +10,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -58,7 +59,7 @@ class WeddingOrganizerResource extends Resource
 
     public static function getNavigationLabel(): string
     {
-        return __('Profil Devi Make Up');
+        return __('Profil Dekorasi Bunga Pernikahan');
     }
 
     public static function form(Form $form): Form
@@ -67,24 +68,6 @@ class WeddingOrganizerResource extends Resource
             ->schema([
                 Forms\Components\Group::make()
                     ->schema([
-                        Forms\Components\Section::make(__('Profil & Identitas Studio'))
-                            ->description(__('Nama, deskripsi, dan identitas visual utama.'))
-                            ->icon('govicon-building')
-                            ->schema([
-                                 Forms\Components\TextInput::make('name')
-                                    ->label(__('Nama Studio'))
-                                    ->required()
-                                    ->maxLength(255)
-                                    ->default('Devi Make Up & Wedding')
-                                    ->dehydrated()
-                                    ->prefixIcon('heroicon-o-sparkles'),
-                                Forms\Components\RichEditor::make('description')
-                                    ->label(__('Deskripsi Lengkap Studio'))
-                                    ->default('Artis rias pengantin profesional yang mengkhususkan diri dalam gaya pernikahan tradisional dan modern.')
-                                    ->columnSpanFull()
-                                    ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList', 'orderedList']),
-                            ])->columns(2),
-
                         Forms\Components\Section::make(__('Visual & Galeri'))
                             ->description(__('Koleksi foto karya dan presentasi video studio.'))
                             ->icon('heroicon-o-photo')
@@ -107,21 +90,22 @@ class WeddingOrganizerResource extends Resource
                                     ->helperText(__('Upload video profil/showreel studio. Format: MP4, WebM, MOV. Maks 100MB per file.'))
                                     ->columnSpanFull(),
                             ]),
-                    ])->columnSpan(['lg' => 2]),
 
-                Forms\Components\Group::make()
-                    ->schema([
-                        Forms\Components\Section::make(__('Reputasi & Kontak'))
-                            ->icon('heroicon-o-star')
+                        Forms\Components\Section::make(__('Profil & Identitas Studio'))
+                            ->description(__('Nama, deskripsi, dan identitas visual utama.'))
+                            ->icon('govicon-building')
                             ->schema([
-                                Forms\Components\Toggle::make('is_verified')
-                                    ->label(__('Akun Terverifikasi'))
+                                 Forms\Components\TextInput::make('name')
+                                    ->label(__('Nama Studio'))
                                     ->required()
-                                    ->default(true)
-                                    ->onColor('success')
-                                    ->onIcon('heroicon-s-check-badge')
-                                    ->offIcon('heroicon-o-x-mark'),
-                            ]),
+                                    ->maxLength(255)
+                                    ->dehydrated()
+                                    ->prefixIcon('heroicon-o-sparkles'),
+                                Forms\Components\RichEditor::make('description')
+                                    ->label(__('Deskripsi Lengkap Studio'))
+                                    ->columnSpanFull()
+                                    ->toolbarButtons(['bold', 'italic', 'underline', 'bulletList', 'orderedList']),
+                            ])->columns(2),
 
                         Forms\Components\Section::make(__('Lokasi Geografis'))
                             ->icon('heroicon-o-map-pin')
@@ -129,8 +113,6 @@ class WeddingOrganizerResource extends Resource
                             ->schema([
                                 Forms\Components\Textarea::make('address')
                                     ->label(__('Alamat Lengkap'))
-                                    ->default('Jakarta Selatan, DKI Jakarta')
-                                    ->placeholder(__('Contoh: Jakarta Selatan, DKI Jakarta'))
                                     ->helperText(__('Setelah mengisi alamat, titik peta akan otomatis berpindah ke lokasi tersebut.'))
                                     ->maxLength(255)
                                     ->rows(3)
@@ -171,7 +153,7 @@ class WeddingOrganizerResource extends Resource
                                         'min-height: 450px',
                                         'z-index: 1',
                                     ])
-                                    ->showMyLocationButton(false) // Hilangkan target lokasi saya
+                                    ->showMyLocationButton(false)
                                     ->live()
                                     ->afterStateHydrated(function (Forms\Set $set, $record) {
                                         if ($record) {
@@ -187,7 +169,6 @@ class WeddingOrganizerResource extends Resource
                                         $set('latitude',  $state['lat']);
                                         $set('longitude', $state['lng']);
 
-                                        // REVERSE GEOCODING: Geser titik -> Alamat terisi otomatis
                                         try {
                                             $response = \Illuminate\Support\Facades\Http::withHeaders([
                                                 'User-Agent' => 'WeddingOrganizerApp/1.0',
@@ -211,6 +192,56 @@ class WeddingOrganizerResource extends Resource
                                 Forms\Components\Hidden::make('latitude'),
                                 Forms\Components\Hidden::make('longitude'),
                             ]),
+                    ])->columnSpan(['lg' => 2]),
+
+                Forms\Components\Group::make()
+                    ->schema([
+                        Forms\Components\Section::make(__('Status'))
+                            ->icon('heroicon-o-star')
+                            ->schema([
+                                Forms\Components\Toggle::make('is_verified')
+                                    ->label(__('Akun Terverifikasi'))
+                                    ->required()
+                                    ->onColor('success')
+                                    ->onIcon('heroicon-s-check-badge')
+                                    ->offIcon('heroicon-o-x-mark'),
+                            ]),
+
+                        Forms\Components\Section::make(__('Informasi Kontak'))
+                            ->icon('heroicon-o-phone')
+                            ->description(__('Data kontak yang ditampilkan ke pengguna di tab Informasi Kontak.'))
+                            ->schema([
+                                Forms\Components\TextInput::make('phone')
+                                    ->label(__('Nomor Telepon'))
+                                    ->tel()
+                                    ->prefixIcon('heroicon-o-phone')
+                                    ->placeholder('+62 812 3456 7890'),
+
+                                Forms\Components\TextInput::make('whatsapp')
+                                    ->label(__('Nomor WhatsApp'))
+                                    ->tel()
+                                    ->prefixIcon('heroicon-o-chat-bubble-left-right')
+                                    ->placeholder('+62 812 3456 7890')
+                                    ->helperText(__('Kosongkan jika sama dengan nomor telepon.')),
+
+                                Forms\Components\TextInput::make('email')
+                                    ->label(__('Email'))
+                                    ->email()
+                                    ->prefixIcon('heroicon-o-envelope')
+                                    ->placeholder('studio@example.com'),
+
+                                Forms\Components\TextInput::make('instagram')
+                                    ->label(__('Username Instagram'))
+                                    ->prefixIcon('ri-instagram-line')
+                                    ->placeholder('username_instagram')
+                                    ->helperText(__('Masukkan username saja (tanpa @).')),
+
+                                Forms\Components\TextInput::make('operational_hours')
+                                    ->label(__('Jam Operasional'))
+                                    ->prefixIcon('heroicon-o-clock')
+                                    ->placeholder('Senin - Minggu: 09:00 - 18:00')
+                                    ->default('Senin - Minggu: 09:00 - 18:00'),
+                            ]),
                     ])->columnSpan(['lg' => 1]),
             ])->columns(3);
     }
@@ -219,23 +250,48 @@ class WeddingOrganizerResource extends Resource
     {
         return $table
             ->columns([
+                SpatieMediaLibraryImageColumn::make('gallery')
+                    ->label(__('Galeri'))
+                    ->collection('gallery')
+                    ->defaultImageUrl(asset('images/placeholders/image-placeholder.png'))
+                    ->height(60)
+                    ->width(60)
+                    ->extraImgAttributes(['class' => 'rounded-lg object-cover'])
+                    ->alignment('center'),
+                Tables\Columns\TextColumn::make('video_url')
+                    ->label(__('Video'))
+                    ->formatStateUsing(fn ($state) => $state
+                        ? new \Illuminate\Support\HtmlString(
+                            '<video src="' . e($state) . '" class="rounded-lg" height="60" width="80" controls preload="none"></video>'
+                        )
+                        : new \Illuminate\Support\HtmlString('<span class="text-gray-400 text-xs">—</span>')
+                    )
+                    ->html()
+                    ->alignment('center'),
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
-                    ->label(__('Nama Studio')),
-
+                    ->label(__('Nama Studio'))
+                    ->alignment('center'),
+                Tables\Columns\TextColumn::make('description')
+                    ->label(__('Deskripsi'))
+                    ->limit(50)
+                    ->html()
+                    ->alignment('center')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('address')
                     ->searchable()
                     ->label(__('Alamat'))
+                    ->limit(40)
+                    ->alignment('center')
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('latitude')
                     ->label(__('Latitude'))
-
+                    ->alignment('center')
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('longitude')
                     ->label(__('Longitude'))
-
+                    ->alignment('center')
                     ->toggleable(isToggledHiddenByDefault: true),
-
                 Tables\Columns\IconColumn::make('is_verified')
                     ->label(__('Terverifikasi'))
                     ->boolean()
@@ -263,16 +319,15 @@ class WeddingOrganizerResource extends Resource
                     ->size('lg'),
                 Tables\Actions\EditAction::make()
                     ->label(__('Atur Profil'))
-                    ->slideOver()
-                    ->modalWidth('5xl')
+                    ->url(fn (WeddingOrganizer $record): string => static::getUrl('edit', ['record' => $record]))
                     ->button()
                     ->color('warning')
                     ->size('lg')
                     ->successNotification(
                         Notification::make()
                             ->success()
-                            ->title(__('Studio Rias Pengantin diperbarui'))
-                            ->body(__('Studio rias pengantin telah berhasil diperbarui.'))
+                            ->title(__('Profil Dekorasi Bunga Pernikahan diperbarui'))
+                            ->body(__('Profil dekorasi bunga pernikahan telah berhasil diperbarui.'))
                     ),
                 Tables\Actions\DeleteAction::make()
                     ->button()
@@ -281,8 +336,8 @@ class WeddingOrganizerResource extends Resource
                     ->successNotification(
                         Notification::make()
                             ->success()
-                            ->title(__('Studio Rias Pengantin dihapus'))
-                            ->body(__('Studio rias pengantin telah berhasil dihapus.'))
+                            ->title(__('Profil Dekorasi Bunga Pernikahan dihapus'))
+                            ->body(__('Profil dekorasi bunga pernikahan telah berhasil dihapus.'))
                     ),
             ])
             ->bulkActions([
@@ -311,6 +366,7 @@ class WeddingOrganizerResource extends Resource
     {
         return [
             'index' => Pages\ManageWeddingOrganizers::route('/'),
+            'edit' => Pages\EditWeddingOrganizer::route('/{record}/edit'),
         ];
     }
 }

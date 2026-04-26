@@ -56,12 +56,14 @@ class Inbox extends Model
     protected $fillable = [
         'title',
         'user_ids',
+        'meta',
     ];
 
     protected function casts(): array
     {
         return [
             'user_ids' => 'array',
+            'meta' => 'array',
         ];
     }
 
@@ -105,4 +107,22 @@ class Inbox extends Model
             get: fn () => User::whereIn('id', $this->user_ids, 'and', false)->where('id', '!=', Auth::id(), 'and')->get(['*'])
         );
     }
+
+    public function primaryAvatar(): Attribute
+    {
+        return Attribute::make(
+            get: function () {
+                $otherUser = $this->other_users->first();
+                if ($otherUser) {
+                    return $otherUser->avatar_url ?? "https://ui-avatars.com/api/?name=" . urlencode($this->inbox_title);
+                }
+
+                // If no other user (chat with self), use current user's avatar
+                return Auth::user()?->avatar_url ?? "https://ui-avatars.com/api/?name=" . urlencode($this->inbox_title);
+            }
+        );
+    }
 }
+
+
+

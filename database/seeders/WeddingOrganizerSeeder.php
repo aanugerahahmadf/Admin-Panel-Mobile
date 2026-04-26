@@ -9,36 +9,44 @@ class WeddingOrganizerSeeder extends Seeder
 {
     public function run(): void
     {
-        $organizer = WeddingOrganizer::updateOrCreate(
-            ['id' => 1],
-            [
-                'name' => 'Devi Make Up Wedding Organizer',
-                'description' => 'Selamat datang di Devi Make Up. Kami adalah penyedia jasa perias pengantin profesional dengan pengalaman lebih dari 10 tahun. Kami hanya menyajikan kualitas terbaik untuk hari bahagia Anda.',
-                'address' => 'Jakarta, Indonesia',
-                'latitude' => -6.2088,
-                'longitude' => 106.8456,
-                'is_verified' => true,
-            ]
-        );
+        $this->command->info('--- Seeding Wedding Organizer ---');
 
-        // Tambahkan foto sampul (Cover) jika belum ada dengan Try-Catch
-        if ($organizer->getMedia('gallery')->isEmpty()) {
-            try {
-                $organizer->addMediaFromUrl('https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1200&auto=format&fit=crop')
-                    ->toMediaCollection('gallery');
-            } catch (\Exception $e) {
-                // Lewati jika koneksi lambat
-            }
+        $wo = WeddingOrganizer::first();
+
+        $contactData = [
+            'name'               => 'Dekorasi Bunga Pernikahan',
+            'address'            => 'Rajasinga, Kec. Terisi, Kabupaten Indramayu, Jawa Barat',
+            'latitude'           => -6.5614,
+            'longitude'          => 108.1289,
+            'description'        => 'Spesialis dekorasi bunga pernikahan premium dengan sentuhan artistik dan elegan. Lebih dari 10 tahun pengalaman menghias momen bahagia Anda.',
+            'is_verified'        => true,
+            'phone'              => '(0234) 123-4567',       // Nomor telepon kantor/studio
+            'whatsapp'           => '+62 812-3456-7890',     // Nomor WhatsApp (HP)
+            'email'              => 'dekorasibunga@example.com',
+            'instagram'          => 'dekorasibunga_id',
+            'operational_hours'  => 'Senin - Minggu: 09:00 - 18:00',
+        ];
+
+        if (!$wo) {
+            $wo = WeddingOrganizer::create($contactData);
+            $this->command->info('  ✓ Wedding Organizer created');
+        } else {
+            $wo->update($contactData);
+            $this->command->info('  ✓ Wedding Organizer updated with contact info');
         }
 
-        // Tambahkan Logo jika belum ada dengan Try-Catch
-        if ($organizer->getMedia('logo')->isEmpty()) {
-            try {
-                $organizer->addMediaFromUrl('https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=300&auto=format&fit=crop')
-                    ->toMediaCollection('logo');
-            } catch (\Exception $e) {
-                // Lewati jika koneksi lambat
-            }
+        // Attach logo from public/images/logo.png
+        $logoPath = public_path('images/logo.png');
+        if (file_exists($logoPath)) {
+            $wo->clearMediaCollection('logo');
+            $wo->addMedia($logoPath)
+                ->preservingOriginal()
+                ->toMediaCollection('logo');
+            $this->command->info('  ✓ Logo attached from images/logo.png');
+        } else {
+            $this->command->warn('  ⚠ Logo not found at public/images/logo.png — please add your logo there.');
         }
+
+        $this->command->info('--- Wedding Organizer Seeding Complete ---');
     }
 }

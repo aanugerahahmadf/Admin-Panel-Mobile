@@ -21,17 +21,19 @@ class LanguageController extends Controller
         $locals = config('filament-language-switcher.locals', []);
         
         if (array_key_exists($locale, $locals)) {
-            // 1. Force update Session
+            // 1. Core State Update
             session()->put('locale', $locale);
             app()->setLocale($locale);
+            config(['app.locale' => $locale]);
 
-            // 2. Find authenticated user across all defined guards
+            // 2. Multi-Guard Authentication Check
             $user = null;
-            $guards = ['web', 'filament','livewire', 'mobile', 'nativephp', 'admin', 'api'];
+            $guards = ['web', 'filament', 'admin', 'mobile', 'nativephp', 'api'];
             foreach ($guards as $guard) {
                 try {
-                    if (Auth::guard($guard)->check()) {
-                        $user = Auth::guard($guard)->user();
+                    $guardInstance = Auth::guard($guard);
+                    if ($guardInstance->check()) {
+                        $user = $guardInstance->user();
                         break;
                     }
                 } catch (\Exception $e) {
@@ -39,25 +41,24 @@ class LanguageController extends Controller
                 }
             }
 
-            // 3. Persist to Database if user found
+            // 3. Database Persistence & Cache Nuclear Purge
             if ($user) {
-                // Ensure we use the common ID and Type string format
-                \App\Models\UserLanguage::updateOrCreate(
-                    ['model_id' => (string) $user->id, 'model_type' => 'App\Models\User'],
-                    ['lang' => $locale]
-                );
-                
-                // Nuclear purge of user-specific caches
-                cache()->forget("user_lang_{$user->id}");
-                cache()->forget("active_trans_map_{$locale}");
+                try {
+                    \App\Models\UserLanguage::updateOrCreate(
+                        ['model_id' => (string) $user->id, 'model_type' => get_class($user)],
+                        ['lang' => $locale]
+                    );
+
+                    // Purge caches to ensure the new locale is used in next request
+                    cache()->forget("user_lang_{$user->id}");
+                    cache()->forget("active_trans_map_{$locale}");
+                } catch (\Exception $e) {
+                    // Fail silently
+                }
             }
         }
 
-        // Final safe check for session
-        if ($locale && session()->get('locale') !== $locale) {
-            session()->put('locale', $locale);
-        }
-
-        return back();
+        // Final safety redirect back with session confirmation
+        return back()->with('switched_locale', $locale);
     }
 }

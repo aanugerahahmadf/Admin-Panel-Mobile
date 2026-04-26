@@ -19,10 +19,10 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read mixed $event_date
- * @property-read Payment|null $latestPayment
+ * @property-read Transaction|null $latestTransaction
  * @property-read Package $package
- * @property-read Collection<int, Payment> $payments
- * @property-read int|null $payments_count
+ * @property-read Collection<int, Transaction> $transactions
+ * @property-read int|null $transactions_count
  * @property-read User $user
  * @property-read WeddingOrganizer|null $weddingOrganizer
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order newModelQuery()
@@ -51,8 +51,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property \Illuminate\Support\Carbon|null $createdAt
  * @property \Illuminate\Support\Carbon|null $updatedAt
  * @property-read mixed $eventDate
- * @property-read int|null $paymentsCount
- * @property-read bool|null $paymentsExists
+ * @property-read int|null $transactionsCount
+ * @property-read bool|null $transactionsExists
  * @method static \Illuminate\Database\Eloquent\Builder<static>|\App\Models\Order whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|\App\Models\Order whereUserId($value)
  * @mixin \Eloquent
@@ -62,6 +62,7 @@ class Order extends Model
     protected $fillable = [
         'user_id',
         'package_id',
+        'product_id',
         'order_number',
         'total_price',
         'status',
@@ -94,25 +95,41 @@ class Order extends Model
         return $this->belongsTo(Package::class);
     }
 
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
+    }
+
     public function weddingOrganizer()
     {
+        if ($this->package_id) {
+            return $this->hasOneThrough(
+                WeddingOrganizer::class,
+                Package::class,
+                'id',
+                'id',
+                'package_id',
+                'wedding_organizer_id'
+            );
+        }
+
         return $this->hasOneThrough(
             WeddingOrganizer::class,
-            Package::class,
-            'id', // Foreign key on packages table...
-            'id', // Foreign key on wedding_organizers table...
-            'package_id', // Local key on orders table...
-            'wedding_organizer_id' // Local key on packages table...
+            Product::class,
+            'id',
+            'id',
+            'product_id',
+            'wedding_organizer_id'
         );
     }
 
-    public function payments()
+    public function transactions()
     {
-        return $this->hasMany(Payment::class);
+        return $this->hasMany(Transaction::class);
     }
 
-    public function latestPayment()
+    public function latestTransaction()
     {
-        return $this->hasOne(Payment::class)->latestOfMany();
+        return $this->hasOne(Transaction::class)->latestOfMany();
     }
 }

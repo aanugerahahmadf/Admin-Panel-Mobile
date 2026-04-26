@@ -13,6 +13,8 @@ class SocialiteController extends Controller
 {
     public function redirect(string $provider)
     {
+        $redirectUrl = config("services.$provider.redirect");
+        \Illuminate\Support\Facades\Log::info("Redirecting to $provider with URL: $redirectUrl");
         return Socialite::driver($provider)->stateless()->redirect();
     }
 
@@ -33,11 +35,19 @@ class SocialiteController extends Controller
 
         if ($user) {
             // Update existing user with social info if not present
+            $updates = [];
             if (!$user->social_id) {
-                $user->update([
-                    'social_id' => $socialUser->getId(),
-                    'social_type' => $provider,
-                ]);
+                $updates['social_id'] = $socialUser->getId();
+                $updates['social_type'] = $provider;
+            }
+            
+            // Sync avatar if not present
+            if (!$user->avatar_url && $socialUser->getAvatar()) {
+                $updates['avatar_url'] = $socialUser->getAvatar();
+            }
+
+            if (!empty($updates)) {
+                $user->update($updates);
             }
         } else {
             // Check for username duplicate
@@ -80,6 +90,11 @@ class SocialiteController extends Controller
         Auth::login($user);
 
         Notification::make()->title(__('Berhasil Masuk'))->body(__('Selamat datang, :name!', ['name' => $user->full_name]))->success()->send();
+
+        // Redirect based on role
+        if ($user->hasRole('super_admin')) {
+            return redirect()->intended('/admin');
+        }
 
         return redirect()->intended('/user');
     }

@@ -16,43 +16,61 @@ class PrivacyPolicyResource extends Resource
     protected static ?string $model = PrivacyPolicy::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-shield-check';
-    protected static ?string $navigationGroup = 'Manajemen Legal';
-    protected static ?string $label = 'Privacy Policy';
-    protected static ?string $pluralLabel = 'Privacy Policy';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Manajemen Legal');
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) static::getModel()::count();
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'primary';
+    }
+
+    public static function getLabel(): ?string
+    {
+        return __('Privacy Policy');
+    }
+
+    public static function getPluralLabel(): ?string
+    {
+        return __('Privacy Policy');
+    }
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Informasi Kebijakan')
+                Forms\Components\Section::make(__('Informasi Kebijakan'))
                     ->schema([
                         Forms\Components\TextInput::make('title')
-                            ->label('Judul Kebijakan')
-                            ->required()
-                            ->default('Kebijakan Privasi'),
+                            ->label(__('Judul Kebijakan'))
+                            ->required(),
                     ]),
 
-                Forms\Components\Section::make('Data & Keamanan')
-                    ->description('Organisasi rincian data dan perlindungan privasi yang dikelola sistem Kami secara in-house.')
+                Forms\Components\Section::make(__('Data & Keamanan'))
+                    ->description(__('Organisasi rincian data dan perlindungan privasi yang dikelola sistem Kami secara in-house.'))
                     ->schema([
                         Forms\Components\Repeater::make('content')
-                            ->label('Pasal / Bagian Data')
+                            ->label(__('Pasal / Bagian Data'))
                             ->schema([
                                 Forms\Components\TextInput::make('heading')
-                                    ->label('Heading / Nama Pasal')
-                                    ->required()
-                                    ->placeholder('Misal: KOMITMEN PRIVASI'),
+                                    ->label(__('Heading / Nama Pasal'))
+                                    ->required(),
                                 Forms\Components\Textarea::make('body')
-                                    ->label('Isi Pasal')
+                                    ->label(__('Isi Pasal'))
                                     ->required()
-                                    ->rows(4)
-                                    ->placeholder('Tuliskan rincian kebijakan di sini...'),
+                                    ->rows(4),
                                 Forms\Components\Toggle::make('is_italic')
-                                    ->label('Gunakan Tulisan Miring (Italic)')
+                                    ->label(__('Gunakan Tulisan Miring (Italic)'))
                                     ->default(false),
                             ])
                             ->collapsible()
-                            ->itemLabel(fn (array $state): ?string => $state['heading'] ?? 'Rincian Baru')
+                            ->itemLabel(fn (array $state): ?string => $state['heading'] ?? __('Rincian Baru'))
                             ->grid(1)
                             ->reorderableWithButtons()
                             ->columnSpanFull(),
@@ -65,11 +83,11 @@ class PrivacyPolicyResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('title')
-                    ->label('Judul')
+                    ->label(__('Judul'))
                     ->weight('bold')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('updated_at')
-                    ->label('Terakhir Diupdate')
+                    ->label(__('Terakhir Diupdate'))
                     ->dateTime('d M Y H:i')
                     ->color('gray')
                     ->sortable(),

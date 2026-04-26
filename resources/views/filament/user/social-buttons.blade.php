@@ -42,14 +42,74 @@
         </x-filament::button>
     </div>
 
+    @php
+        $termsRecord = \App\Models\TermsOfService::first();
+        $privacyRecord = \App\Models\PrivacyPolicy::first();
+    @endphp
+
     <div class="mt-4 text-center">
-        <x-filament::link href="{{ route('terms') }}" size="xs" color="warning">
-            {{ __('Terms & Conditions') }}
-        </x-filament::link>
-        <span class="text-xs text-gray-500 mx-1">&</span>
-        <x-filament::link href="{{ route('privacy') }}" size="xs" color="warning">
-            {{ __('Kebijakan Privasi') }}
-        </x-filament::link>
+        {{-- Modal Syarat & Ketentuan --}}
+        <x-filament::modal id="terms-modal" width="3xl" slide-over>
+            <x-slot name="trigger">
+                <x-filament::link size="xs" color="warning" class="cursor-pointer">
+                    {{ __('Syarat & Ketentuan') }}
+                </x-filament::link>
+            </x-slot>
+
+            <x-slot name="heading">
+                <span class="text-xl font-bold text-primary-600 dark:text-primary-500">
+                    {{ __($termsRecord?->title ?? 'Syarat & Ketentuan') }}
+                </span>
+            </x-slot>
+
+            <div class="space-y-6 text-left py-2">
+                @forelse ($termsRecord?->content ?? [] as $i => $item)
+                    <article class="space-y-2">
+                        <h3 class="text-sm font-bold uppercase tracking-wide text-gray-900 dark:text-gray-100">
+                            {{ $i + 1 }}. {{ __($item['heading']) }}
+                        </h3>
+                        <p class="text-sm leading-relaxed text-gray-600 dark:text-gray-400 text-justify">
+                            {!! nl2br(e(__($item['body']))) !!}
+                        </p>
+                    </article>
+                @empty
+                    <p class="text-sm text-gray-400 italic">{{ __('Konten belum tersedia.') }}</p>
+                @endforelse
+            </div>
+        </x-filament::modal>
+
+        <span class="text-xs text-gray-500 mx-1">{{ __('&') }}</span>
+
+        {{-- Modal Kebijakan Privasi --}}
+        <x-filament::modal id="privacy-modal" width="3xl" slide-over>
+            <x-slot name="trigger">
+                <x-filament::link size="xs" color="warning" class="cursor-pointer">
+                    {{ __('Kebijakan Privasi') }}
+                </x-filament::link>
+            </x-slot>
+
+            <x-slot name="heading">
+                <span class="text-xl font-bold text-primary-600 dark:text-primary-500">
+                    {{ __($privacyRecord?->title ?? 'Kebijakan Privasi') }}
+                </span>
+            </x-slot>
+
+            <div class="space-y-6 text-left py-2">
+                @forelse ($privacyRecord?->content ?? [] as $i => $item)
+                    <article class="space-y-2">
+                        <h3 class="text-sm font-bold uppercase tracking-wide text-gray-900 dark:text-gray-100">
+                            {{ $i + 1 }}. {{ __($item['heading']) }}
+                        </h3>
+                        <p class="text-sm leading-relaxed text-gray-600 dark:text-gray-400 text-justify">
+                            {!! nl2br(e(__($item['body']))) !!}
+                        </p>
+                    </article>
+                @empty
+                    <p class="text-sm text-gray-400 italic">{{ __('Konten belum tersedia.') }}</p>
+                @endforelse
+            </div>
+        </x-filament::modal>
+
         <div class="mt-1 text-xs text-gray-500">
             {{ __('Dengan login, kamu menyetujui kebijakan penyelenggara.') }}
         </div>

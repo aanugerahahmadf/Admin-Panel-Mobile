@@ -64,7 +64,7 @@ class PersonalInfoComponent extends Component implements HasForms
                             ->avatar()
                             ->imageEditor()
                             ->directory('avatars')
-                            ->extraAttributes(['class' => 'flex flex-col items-center justify-center'])
+                            ->extraAttributes(['class' => 'flex flex-col products-center justify-center'])
                             ->alignCenter()
                             ->columnSpanFull(),
                         TextInput::make('full_name')

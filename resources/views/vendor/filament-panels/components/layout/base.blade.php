@@ -104,7 +104,9 @@
     </head>
 
     <body
+        x-data="{}"
         {{ $attributes
+
                 ->merge(($livewire ?? null)?->getExtraBodyAttributes() ?? [], escape: false)
                 ->class([
                     'fi-body',

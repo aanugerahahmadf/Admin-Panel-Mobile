@@ -2,8 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Topup;
-use App\Enums\TopupStatus;
+use App\Models\Transaction;
 use Illuminate\Console\Command;
 use Carbon\Carbon;
 
@@ -31,7 +30,8 @@ class CleanupPendingTopups extends Command
         $hours = (int) $this->argument('hours');
         $before = Carbon::now()->subHours($hours);
 
-        $pendingTopups = Topup::where('status', TopupStatus::PENDING)
+        $pendingTopups = Transaction::where('type', 'topup')
+            ->where('status', 'pending')
             ->where('created_at', '<=', $before)
             ->get();
 
@@ -45,7 +45,7 @@ class CleanupPendingTopups extends Command
 
         foreach ($pendingTopups as $topup) {
             $topup->update([
-                'status' => TopupStatus::CANCELLED,
+                'status' => 'cancelled',
                 'notes' => 'Otomatis dibatalkan oleh sistem karena melewati batas waktu pembayaran.',
             ]);
             $bar->advance();

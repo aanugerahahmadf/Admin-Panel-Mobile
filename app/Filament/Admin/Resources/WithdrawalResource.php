@@ -21,6 +21,8 @@ use Illuminate\Support\Str;
  */
 class WithdrawalResource extends Resource
 {
+    protected static bool $shouldRegisterNavigation = false;
+
     protected static ?string $model = Withdrawal::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-banknotes';

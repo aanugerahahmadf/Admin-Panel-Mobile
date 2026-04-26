@@ -333,7 +333,7 @@ class ProfileController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $orders->items(),
+                'data' => $orders->products(),
                 'pagination' => [
                     'current_page' => $orders->currentPage(),
                     'last_page' => $orders->lastPage(),
@@ -352,7 +352,7 @@ class ProfileController extends Controller
     }
 
     /**
-     * Get user's wishlist items
+     * Get user's wishlist products
      */
     public function getWishlist(Request $request)
     {
@@ -389,7 +389,7 @@ class ProfileController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $wishlistItems->items(),
+                'data' => $wishlistItems->products(),
                 'pagination' => [
                     'current_page' => $wishlistItems->currentPage(),
                     'last_page' => $wishlistItems->lastPage(),

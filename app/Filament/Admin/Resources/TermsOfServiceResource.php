@@ -16,43 +16,61 @@ class TermsOfServiceResource extends Resource
     protected static ?string $model = TermsOfService::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
-    protected static ?string $navigationGroup = 'Manajemen Legal';
-    protected static ?string $label = 'Terms of Service';
-    protected static ?string $pluralLabel = 'Terms of Service';
+    public static function getNavigationGroup(): ?string
+    {
+        return __('Manajemen Legal');
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) static::getModel()::count();
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'primary';
+    }
+
+    public static function getLabel(): ?string
+    {
+        return __('Terms of Service');
+    }
+
+    public static function getPluralLabel(): ?string
+    {
+        return __('Terms of Service');
+    }
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Informasi Dokumen')
+                Forms\Components\Section::make(__('Informasi Dokumen'))
                     ->schema([
                         Forms\Components\TextInput::make('title')
-                            ->label('Judul Dokumen')
-                            ->required()
-                            ->default('Syarat & Ketentuan'),
+                            ->label(__('Judul Dokumen'))
+                            ->required(),
                     ]),
 
-                Forms\Components\Section::make('Konten Legal (1, 2, 3...)')
-                    ->description('Kelola setiap pasal atau bagian dokumen Anda di sini. Urutan dapat digeser.')
+                Forms\Components\Section::make(__('Konten Legal (1, 2, 3...)'))
+                    ->description(__('Kelola setiap pasal atau bagian dokumen Anda di sini. Urutan dapat digeser.'))
                     ->schema([
                         Forms\Components\Repeater::make('content')
-                            ->label('Pasal / Bagian')
+                            ->label(__('Pasal / Bagian'))
                             ->schema([
                                 Forms\Components\TextInput::make('heading')
-                                    ->label('Heading / Kepala Pasal')
-                                    ->required()
-                                    ->placeholder('Misal: PENDAHULUAN'),
+                                    ->label(__('Heading / Kepala Pasal'))
+                                    ->required(),
                                 Forms\Components\Textarea::make('body')
-                                    ->label('Isi Pasal')
+                                    ->label(__('Isi Pasal'))
                                     ->required()
-                                    ->rows(4)
-                                    ->placeholder('Tuliskan rincian hukum di sini...'),
+                                    ->rows(4),
                                 Forms\Components\Toggle::make('is_italic')
-                                    ->label('Gunakan Tulisan Miring (Italic)')
+                                    ->label(__('Gunakan Tulisan Miring (Italic)'))
                                     ->default(false),
                             ])
                             ->collapsible()
-                            ->itemLabel(fn (array $state): ?string => $state['heading'] ?? 'Section Baru')
+                            ->itemLabel(fn (array $state): ?string => $state['heading'] ?? __('Section Baru'))
                             ->grid(1)
                             ->reorderableWithButtons()
                             ->columnSpanFull(),
@@ -65,11 +83,11 @@ class TermsOfServiceResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('title')
-                    ->label('Judul')
+                    ->label(__('Judul'))
                     ->weight('bold')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('updated_at')
-                    ->label('Terakhir Diupdate')
+                    ->label(__('Terakhir Diupdate'))
                     ->dateTime('d M Y H:i')
                     ->color('gray')
                     ->sortable(),

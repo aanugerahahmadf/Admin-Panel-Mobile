@@ -41,6 +41,11 @@ use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 use Spatie\Backup\BackupServiceProvider;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Filament\View\PanelsRenderHook;
+use Filament\Support\Facades\FilamentView;
+use Illuminate\Support\Facades\Blade;
+use App\Models\Order;
+use App\Models\Transaction;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -134,6 +139,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // 🚀 Force HTTPS for Ngrok/Production Assets
+        if (str_contains(config('app.url'), 'https://')) {
+            \Illuminate\Support\Facades\URL::forceScheme('https');
+        }
+
         // 🚀 Vercel Read-Only Filesystem Fix
         if (env('VERCEL')) {
             $storagePath = '/tmp/storage';
@@ -181,11 +191,8 @@ class AppServiceProvider extends ServiceProvider
         );
 
         Media::observe(MediaObserver::class);
-        \App\Models\Topup::observe(\App\Observers\TopupObserver::class);
-        \App\Models\Withdrawal::observe(\App\Observers\WithdrawalObserver::class);
-        \App\Models\Order::observe(\App\Observers\OrderObserver::class);
-        \App\Models\Payment::observe(\App\Observers\PaymentObserver::class);
-
+        Order::observe(\App\Observers\OrderObserver::class);
+        Transaction::observe(\App\Observers\TransactionObserver::class);
         Livewire::component('edit_password_form', EditPasswordComponent::class);
         Livewire::component('delete_account_form', DeleteAccountComponent::class);
         Livewire::component('browser_sessions_form', BrowserSessionsComponent::class);
@@ -216,7 +223,8 @@ class AppServiceProvider extends ServiceProvider
 
         // 🎯 GLOBAL ALIGNMENT CENTER UNTUK SEMUA TABLE & EXPORTER
         Column::configureUsing(function (Column $column): void {
-            $column->alignCenter();
+            $column->alignCenter()
+                ->label(fn () => __($column->getName()));
         });
 
         // 🎯 GLOBAL AUTO-TRANSLATE UNTUK SEMUA "ISI TABLE" (ROW DATA) PADA WEBDAN NATIVEPHP
@@ -276,6 +284,16 @@ class AppServiceProvider extends ServiceProvider
         //     // service provider failed to register it due to the macro compatibility issue.
         //     // Css::make('mobile-cards-styles', base_path('vendor/slym758/filament-mobile-table/resources/css/mobile-cards.css')),
         // ]);
+
+        // 💳 MIDTRANS SNAP MODAL INTEGRATION
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::BODY_END,
+            fn (): string => Blade::render('
+                <div id="snap-container"></div>
+                @include("filament.snap-script")
+            '),
+        );
+
 
         // Singletons are now registered in NativeServiceProvider
     }

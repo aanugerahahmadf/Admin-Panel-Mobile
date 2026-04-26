@@ -19,6 +19,11 @@ return new class extends Migration
             $table->string('latitude')->nullable();
             $table->string('longitude')->nullable();
             $table->boolean('is_verified')->default(false);
+            $table->string('phone')->nullable();
+            $table->string('whatsapp')->nullable();
+            $table->string('email')->nullable();
+            $table->string('instagram')->nullable();
+            $table->string('operational_hours')->nullable()->default('Senin - Minggu: 09:00 - 18:00');
             $table->timestamps();
         });
     }

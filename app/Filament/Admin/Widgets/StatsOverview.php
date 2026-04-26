@@ -94,7 +94,7 @@ class StatsOverview extends BaseWidget
                 ->color('success')
                 ->extraAttributes([
                     'class' => 'cursor-pointer hover:shadow-lg transition-all duration-300',
-                    'onclick' => "window.location.href='" . route('filament.admin.resources.payments.index') . "'",
+                    'onclick' => "window.location.href='" . route('filament.admin.resources.transactions.index') . "'",
                 ]),
         ];
         });

@@ -19,13 +19,13 @@ class StatsOverview extends BaseWidget
     public function getExtraAttributes(): array
     {
         return [
-            'class' => '[&_.fi-wi-stats-overview-stats-ctn]:grid-cols-1 [&_.fi-wi-stats-overview-stats-ctn]:md:grid-cols-3 [&_.fi-wi-stats-overview-stats-ctn]:xl:grid-cols-5',
+            'class' => '[&_.fi-wi-stats-overview-stats-ctn]:grid-cols-1 [&_.fi-wi-stats-overview-stats-ctn]:md:grid-cols-2 [&_.fi-wi-stats-overview-stats-ctn]:xl:grid-cols-4',
         ];
     }
 
     protected function getColumns(): int
     {
-        return 5;
+        return 4;
     }
 
     protected function getStats(): array
@@ -34,21 +34,12 @@ class StatsOverview extends BaseWidget
         $name = $user->full_name ?? $user->username ?? __('User');
 
         return [
-            Stat::make(new \Illuminate\Support\HtmlString(__('Selamat Datang,') . '<style>@media (min-width: 1280px) { .fi-wi-stats-overview-stats-ctn { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; } }</style>'), $name)
+            Stat::make(new \Illuminate\Support\HtmlString(__('Selamat Datang,') . '<style>@media (min-width: 1280px) { .fi-wi-stats-overview-stats-ctn { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; } }</style>'), $name)
                 ->description(__('Ayo buat momen spesialmu hari ini!'))
                 ->descriptionIcon('heroicon-m-sparkles')
                 ->color('primary')
                 ->extraAttributes([
                     'class' => 'h-full',
-                ]),
-
-            Stat::make(__('Saldo Dompet'), 'Rp ' . number_format($user->balance ?? 0, 0, ',', '.'))
-                ->description(__('Sisa saldo Anda'))
-                ->descriptionIcon('heroicon-m-wallet', IconPosition::Before)
-                ->color('success')
-                ->extraAttributes([
-                    'class' => 'cursor-pointer hover:scale-105 transition-transform h-full',
-                    'onclick' => "window.location.href='" . route('filament.user.resources.topups.index') . "'",
                 ]),
 
             Stat::make(__('Pesanan Saya'), Order::where('user_id', $user->id)->count())
@@ -68,7 +59,7 @@ class StatsOverview extends BaseWidget
                     'class' => 'cursor-pointer hover:scale-105 transition-transform h-full',
                     'onclick' => "window.location.href='" . route('filament.user.resources.wishlists.index') . "'",
                 ]),
-            Stat::make(__('Voucher Aktif'), auth()->user()->vouchers()->whereNull('user_vouchers.used_at')->count())
+            Stat::make(__('Voucher Aktif'), \Filament\Facades\Filament::auth()->user()?->vouchers()->whereNull('user_vouchers.used_at')->count() ?? 0)
                 ->description(__('Gunakan diskonmu'))
                 ->descriptionIcon('heroicon-m-ticket', IconPosition::Before)
                 ->color('warning')

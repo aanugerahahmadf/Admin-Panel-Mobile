@@ -31,7 +31,7 @@ class OrderResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) static::getModel()::count();
+        return (string) static::getModel()::where('user_id', \Filament\Facades\Filament::auth()->id())->count();
     }
 
     public static function getNavigationBadgeTooltip(): ?string
@@ -44,14 +44,47 @@ class OrderResource extends Resource
         return __('Pesanan Saya');
     }
 
+    public static function getPluralModelLabel(): string
+    {
+        return __('Pesanan Saya');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('Pesanan Saya');
+    }
+
+    public static function form(Forms\Form $form): Forms\Form
+    {
+        return $form
+            ->schema([
+                Forms\Components\Section::make(__('Edit Pesanan'))
+                    ->description(__('Anda hanya dapat merubah catatan dan tanggal acara.'))
+                    ->schema([
+                        Forms\Components\DatePicker::make('booking_date')
+                            ->label(__('Tanggal Acara'))
+                            ->required()
+                            ->native(false)
+                            ->minDate(now()->addDays(7))
+                            ->prefixIcon('heroicon-o-calendar-days'),
+                        Forms\Components\Textarea::make('notes')
+                            ->label(__('Catatan Khusus'))
+                            ->rows(4)
+                            ->required(),
+                    ]),
+            ]);
+    }
+
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
     {
-        return parent::getEloquentQuery()->where('user_id', auth()->id());
+        return parent::getEloquentQuery()->where('user_id', \Filament\Facades\Filament::auth()->id());
     }
 
     public static function table(Table $table): Table
     {
         return $table
+            ->description(new \Illuminate\Support\HtmlString('<style>.fi-ta-ctn, .fi-ta-content, .fi-ta-header-toolbar, .fi-ta-pagination { background-color: transparent !important; box-shadow: none !important; border-color: transparent !important; }</style>'))
+            ->poll('5s')
             ->emptyStateHeading(__('Belum ada pesanan'))
             ->emptyStateDescription(__('Wujudkan acara impianmu dengan paket terbaik dari kami. Mulai pesan sekarang!'))
             ->emptyStateIcon('heroicon-o-shopping-bag')
@@ -65,66 +98,99 @@ class OrderResource extends Resource
                     ->icon('heroicon-m-sparkles'),
             ])
             ->contentGrid([
-                'sm' => 2,
-                'md' => 3,
-                'lg' => 5,
-                'xl' => 6,
+                'sm' => 1,
+                'md' => 2,
+                'lg' => 3,
+                'xl' => 4,
             ])
             ->columns([
                 Tables\Columns\Layout\Stack::make([
-                    // Image Section (Top Center in White Box)
-                    Tables\Columns\ImageColumn::make('package.image_url')
-                        ->label('')
-                        ->height('14rem')
-                        ->width('100%')
-                        ->extraAttributes(['class' => 'w-full flex justify-center items-center bg-white p-2 rounded-t-xl overflow-hidden aspect-square'])
-                        ->extraImgAttributes([
-                            'class' => 'object-contain transition-all duration-500 opacity-90 group-hover:opacity-100 !mx-auto',
-                            'style' => 'max-height: 100%; width: auto; object-fit: contain;'
-                        ]),
+                    // Image Section with Status Overlay
+                    Tables\Columns\Layout\Stack::make([
+                        Tables\Columns\ImageColumn::make('package.image_url')
+                            ->label('')
+                            ->height('200px')
+                            ->width('100%')
+                            ->extraAttributes(['class' => 'w-full flex justify-center products-center bg-gray-50 dark:bg-gray-800 rounded-t-2xl overflow-hidden'])
+                            ->extraImgAttributes([
+                                'class' => 'aspect-square object-contain transition-all duration-500 group-hover:scale-110 !mx-auto',
+                                'style' => 'height: 200px; width: 100%;'
+                            ]),
+                        
+
+                    ])->extraAttributes(['class' => 'relative overflow-hidden group/img-overlay']),
 
                     Tables\Columns\Layout\Stack::make([
-                        // Store Info (Single Appearance)
-                        Tables\Columns\TextColumn::make('package.weddingOrganizer.name')
+                        // Category Badge
+                        Tables\Columns\TextColumn::make('package.category.name')
+                            ->formatStateUsing(fn ($state) => __($state))
+                            ->badge()
+                            ->color('warning')
                             ->size('xs')
-                            ->weight(FontWeight::Bold)
+                            ->alignCenter(),
+
+                        // Store Info
+                        Tables\Columns\TextColumn::make('package.weddingOrganizer.name')
                             ->color('gray')
-                            ->icon('heroicon-s-building-storefront')
-,
+                            ->size('xs')
+                            ->weight('bold')
+                            ->alignCenter(),
+                            
+                        // Package Name
                         Tables\Columns\TextColumn::make('package.name')
-                            ->weight(FontWeight::Bold)
+                            ->formatStateUsing(fn ($state) => __($state))
+                            ->weight('bold')
                             ->size('sm')
                             ->lineClamp(1)
                             ->color('info')
-
+                            ->alignCenter()
                             ->extraAttributes(['class' => 'mt-1']),
+
+                        // Order ID
                         Tables\Columns\TextColumn::make('order_number')
                             ->prefix('#')
                             ->size('xs')
                             ->color('gray')
-,
-                        // Metadata & Status Footer
-                        Tables\Columns\Layout\Split::make([
+                            ->weight('medium')
+                            ->alignCenter(),
+
+                        // Booking Date & Total Price
+                        Tables\Columns\Layout\Stack::make([
                             Tables\Columns\TextColumn::make('booking_date')
-                                ->date('d/m/y')
+                                ->label(__('Tanggal:'))
+                                ->date('d M Y')
+                                ->icon('heroicon-m-calendar-days')
                                 ->size('xs')
-                                ->color('gray'),
+                                ->color('primary')
+                                ->alignCenter(),
+                            Tables\Columns\TextColumn::make('payment_status')
+                                ->badge()
+                                ->size('xs')
+                                ->alignCenter(),
                             Tables\Columns\TextColumn::make('total_price')
                                 ->formatStateUsing(fn ($state) => 'Rp ' . number_format($state, 2, ',', '.'))
-                                ->weight(FontWeight::Bold)
-                                ->size('xs')
-                                ->alignEnd(),
-                        ])->extraAttributes(['class' => 'mt-2 pt-2 border-t border-gray-100/10']),
-                        // Status Badge at the very bottom
-                        Tables\Columns\TextColumn::make('status')
-                            ->badge()
-                            ->color(fn ($state) => $state->getColor())
-                            ->extraAttributes(['class' => 'mt-1 self-end']),
-                    ])->space(1)->extraAttributes(['class' => 'p-2']),
+                                ->weight('black')
+                                ->size('md')
+                                ->color('primary')
+                                ->alignCenter(),
+                        ])->space(3)->extraAttributes(['class' => 'mt-4']),
+
+                        // Rating Stats
+                        Tables\Columns\TextColumn::make('avg_rating')
+                            ->state(fn ($record) => $record->package ? number_format($record->package->reviews()->avg('rating') ?: 0, 1) : '5.0')
+                            ->icon('heroicon-m-star')
+                            ->iconColor('warning')
+                            ->size('xs')
+                            ->color('gray')
+                            ->weight('bold')
+                            ->alignCenter()
+                            ->extraAttributes(['class' => 'pt-3 mt-auto']),
+                    ])->space(2)->extraAttributes(['class' => 'p-3 flex-1 flex flex-col']),
                 ])->extraAttributes([
-                    'class' => 'bg-white dark:bg-gray-950 rounded-xl shadow-sm hover:shadow-lg transition-all border border-gray-100 dark:border-gray-800 group overflow-hidden'
+                    'class' => 'bg-white dark:bg-gray-900 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group border border-transparent dark:border-white/10 h-full flex flex-col'
                 ]),
             ])
+
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->searchable()
@@ -135,95 +201,125 @@ class OrderResource extends Resource
                         Forms\Components\TextInput::make('value')
                             ->label(__('ID')),
                     ])
-                    ->query(fn (Builder $query, array $data) => $query->when($data['value'], fn ($q, $id) => $q->where('id', $id)))
+                    ->query(fn (\Illuminate\Database\Eloquent\Builder $query, array $data) => $query->when($data['value'], fn ($q, $id) => $q->where('id', $id)))
                     ->hidden(),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()
                     ->hiddenLabel()
-                    ->iconButton()
-                    ->color('gray')
-                    ->size('lg')
+                    ->tooltip(__('Detail'))
                     ->icon('heroicon-m-eye')
-                    ->extraAttributes(['class' => 'flex-1 justify-center !rounded-lg border border-gray-200 dark:border-gray-800'])
+                    ->button()
+                    ->size('sm')
+                    ->color('gray')
                     ->slideOver()
                     ->modalWidth('2xl')
-                    ->modalHeading(__('Detail Pesanan'))
-                    ->modalDescription(fn($record) => $record->order_number),
-                Tables\Actions\Action::make('pay')
-                    ->label(__('Bayar'))
+                    ->extraAttributes(['class' => 'order-3 !rounded-lg justify-center gap-0']),
+
+                Tables\Actions\EditAction::make()
+                    ->hiddenLabel()
+                    ->tooltip(__('Ubah'))
+                    ->icon('heroicon-m-pencil-square')
                     ->button()
+                    ->size('sm')
                     ->color('warning')
-                    ->size('lg')
+                    ->extraAttributes(['class' => 'order-4 !rounded-lg justify-center gap-0'])
+                    ->visible(fn ($record) => in_array($record?->status, [
+                        \App\Enums\OrderStatus::PENDING, 
+                        \App\Enums\OrderStatus::CONFIRMED,
+                        \App\Enums\OrderStatus::COMPLETED
+                    ])),
+
+                Tables\Actions\DeleteAction::make()
+                    ->hiddenLabel()
+                    ->tooltip(__('Batal'))
+                    ->icon('heroicon-m-trash')
+                    ->button()
+                    ->size('sm')
+                    ->color('danger')
+                    ->extraAttributes(['class' => 'order-5 !rounded-lg justify-center gap-0'])
+                    ->visible(fn ($record) => in_array($record?->status, [
+                        \App\Enums\OrderStatus::PENDING, 
+                        \App\Enums\OrderStatus::CONFIRMED,
+                        \App\Enums\OrderStatus::COMPLETED
+                    ])),
+
+                Tables\Actions\Action::make('pay_midtrans')
+                    ->hiddenLabel()
+                    ->tooltip(__('Bayar Sekarang'))
+                    ->button()
+                    ->color('primary')
+                    ->size('sm')
                     ->icon('heroicon-m-credit-card')
-                    ->extraAttributes(['class' => 'flex-1 justify-center !rounded-lg'])
-                    ->visible(fn ($record) => $record?->status === \App\Enums\OrderStatus::PENDING)
-                    ->slideOver()
-                    ->modalWidth('3xl')
-                    ->modalHeading(__('Konfirmasi Pembayaran'))
-                    ->steps(fn ($record) => \App\Filament\User\Resources\PaymentResource::getWizardSteps())
-                    ->fillForm(fn ($record) => [
-                        'order_id'    => $record->id,
-                        'amount'      => $record->total_price,
-                        'total_amount'=> $record->total_price,
-                        'admin_fee'   => 0,
-                    ])
-                    ->action(function ($record, array $data) {
-                        $method = \App\Models\PaymentMethod::where('code', $data['payment_method'])->first();
-                        $user = auth()->user();
-                        $totalAmount = floatval($data['total_amount'] ?? $data['amount'] ?? 0);
-
-                        // Wallet payment
-                        if ($method && $method->type === \App\Enums\PaymentMethodType::WALLET) {
-                            if ($user->balance < $totalAmount) {
-                                \Filament\Notifications\Notification::make()
-                                    ->danger()
-                                    ->title(__('Saldo Tidak Mencukupi'))
-                                    ->body(__('Saldo Anda tidak cukup untuk menyelesaikan pembayaran ini.'))
-                                    ->send();
-                                return;
+                    ->extraAttributes(['class' => 'flex-1 !rounded-lg shadow-sm font-bold order-1 justify-center gap-0'])
+                    ->visible(fn ($record) => in_array($record?->payment_status, [
+                        \App\Enums\OrderPaymentStatus::UNPAID, 
+                        \App\Enums\OrderPaymentStatus::FAILED,
+                        \App\Enums\OrderPaymentStatus::PENDING
+                    ]))
+                    ->action(function (Order $record, \Livewire\Component $livewire) {
+                        try {
+                            // Selalu buat transaksi dengan ref baru biar Midtrans nggak komplain "Duplicate Order ID"
+                            $reference = 'PAY-' . strtoupper(str()->random(5)) . '-' . $record->id;
+                            $transaction = \App\Models\Transaction::create([
+                                'user_id'          => $record->user_id,
+                                'order_id'         => $record->id,
+                                'type'             => 'order',
+                                'reference_number' => $reference,
+                                'amount'           => $record->total_price,
+                                'admin_fee'        => 0,
+                                'total_amount'     => $record->total_price,
+                                'payment_gateway'  => 'midtrans',
+                                'status'           => 'pending',
+                                'notes'            => __('Pembayaran via Midtrans untuk Pesanan #') . $record->order_number,
+                            ]);
+                            $record->update(['payment_status' => \App\Enums\OrderPaymentStatus::PENDING]);
+                            
+                            $midtrans = new \App\Services\MidtransService();
+                            if (!$transaction->snap_token) {
+                                $transaction = $midtrans->createTransactionSnap($transaction);
                             }
-                            $user->decrement('balance', $totalAmount);
-                            $status    = \App\Enums\PaymentStatus::SUCCESS;
-                            $paidAt    = now();
-                            $orderStatus = \App\Enums\OrderStatus::CONFIRMED;
-                            $orderPay    = \App\Enums\OrderPaymentStatus::PAID;
-                        } else {
-                            $status    = \App\Enums\PaymentStatus::PENDING;
-                            $paidAt    = null;
-                            $orderStatus = \App\Enums\OrderStatus::PENDING;
-                            $orderPay    = \App\Enums\OrderPaymentStatus::UNPAID;
+                            $livewire->dispatch('open-midtrans-snap', token: $transaction->snap_token);
+                        } catch (\Exception $e) {
+                            \Filament\Notifications\Notification::make()->title(__('Gagal Memuat Pembayaran'))->body($e->getMessage())->danger()->send();
                         }
+                    }),
 
-                        // Buat payment record
-                        $payment = \App\Models\Payment::create([
-                            'order_id'       => $record->id,
-                            'user_id'        => $user->id,
-                            'payment_method' => $data['payment_method'],
-                            'payment_number' => 'PAY-' . strtoupper(str()->random(8)),
-                            'amount'         => $data['amount'],
-                            'admin_fee'      => $data['admin_fee'] ?? 0,
-                            'total_amount'   => $totalAmount,
-                            'status'         => $status,
-                            'paid_at'        => $paidAt,
-                            'evidence_url'   => $data['evidence_url'] ?? null,
-                        ]);
-
-                        // Update order
-                        $record->update([
-                            'status'         => $orderStatus,
-                            'payment_status' => $orderPay,
-                        ]);
-
-                        \Filament\Notifications\Notification::make()
-                            ->success()
-                            ->title($method && $method->type === \App\Enums\PaymentMethodType::WALLET
-                                ? __('Pembayaran Berhasil! Pesanan dikonfirmasi otomatis.')
-                                : __('Bukti pembayaran berhasil dikirim.'))
-                            ->send();
+                Tables\Actions\Action::make('refresh_midtrans_status')
+                    ->hiddenLabel()
+                    ->tooltip(__('Cek Status Pembayaran'))
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('info')
+                    ->button()
+                    ->size('sm')
+                    ->extraAttributes(['class' => 'flex-1 !rounded-lg shadow-sm font-bold order-2 justify-center gap-0'])
+                    ->visible(fn ($record) => $record?->payment_status === \App\Enums\OrderPaymentStatus::PENDING)
+                    ->action(function (Order $record) {
+                        try {
+                            $transaction = $record->latestTransaction;
+                            if (!$transaction) return;
+                            $midtrans = new \App\Services\MidtransService();
+                            $status = $midtrans->getStatus($midtrans->getMidtransOrderId($transaction));
+                            $data = (array) $status;
+                            if ($midtrans->isSuccess($data)) {
+                                $transaction->markAsSuccess();
+                                \Filament\Notifications\Notification::make()->title(__('Pembayaran Berhasil!'))->success()->send();
+                            } elseif ($midtrans->isFailed($data)) {
+                                $transaction->markAsFailed('Midtrans: ' . ($data['transaction_status'] ?? 'failed'));
+                                \Filament\Notifications\Notification::make()->title(__('Pembayaran Gagal/Kadaluarsa'))->danger()->send();
+                            } else {
+                                \Filament\Notifications\Notification::make()->title(__('Pembayaran Masih Pending'))->info()->send();
+                            }
+                        } catch (\Exception $e) {
+                            \Filament\Notifications\Notification::make()->title(__('Gagal Sinkronisasi'))->body($e->getMessage())->danger()->send();
+                        }
                     }),
             ])
-            ->actionsAlignment('center');
+            ->actionsAlignment('center')
+            ->extraAttributes([
+                'class' => 'filament-table-actions-container !flex !flex-row !gap-1 !p-3 !bg-gray-50/50 dark:!bg-white/5 !border-t dark:!border-gray-800'
+            ]);
+
     }
 
     public static function infolist(Infolist $infolist): Infolist
@@ -265,6 +361,7 @@ class OrderResource extends Resource
                                 ->grow(false),
                             Infolists\Components\Group::make([
                                 Infolists\Components\TextEntry::make('package.name')
+                                    ->formatStateUsing(fn ($state) => __($state))
                                     ->hiddenLabel()
                                     ->weight(FontWeight::Bold)
                                     ->size(Infolists\Components\TextEntry\TextEntrySize::Large),
@@ -304,8 +401,9 @@ class OrderResource extends Resource
                     ->compact()
                     ->schema([
                         Infolists\Components\TextEntry::make('notes')
+                            ->formatStateUsing(fn ($state) => __($state))
                             ->hiddenLabel()
-                            ->placeholder(__('Tidak ada catatan tambahan.'))
+
                             ->columnSpanFull(),
                     ]),
             ]);

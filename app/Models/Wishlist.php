@@ -49,6 +49,7 @@ class Wishlist extends Model
     protected $fillable = [
         'user_id',
         'package_id',
+        'product_id',
     ];
 
     public function user()
@@ -59,5 +60,10 @@ class Wishlist extends Model
     public function package()
     {
         return $this->belongsTo(Package::class);
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
     }
 }

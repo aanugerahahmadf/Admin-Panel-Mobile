@@ -1,0 +1,135 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use App\Models\Product;
+use App\Models\Package;
+use App\Models\Category;
+use App\Models\WeddingOrganizer;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\File;
+
+class DecorationDatasetSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $this->command->info("--- Initializing Wedding Decoration Dataset Seeder ---");
+
+        // 1. Ensure Wedding Organizer exists (Using the first existing profile)
+        $wo = WeddingOrganizer::first();
+        
+        if (!$wo) {
+            $wo = WeddingOrganizer::create([
+                'name' => 'Ayra Wedding Organizer',
+                'address' => 'AI Core Street No. 1',
+                'description' => 'Premium AI-driven wedding services',
+            ]);
+        }
+
+        // 2. Define categories
+        $categories = [
+            'traditional' => 'Traditional',
+            'modern' => 'Modern',
+            'rustic' => 'Rustic',
+            'minimalist' => 'Minimalist',
+        ];
+
+        $categoryModels = [];
+        foreach ($categories as $slug => $name) {
+            $categoryModels[$slug] = Category::firstOrCreate(
+                ['slug' => $slug],
+                ['name' => $name]
+            );
+        }
+
+        // 3. Define dataset products
+        $products = [
+            [
+                'name' => 'Luxurious Traditional Gebyok',
+                'category' => 'traditional',
+                'filename' => 'traditional.png',
+                'price' => 15000000,
+                'description' => 'High-end traditional Indonesian wedding decoration with intricate carvings and fresh flowers.',
+            ],
+            [
+                'name' => 'Modern Crystal Stage',
+                'category' => 'modern',
+                'filename' => 'modern.png',
+                'price' => 20000000,
+                'description' => 'Elegant modern decoration featuring crystal chandeliers and minimalist white orchids.',
+            ],
+            [
+                'name' => 'Rustic Sunset Garden',
+                'category' => 'rustic',
+                'filename' => 'rustic.png',
+                'price' => 12000000,
+                'description' => 'Warm and intimate rustic decoration with wooden arch and pampas grass.',
+            ],
+            [
+                'name' => 'Minimalist Pastel Arch',
+                'category' => 'minimalist',
+                'filename' => 'minimalist.png',
+                'price' => 8000000,
+                'description' => 'Simple and clean minimalist decoration with blush roses and eucalyptus.',
+            ],
+        ];
+
+        // 4. Create products/packages and register images
+        $sourceDir = 'D:/Weeding-Organizer-CBIR/ai_core/data/dataset/decorations/';
+
+        foreach ($products as $data) {
+            $slug = Str::slug($data['name']);
+            
+            // Seed Product
+            $product = Product::updateOrCreate(
+                ['slug' => $slug],
+                [
+                    'wedding_organizer_id' => $wo->id,
+                    'category_id' => $categoryModels[$data['category']]->id,
+                    'name' => $data['name'],
+                    'description' => $data['description'],
+                    'price' => $data['price'],
+                    'stock' => 10,
+                ]
+            );
+
+            // Seed Package
+            $package = Package::updateOrCreate(
+                ['slug' => $slug . '-package'],
+                [
+                    'wedding_organizer_id' => $wo->id,
+                    'category_id' => $categoryModels[$data['category']]->id,
+                    'name' => $data['name'] . ' Package',
+                    'description' => 'Full service package for ' . $data['name'],
+                    'price' => $data['price'] + 5000000,
+                    'stock' => 5,
+                ]
+            );
+
+            // Register distinct images
+            $productImage = $sourceDir . 'products/' . $data['filename'];
+            $packageImage = $sourceDir . 'packages/' . $data['filename'];
+
+            // Add to Product (Close-up/Component)
+            if (File::exists($productImage)) {
+                $product->clearMediaCollection('product_image');
+                $product->addMedia($productImage)
+                    ->preservingOriginal()
+                    ->toMediaCollection('product_image');
+                $this->command->info("Seeded Product Detail: {$data['name']}");
+            }
+
+            // Add to Package (Overall/Full)
+            if (File::exists($packageImage)) {
+                $package->clearMediaCollection('package_image');
+                $package->addMedia($packageImage)
+                    ->preservingOriginal()
+                    ->toMediaCollection('package_image');
+                $this->command->info("Seeded Package Overall: {$data['name']} Package");
+            }
+        }
+
+        $this->command->info("--- Wedding Decoration Dataset Seeding Complete ---");
+    }
+}

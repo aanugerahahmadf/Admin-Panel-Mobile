@@ -21,8 +21,11 @@ class Search extends Component
 
     public Collection $messages;
 
+    public string $panelId = 'admin';
+
     public function mount(): void
     {
+        $this->panelId = filament()->getCurrentPanel()?->getId() ?? 'admin';
         $this->messages = collect();
     }
 

@@ -198,32 +198,40 @@ class OrderResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ActionGroup::make([
-                    Tables\Actions\Action::make('start_preparing')
-                        ->label(__('Mulai Persiapan'))
-                        ->icon('heroicon-m-cog-6-tooth')
-                        ->color('info')
-                        ->visible(fn ($record) => $record->status === \App\Enums\OrderStatus::CONFIRMED)
-                        ->requiresConfirmation()
-                        ->successNotificationTitle(__('Persiapan Dimulai'))
-                        ->action(fn ($record) => $record->update(['status' => \App\Enums\OrderStatus::PREPARING])),
-
-                    Tables\Actions\Action::make('set_event_day')
-                        ->label(__('Set Hari H'))
-                        ->icon('heroicon-m-sparkles')
-                        ->color('success')
-                        ->visible(fn ($record) => $record->status === \App\Enums\OrderStatus::PREPARING)
-                        ->requiresConfirmation()
-                        ->successNotificationTitle(__('Status Hari H Aktif'))
-                        ->action(fn ($record) => $record->update(['status' => \App\Enums\OrderStatus::EVENT_DAY])),
-
                     Tables\Actions\Action::make('complete')
                         ->label(__('Selesaikan'))
                         ->icon('heroicon-m-check-badge')
                         ->color('success')
-                        ->visible(fn ($record) => $record->status === \App\Enums\OrderStatus::EVENT_DAY)
+                        ->visible(fn ($record) => $record->status === \App\Enums\OrderStatus::CONFIRMED)
                         ->requiresConfirmation()
                         ->successNotificationTitle(__('Pesanan Selesai'))
                         ->action(fn ($record) => $record->update(['status' => \App\Enums\OrderStatus::COMPLETED])),
+
+                    Tables\Actions\Action::make('refresh_midtrans_status')
+                        ->label(__('Sinkronkan Pembayaran'))
+                        ->icon('heroicon-o-arrow-path')
+                        ->color('warning')
+                        ->visible(fn ($record) => $record?->payment_status === \App\Enums\OrderPaymentStatus::PENDING)
+                        ->action(function (Order $record) {
+                            try {
+                                $transaction = $record->latestTransaction;
+                                if (!$transaction) return;
+                                $midtrans = new \App\Services\MidtransService();
+                                $status = $midtrans->getStatus($midtrans->getMidtransOrderId($transaction));
+                                $data = (array) $status;
+                                if ($midtrans->isSuccess($data)) {
+                                    $transaction->markAsSuccess();
+                                    \Filament\Notifications\Notification::make()->title(__('Pembayaran Berhasil!'))->success()->send();
+                                } elseif ($midtrans->isFailed($data)) {
+                                    $transaction->markAsFailed('Midtrans: ' . ($data['transaction_status'] ?? 'failed'));
+                                    \Filament\Notifications\Notification::make()->title(__('Pembayaran Gagal/Kadaluarsa'))->danger()->send();
+                                } else {
+                                    \Filament\Notifications\Notification::make()->title(__('Pembayaran Masih Pending'))->info()->send();
+                                }
+                            } catch (\Exception $e) {
+                                \Filament\Notifications\Notification::make()->title(__('Gagal Sinkronisasi'))->body($e->getMessage())->danger()->send();
+                            }
+                        }),
 
                 ])->label(__('Aksi'))
                   ->icon('heroicon-m-ellipsis-vertical')
@@ -273,7 +281,7 @@ class OrderResource extends Resource
                             ]);
                         }
 
-                        return MessagesPage::getUrl(['id' => $inbox->id]);
+                        return MessagesPage::getUrl() . '/' . $inbox->id;
                     }),
                 Tables\Actions\ViewAction::make()
                     ->slideOver()
@@ -315,7 +323,7 @@ class OrderResource extends Resource
     public static function getRelations(): array
     {
         return [
-            RelationManagers\PaymentsRelationManager::class,
+            RelationManagers\TransactionsRelationManager::class,
         ];
     }
 

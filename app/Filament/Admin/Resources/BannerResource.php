@@ -81,7 +81,7 @@ class BannerResource extends Resource
                             ->schema([
                                 Forms\Components\TextInput::make('title')
                                     ->label(__('Judul Promosi/Banner'))
-                                    ->placeholder(__('Masukkan judul banner'))
+
                                     ->maxLength(255)
                                     ->prefixIcon('heroicon-o-megaphone'),
                                 Forms\Components\FileUpload::make('image_url')

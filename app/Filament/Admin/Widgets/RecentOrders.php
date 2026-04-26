@@ -33,7 +33,7 @@ class RecentOrders extends BaseWidget
                 Tables\Columns\TextColumn::make('user.full_name')
                     ->label(__('Pelanggan')),
                 Tables\Columns\TextColumn::make('package.name')
-                    ->label(__('Paket Rias'))
+                    ->label(__('Paket Dekorasi'))
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('total_price')
                     ->label(__('Total Harga'))

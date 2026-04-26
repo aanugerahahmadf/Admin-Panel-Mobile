@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Auth;
 class WishlistController extends Controller
 {
     /**
-     * Get user's wishlist items
+     * Get user's wishlist products
      */
     public function index(Request $request)
     {
@@ -38,7 +38,7 @@ class WishlistController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $wishlistItems->items(),
+                'data' => $wishlistItems->products(),
                 'pagination' => [
                     'current_page' => $wishlistItems->currentPage(),
                     'last_page' => $wishlistItems->lastPage(),
@@ -57,7 +57,7 @@ class WishlistController extends Controller
     }
 
     /**
-     * Toggle wishlist item (add/remove)
+     * Toggle wishlist product (add/remove)
      */
     public function toggle(Request $request)
     {
@@ -159,7 +159,7 @@ class WishlistController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'message' => $addedCount.' '.__('item ditambahkan ke wishlist'),
+                'message' => $addedCount.' '.__('product ditambahkan ke wishlist'),
                 'added_count' => $addedCount,
                 'skipped_count' => count($skippedIds),
                 'skipped_ids' => $skippedIds,
@@ -167,14 +167,14 @@ class WishlistController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => __('Gagal menambahkan item ke wishlist'),
+                'message' => __('Gagal menambahkan product ke wishlist'),
                 'error' => $e->getMessage(),
             ], 500);
         }
     }
 
     /**
-     * Remove specific item from wishlist
+     * Remove specific product from wishlist
      */
     public function removeFromWishlist($packageId)
     {
@@ -186,7 +186,7 @@ class WishlistController extends Controller
             if (! $wishlist) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => __('Item tidak ditemukan dalam wishlist'),
+                    'message' => __('Product tidak ditemukan dalam wishlist'),
                 ], 404);
             }
 

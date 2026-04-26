@@ -1,0 +1,93 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class Transaction extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'user_id',
+        'order_id',
+        'type', // 'topup' or 'order'
+        'reference_number',
+        'amount',
+        'admin_fee',
+        'total_amount',
+        'payment_gateway',
+        'payment_method',
+        'snap_token',
+        'payment_url',
+        'status', // 'pending', 'success', 'failed', 'expired', 'cancelled'
+        'paid_at',
+        'notes',
+        'metadata',
+    ];
+
+    protected $casts = [
+        'amount' => 'decimal:2',
+        'admin_fee' => 'decimal:2',
+        'total_amount' => 'decimal:2',
+        'paid_at' => 'datetime',
+        'metadata' => 'json',
+        'status' => \App\Enums\PaymentStatus::class,
+    ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    public function markAsSuccess(): void
+    {
+        $this->update([
+            'status' => 'success',
+            'paid_at' => now(),
+        ]);
+
+        if ($this->type === 'topup') {
+            $this->user->increment('balance', $this->amount);
+        } elseif ($this->type === 'order' && $this->order) {
+            $this->order->update([
+                'status' => \App\Enums\OrderStatus::CONFIRMED,
+                'payment_status' => \App\Enums\OrderPaymentStatus::PAID,
+            ]);
+
+            // Mark voucher as used if exists
+            $voucherLink = \DB::table('user_vouchers')
+                ->where('order_id', $this->order_id)
+                ->where('user_id', $this->user_id)
+                ->first();
+            
+            if ($voucherLink && $voucherLink->voucher_id) {
+                $voucher = \App\Models\Voucher::find($voucherLink->voucher_id);
+                if ($voucher) {
+                    $voucher->markAsUsedBy($this->user_id, $this->order_id);
+                }
+            }
+        }
+    }
+
+    public function markAsFailed(?string $reason = null): void
+    {
+        $this->update([
+            'status' => 'failed',
+            'notes' => $reason ?? $this->notes,
+        ]);
+        
+        if ($this->type === 'order' && $this->order) {
+            $this->order->update([
+                'payment_status' => \App\Enums\OrderPaymentStatus::FAILED,
+            ]);
+        }
+    }
+}

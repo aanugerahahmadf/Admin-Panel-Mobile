@@ -12,8 +12,11 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
+use Filament\Tables\Columns\ViewColumn;
 use Illuminate\Database\Eloquent\Builder;
-
+use Spatie\MediaLibrary\MediaCollections\Models\MediaCollection;
 /**
  * @mixin \Eloquent
  * @property-read \App\Models\Package $record
@@ -22,7 +25,7 @@ class PackageResource extends Resource
 {
     protected static ?string $model = Package::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-gift';
+    protected static ?string $navigationIcon = 'ri-gift-line';
 
     protected static ?int $navigationSort = 3;
 
@@ -30,12 +33,12 @@ class PackageResource extends Resource
 
     public static function getModelLabel(): string
     {
-        return __('Paket');
+        return __('Paket Dekorasi');
     }
 
     public static function getPluralModelLabel(): string
     {
-        return __('Paket');
+        return __('Paket Dekorasi');
     }
 
     public static function getGloballySearchableAttributes(): array
@@ -50,7 +53,7 @@ class PackageResource extends Resource
 
     public static function getNavigationLabel(): string
     {
-        return __('Paket Rias');
+        return __('Paket Dekorasi');
     }
 
     public static function getNavigationBadge(): ?string
@@ -68,7 +71,7 @@ class PackageResource extends Resource
 
     public static function getNavigationBadgeTooltip(): ?string
     {
-        return __('Total Paket Rias');
+        return __('Total Paket Dekorasi');
     }
 
     public static function form(Form $form): Form
@@ -78,7 +81,7 @@ class PackageResource extends Resource
                 Forms\Components\Group::make()
                     ->schema([
                         Forms\Components\Section::make(__('Informasi Utama'))
-                            ->description(__('Penamaan dan deskripsi paket rias.'))
+                            ->description(__('Penamaan dan deskripsi paket dekorasi.'))
                             ->icon('heroicon-o-information-circle')
                             ->schema([
                                 Forms\Components\TextInput::make('name')
@@ -99,12 +102,19 @@ class PackageResource extends Resource
                                     ->required(),
                                 Forms\Components\Select::make('category_id')
                                     ->searchable()
-                                    ->label(__('Kategori Rias'))
+                                    ->label(__('Kategori Dekorasi'))
                                     ->relationship('category', 'name')
                                     ->preload()
                                     ->prefixIcon('heroicon-o-tag')
                                     ->columnSpanFull()
                                     ->required(),
+                                Forms\Components\TextInput::make('stock')
+                                    ->label(__('Stok / Kuota Tersedia'))
+                                    ->helperText(__('Jumlah paket yang tersedia untuk dipesan.'))
+                                    ->numeric()
+                                    ->default(10)
+                                    ->required()
+                                    ->prefixIcon('heroicon-o-archive-box'),
                                 Forms\Components\RichEditor::make('description')
                                     ->label(__('Deskripsi Lengkap'))
                                     ->columnSpanFull()
@@ -116,7 +126,7 @@ class PackageResource extends Resource
                                     ->label(__('Artikel Terkait'))
                                     ->relationship('article', 'title')
                                     ->preload()
-                                    ->placeholder(__('Pilih artikel untuk menjelaskan paket ini...'))
+
                                     ->prefixIcon('heroicon-o-document-text')
                                     ->columnSpanFull()
                                     ->helperText(__('Pilih artikel panduan atau tips yang relevan dengan paket ini.')),
@@ -142,18 +152,22 @@ class PackageResource extends Resource
                                     ->rules(['nullable']),
                                 Forms\Components\TagsInput::make('features')
                                     ->label(__('Fitur Paket'))
-                                    ->placeholder(__('Ketik fitur lalu tekan Enter'))
+
                                     ->color('primary')
                                     ->columnSpanFull(),
                             ])->columns(2),
 
+                    ])->columnSpan(['lg' => 2]),
+
+                Forms\Components\Group::make()
+                    ->schema([
                         Forms\Components\Section::make(__('Media Portfolio'))
                             ->description(__('Upload foto utama dan video presentasi dari paket ini.'))
                             ->icon('heroicon-o-photo')
                             ->schema([
                                 Forms\Components\SpatieMediaLibraryFileUpload::make('package_image')
                                     ->label(__('Foto Utama Paket'))
-                                    ->collection('package')
+                                    ->collection('package_image')
                                     ->image()
                                     ->imageEditor()
                                     ->formatStateUsing(fn (mixed $state): mixed => static::sanitizeSpatieUploadState($state))
@@ -163,7 +177,7 @@ class PackageResource extends Resource
                                     ->getUploadedFileUsing(
                                         fn (Forms\Components\SpatieMediaLibraryFileUpload $component, mixed $file): ?array => static::safeUploadedMediaFileData($component, $file)
                                     )
-                                    ->maxSize(102400000) // 100GB
+                                    ->maxSize(102400000)
                                     ->columnSpanFull(),
                                 Forms\Components\SpatieMediaLibraryFileUpload::make('videos')
                                     ->label(__('Video Portfolio'))
@@ -177,15 +191,12 @@ class PackageResource extends Resource
                                         fn (Forms\Components\SpatieMediaLibraryFileUpload $component, mixed $file): ?array => static::safeUploadedMediaFileData($component, $file)
                                     )
                                     ->acceptedFileTypes(['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'])
-                                    ->maxSize(102400000) // 100GB
+                                    ->maxSize(102400000)
                                     ->maxFiles(5)
                                     ->helperText(__('Upload video portfolio paket. Format: MP4, WebM, MOV. Maks 100GB per file.'))
                                     ->columnSpanFull(),
                             ]),
-                    ])->columnSpan(['lg' => 2]),
 
-                Forms\Components\Group::make()
-                    ->schema([
                         Forms\Components\Section::make(__('Status & Klasifikasi'))
                             ->icon('heroicon-o-sparkles')
                             ->schema([
@@ -209,23 +220,8 @@ class PackageResource extends Resource
                         Forms\Components\Section::make(__('Tema & Kapasitas'))
                             ->icon('heroicon-o-users')
                             ->schema([
-                                Forms\Components\TextInput::make('theme')
-                                    ->label(__('Tema Visual'))
-                                    ->maxLength(255)
-                                    ->prefixIcon('heroicon-o-swatch'),
                                 Forms\Components\ColorPicker::make('color')
                                     ->label(__('Warna Aksen')),
-                                Forms\Components\Fieldset::make(__('Target Tamu'))
-                                    ->schema([
-                                        Forms\Components\TextInput::make('min_capacity')
-                                            ->label(__('Minimum'))
-                                            ->numeric()
-                                            ->suffix('Pax'),
-                                        Forms\Components\TextInput::make('max_capacity')
-                                            ->label(__('Maksimum'))
-                                            ->numeric()
-                                            ->suffix('Pax'),
-                                    ])->columns(2),
                             ]),
                     ])->columnSpan(['lg' => 1]),
             ])->columns(3);
@@ -243,10 +239,12 @@ class PackageResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('category.name')
                     ->searchable()
-                    ->label(__('Kategori')),
+                    ->label(__('Kategori'))
+                    ->alignment('center'),
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
-                    ->label(__('Nama Paket')),
+                    ->label(__('Nama Paket'))
+                    ->alignment('center'),
                 Tables\Columns\TextColumn::make('slug')
                     ->label(__('Slug'))
                     ->searchable()
@@ -255,27 +253,34 @@ class PackageResource extends Resource
                     ->label(__('Deskripsi'))
                     ->limit(50)
                     ->toggleable(isToggledHiddenByDefault: true),
+                SpatieMediaLibraryImageColumn::make('package_image')
+                    ->label(__('Foto'))
+                    ->collection('package_image')
+                    ->defaultImageUrl(asset('images/placeholders/image-placeholder.png'))
+                    ->height(60)
+                    ->width(60)
+                    ->extraImgAttributes(['class' => 'rounded-lg object-cover'])
+                    ->alignment('center'),
+                Tables\Columns\TextColumn::make('video_url')
+                    ->label(__('Video'))
+                    ->formatStateUsing(fn ($state) => $state
+                        ? new \Illuminate\Support\HtmlString(
+                            '<video src="' . e($state) . '" class="rounded-lg" height="60" width="80" controls preload="none"></video>'
+                        )
+                        : new \Illuminate\Support\HtmlString('<span class="text-gray-400 text-xs">—</span>')
+                    )
+                    ->html()
+                    ->alignment('center'),
                 Tables\Columns\TextColumn::make('price')
                     ->label(__('Harga Dasar'))
                     ->formatStateUsing(fn ($state) => 'Rp ' . number_format($state, 2, ',', '.'))
-                    ->alignment('right'),
-                Tables\Columns\TextColumn::make('theme')
-                    ->label(__('Tema'))
-                    ->searchable()
                     ->alignment('center'),
-                Tables\Columns\TextColumn::make('color')
-                    ->label(__('Warna'))
-                    ->searchable()
+                Tables\Columns\TextColumn::make('stock')
+                    ->label(__('Stok'))
+                    ->numeric()
+                    ->sortable()
                     ->alignment('center')
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('min_capacity')
-                    ->label(__('Min Pax'))
-                    ->numeric()
-                    ->alignment('center'),
-                Tables\Columns\TextColumn::make('max_capacity')
-                    ->label(__('Max Pax'))
-                    ->numeric()
-                    ->alignment('center'),
+                    ->color(fn ($state) => $state <= 0 ? 'danger' : ($state <= 5 ? 'warning' : 'success')),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Dibuat Pada'))
                     ->dateTime()
@@ -292,12 +297,10 @@ class PackageResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()
-                    ->slideOver()
                     ->button()
                     ->color('info')
                     ->size('lg'),
                 Tables\Actions\EditAction::make()
-                    ->slideOver()
                     ->button()
                     ->color('warning')
                     ->size('lg')
@@ -328,15 +331,18 @@ class PackageResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ManagePackages::route('/'),
+            'index' => Pages\ListPackages::route('/'),
+            'create' => Pages\CreatePackage::route('/create'),
+            'view' => Pages\ViewPackage::route('/{record}'),
+            'edit' => Pages\EditPackage::route('/{record}/edit'),
         ];
     }
 
     private static function sanitizeSpatieUploadState(mixed $state): array
     {
         return collect(is_array($state) ? $state : [$state])
-            ->filter(fn (mixed $item): bool => is_string($item) && $item !== '')
-            ->mapWithKeys(fn (string $item): array => [$item => $item])
+            ->filter(fn (mixed $product): bool => is_string($product) && $product !== '')
+            ->mapWithKeys(fn (string $product): array => [$product => $product])
             ->all();
     }
 

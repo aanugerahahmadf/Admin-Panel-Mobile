@@ -22,85 +22,148 @@ class CBIRController extends Controller
             'top_k' => 'nullable|integer|min:1|max:50',
         ]);
 
-        $topK = (int) $request->input('top_k', 10);
-        $results = $cbirService->searchByImage($request->file('image'), $topK);
+        $topK = $request->input('top_k', 20);
+        $apiResponse = $cbirService->searchByImage($request->file('image'), $topK);
 
-        $organizerIds = collect($results)->pluck('owner_id')->filter()->unique()->values();
-        $packages = Package::query()
-            ->with(['weddingOrganizer'])
-            ->whereIn('wedding_organizer_id', $organizerIds->all())
-            ->latest()
+        if (isset($apiResponse['error']) || !($apiResponse['success'] ?? false)) {
+            return response()->json([
+                'success' => false,
+                'message' => $apiResponse['message'] ?? 'Error',
+                'results' => [],
+            ]);
+        }
+
+        $results = $apiResponse['results'] ?? [];
+
+        // Group IDs by type
+        $idsByType = collect($results)->groupBy('type');
+        
+        $packageIds = $idsByType->get('package', collect())->pluck('owner_id')->all();
+        $itemIds = $idsByType->get('product', collect())->pluck('owner_id')->all();
+
+        $packages = \App\Models\Package::with(['category', 'weddingOrganizer'])
+            ->whereIn('id', $packageIds)
             ->get()
-            ->groupBy('wedding_organizer_id');
+            ->keyBy('id');
+            
+        $products = \App\Models\Product::with(['category', 'weddingOrganizer'])
+            ->whereIn('id', $itemIds)
+            ->get()
+            ->keyBy('id');
 
-        $enrichedResults = collect($results)->map(function (array $item) use ($packages): array {
-            $package = $packages->get((int) ($item['owner_id'] ?? 0))?->first();
+        $enrichedResults = collect($results)->map(function (array $res) use ($packages, $products): ?array {
+            $type = $res['type'] ?? 'unknown';
+            $id = (int) ($res['owner_id'] ?? 0);
+            
+            $model = ($type === 'package') ? $packages->get($id) : (($type === 'product') ? $products->get($id) : null);
+
+            if (!$model) {
+                return null;
+            }
 
             return [
-                'similarity' => $item['similarity'] ?? 0,
-                'distance' => round(1 - (($item['score'] ?? 0)), 4),
-                'package' => $package ? [
-                    'id' => $package->id,
-                    'name' => $package->name,
-                    'slug' => $package->slug,
-                    'description' => $package->description,
-                    'price' => $package->price,
-                    'image_url' => $package->image_url,
+                'type' => $type,
+                'similarity' => $res['similarity'] ?? 0,
+                'score' => $res['score'] ?? 0,
+                'data' => [
+                    'id' => $model->id,
+                    'name' => $model->name,
+                    'slug' => $model->slug,
+                    'description' => strip_tags($model->description),
+                    'price' => $model->price,
+                    'discount_price' => $model->discount_price ?? 0,
+                    'image_url' => $model->image_url,
+                    'category' => $model->category?->name,
                     'wedding_organizer' => [
-                        'id' => $package->weddingOrganizer?->id,
-                        'name' => $package->weddingOrganizer?->name,
-                        'city' => $package->weddingOrganizer?->city,
+                        'id' => $model->weddingOrganizer?->id,
+                        'name' => $model->weddingOrganizer?->name,
                     ],
-                ] : null,
+                ],
             ];
-        })->values();
+        })->filter()->values();
+
+        // Store in session for Blade preview
+        session([
+            'cbir_mixed_results' => $enrichedResults->toArray(),
+            'cbir_search_time' => $apiResponse['query_time_seconds'] ?? 0,
+        ]);
 
         return response()->json([
             'success' => true,
             'results' => $enrichedResults,
             'total_results' => $enrichedResults->count(),
-            'query_time_seconds' => 0,
+            'query_time_seconds' => $apiResponse['query_time_seconds'] ?? 0,
         ]);
     }
 
     /**
-     * Index a package image into CBIR database
+     * Index an product image into CBIR database
      *
      * @return JsonResponse
      */
-    public function indexPackage(Request $request)
+    public function indexItem(Request $request, CBIRService $cbirService)
     {
         $request->validate([
-            'package_id' => 'required|exists:packages,id',
+            'product_id' => 'required|exists:products,id',
         ]);
 
-        $package = Package::with('weddingOrganizer')->findOrFail($request->package_id);
+        $product = \App\Models\Product::with('weddingOrganizer')->findOrFail($request->product_id);
+        $media = $product->getFirstMedia('product_image');
+
+        if (!$media) {
+             return response()->json(['success' => false, 'message' => 'No image found for this product'], 400);
+        }
+
+        $success = $cbirService->indexMedia($media);
 
         return response()->json([
-            'success' => true,
-            'message' => __('Index lokal bersifat on-demand, tidak memerlukan sinkronisasi eksternal.'),
+            'success' => $success,
+            'message' => $success ? __('Product indexed successfully') : __('Failed to index product'),
             'data' => [
-                'package_id' => $package->id,
-                'wedding_organizer_id' => $package->wedding_organizer_id,
+                'product_id' => $product->id,
+                'wedding_organizer_id' => $product->wedding_organizer_id,
             ],
         ]);
     }
 
-    /**
-     * Build index for all packages
-     *
-     * @return JsonResponse
-     */
-    public function buildIndex()
+    public function buildIndex(CBIRService $cbirService)
     {
-        $totalPackages = Package::query()->count();
+        $packages = \App\Models\Package::all();
+        $products = \App\Models\Product::all();
+        
+        $pCount = 0;
+        $iCount = 0;
+        $errors = [];
+
+        foreach ($packages as $package) {
+            $media = $package->getFirstMedia('package_image');
+            if ($media) {
+                if ($cbirService->indexMedia($media)) {
+                    $pCount++;
+                } else {
+                    $errors[] = "Failed to index package ID {$package->id}";
+                }
+            }
+        }
+
+        foreach ($products as $product) {
+            $media = $product->getFirstMedia('product_image');
+            if ($media) {
+                if ($cbirService->indexMedia($media)) {
+                    $iCount++;
+                } else {
+                    $errors[] = "Failed to index product ID {$product->id}";
+                }
+            }
+        }
 
         return response()->json([
             'success' => true,
-            'message' => __('CBIR lokal aktif. Proses build index tidak diperlukan.'),
-            'indexed_count' => $totalPackages,
-            'total_packages' => $totalPackages,
-            'errors' => [],
+            'message' => __("CBIR Index built with :pCount packages and :iCount products", ['pCount' => $pCount, 'iCount' => $iCount]),
+            'indexed_packages' => $pCount,
+            'indexed_items' => $iCount,
+            'total_products' => $packages->count() + $products->count(),
+            'errors' => $errors,
         ]);
     }
 
@@ -109,13 +172,32 @@ class CBIRController extends Controller
      *
      * @return JsonResponse
      */
-    public function getStats()
+    public function getStats(CBIRService $cbirService)
     {
+        try {
+            $baseUrl = config('services.ai_core_url', 'http://127.0.0.1:5000');
+            $response = \Illuminate\Support\Facades\Http::get("{$baseUrl}/status");
+            
+            if ($response->successful()) {
+                $status = $response->json();
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'mode' => 'local',
+                        'server_status' => 'online',
+                        'indexed_products' => $status['total_products'] ?? 0,
+                        'total_database_items' => \App\Models\Product::query()->count(),
+                    ],
+                ]);
+            }
+        } catch (\Exception $e) {}
+
         return response()->json([
             'success' => true,
             'data' => [
                 'mode' => 'local',
-                'total_packages' => Package::query()->count(),
+                'server_status' => 'offline',
+                'total_database_items' => \App\Models\Product::query()->count(),
             ],
         ]);
     }

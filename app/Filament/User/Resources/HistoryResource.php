@@ -2,7 +2,6 @@
 
 namespace App\Filament\User\Resources;
 
-use App\Models\Topup;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -33,12 +32,17 @@ class HistoryResource extends Resource
 
     public static function getNavigationLabel(): string
     {
-        return __('Riwayat Aktivitas');
+        return __('Histori Transaksi');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('Histori Transaksi');
     }
 
     public static function getModelLabel(): string
     {
-        return __('Riwayat Aktivitas');
+        return __('Histori Transaksi');
     }
 
     public static function getNavigationBadge(): ?string
@@ -54,14 +58,15 @@ class HistoryResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->where('user_id', auth()->id())
+            ->where('user_id', \Filament\Facades\Filament::auth()->id())
             ->latest();
     }
 
     public static function table(Table $table): Table
     {
         return $table
-            ->emptyStateHeading(__('Belum ada riwayat aktivitas'))
+            // ->description(new \Illuminate\Support\HtmlString('<style>.fi-ta-ctn, .fi-ta-content, .fi-ta-header-toolbar, .fi-ta-pagination { background-color: transparent !important; box-shadow: none !important; border-color: transparent !important; }</style>'))
+            ->emptyStateHeading(__('Belum ada histori transaksi'))
             ->emptyStateDescription(__('Temukan layanan pernikahan impianmu dan mulai transaksi pertama hari ini!'))
             ->emptyStateIcon('heroicon-o-clock')
             ->emptyStateActions([
@@ -75,57 +80,87 @@ class HistoryResource extends Resource
             ])
             ->actionsAlignment('center')
             ->defaultSort('created_at', 'desc')
+            ->contentGrid([
+                'sm' => 1,
+                'md' => 2,
+                'lg' => 3,
+                'xl' => 4,
+            ])
             ->columns([
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label(__('Waktu'))
-                    ->description(fn($record) => match($record->type) {
-                        'topup' => __('Diterima'),
-                        'withdrawal' => __('Penarikan'),
-                        'order' => __('Pembayaran'),
-                        default => ucfirst($record->type)
-                    }, position: 'above')
-                    ->dateTime('d M Y, H:i')
-                    ->alignCenter(),
-                Tables\Columns\TextColumn::make('reference_number')
-                    ->label(__('ID Transaksi'))
-                    ->searchable()
-                    ->copyable()
-                    ->weight(FontWeight::Bold)
-                    ->alignCenter(),
-                Tables\Columns\TextColumn::make('info')
-                    ->label(__('Keterangan'))
-                    ->limit(40)
-                    ->tooltip(fn($record) => $record->info)
-                    ->alignCenter(),
-                Tables\Columns\TextColumn::make('amount')
-                    ->label(__('Nominal'))
-                    ->formatStateUsing(fn ($state, $record) => ($record->type === 'topup' ? '+' : '-') . ' Rp ' . number_format((float)$state, 0, ',', '.'))
-                    ->weight(FontWeight::Black)
-                    ->color(fn($record) => $record->type === 'topup' ? 'success' : 'danger')
-                    ->alignCenter(),
-                Tables\Columns\TextColumn::make('status')
-                    ->label(__('Status'))
-                    ->badge()
-                    ->formatStateUsing(fn ($state) => match($state) {
-                        'pending' => __('Menunggu'),
-                        'success', 'completed', 'approved', 'paid', 'confirmed' => __('Berhasil'),
-                        'failed', 'rejected', 'cancelled', 'expired' => __('Gagal'),
-                        default => ucfirst($state),
-                    })
-                    ->color(fn ($state) => match($state) {
-                        'pending' => 'warning',
-                        'success', 'completed', 'approved' => 'success',
-                        'failed', 'rejected', 'cancelled' => 'danger',
-                        default => 'gray',
-                    })
-                    ->alignCenter(),
+                Tables\Columns\Layout\Stack::make([
+                    // Header Area with Icon & Type
+                    Tables\Columns\Layout\Split::make([
+                        Tables\Columns\TextColumn::make('type')
+                            ->formatStateUsing(fn($state) => match($state) {
+                                'order' => __('Pembelian'),
+                                default => ucfirst($state)
+                            })
+                            ->badge()
+                            ->color(fn($record) => match($record->type) {
+                                'order' => 'primary',
+                                default => 'gray'
+                            })
+                            ->icon(fn($record) => match($record->type) {
+                                'order' => 'heroicon-m-shopping-bag',
+                                default => 'heroicon-m-clock'
+                            }),
+                        
+                        Tables\Columns\TextColumn::make('status')
+                            ->badge()
+                            ->formatStateUsing(fn ($state) => match($state) {
+                                'pending' => __('Menunggu'),
+                                'success', 'completed', 'approved', 'paid', 'confirmed' => __('Berhasil'),
+                                'failed', 'rejected', 'cancelled', 'expired' => __('Gagal'),
+                                default => ucfirst($state),
+                            })
+                            ->color(fn ($state) => match($state) {
+                                'pending' => 'warning',
+                                'success', 'completed', 'approved' => 'success',
+                                'failed', 'rejected', 'cancelled' => 'danger',
+                                default => 'gray',
+                            })
+                            ->alignEnd(),
+                    ]),
+
+                    // Main Amount Area
+                    Tables\Columns\Layout\Stack::make([
+                        Tables\Columns\TextColumn::make('amount')
+                            ->formatStateUsing(fn ($state, $record) => '- Rp ' . number_format((float)$state, 0, ',', '.'))
+                            ->weight('black')
+                            ->size('xl')
+                            ->color('danger')
+                            ->extraAttributes(['class' => 'mt-4 mb-1']),
+                        
+                        Tables\Columns\TextColumn::make('info')
+                            ->formatStateUsing(fn ($state) => __($state))
+                            ->size('xs')
+                            ->color('gray')
+                            ->lineClamp(2)
+                            ->extraAttributes(['class' => 'opacity-80']),
+                    ]),
+
+                    // Footer with ID and Time
+                    Tables\Columns\Layout\Split::make([
+                        Tables\Columns\TextColumn::make('reference_number')
+                            ->prefix('#')
+                            ->size('xs')
+                            ->color('gray')
+                            ->weight('medium'),
+                        
+                        Tables\Columns\TextColumn::make('created_at')
+                            ->dateTime('d M Y, H:i')
+                            ->size('xs')
+                            ->color('gray')
+                            ->alignEnd(),
+                    ])->extraAttributes(['class' => 'mt-4 pt-3']),
+                ])->extraAttributes([
+                    'class' => 'bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-800'
+                ]),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('type')
                     ->searchable()
                     ->options([
-                        'topup' => __('Deposit'),
-                        'withdrawal' => __('Penarikan'),
                         'order' => __('Pembelian'),
                     ])
                     ->label(__('Filter Tipe'))
@@ -141,14 +176,32 @@ class HistoryResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()
-                    ->label(__('Lihat Detail'))
+                    ->label(__('Rincian'))
                     ->button()
-                    ->color('primary')
+                    ->size('sm')
+                    ->extraAttributes(['class' => 'flex-1 justify-center rounded-lg shadow-sm font-bold'])
                     ->icon('heroicon-m-magnifying-glass')
                     ->slideOver()
                     ->modalWidth('xl')
-                    ->modalHeading(__('Rincian Aktivitas')),
+                    ->modalHeading(__('Rincian Transaksi')),
+                Tables\Actions\DeleteAction::make()
+                    ->label(__('Hapus'))
+                    ->button()
+                    ->size('sm')
+                    ->extraAttributes(['class' => 'flex-1 justify-center rounded-lg shadow-sm font-bold'])
+                    ->color('danger')
+                    ->icon('heroicon-m-trash'),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ])
+            ->actionsAlignment('center')
+            ->extraAttributes([
+                'class' => 'filament-table-actions-container !flex !flex-row !gap-1 !p-3 !bg-gray-50/50 dark:!bg-white/5 !border-t dark:!border-gray-800'
             ]);
+
     }
 
     public static function infolist(\Filament\Infolists\Infolist $infolist): \Filament\Infolists\Infolist
@@ -160,14 +213,12 @@ class HistoryResource extends Resource
                         \Filament\Infolists\Components\Grid::make(2)->schema([
                             \Filament\Infolists\Components\TextEntry::make('reference_number')
                                 ->label(__('ID Transaksi'))
-                                ->weight(FontWeight::Bold)
+                                ->weight('bold')
                                 ->copyable(),
                             \Filament\Infolists\Components\TextEntry::make('type')
                                 ->label(__('Jenis'))
                                 ->badge()
                                 ->formatStateUsing(fn($state) => match($state) {
-                                    'topup' => __('Deposit'),
-                                    'withdrawal' => __('Penarikan'),
                                     'order' => __('Pembelian Paket'),
                                     default => ucfirst($state),
                                 }),
@@ -192,16 +243,18 @@ class HistoryResource extends Resource
                         ]),
                         \Filament\Infolists\Components\TextEntry::make('amount')
                             ->label(__('Nominal'))
-                            ->formatStateUsing(fn ($state, $record) => ($record->type === 'topup' ? '+' : '-') . ' Rp ' . number_format($state, 0, ',', '.'))
-                            ->weight(FontWeight::Black)
+                            ->formatStateUsing(fn ($state, $record) => '- Rp ' . number_format($state, 0, ',', '.'))
+                            ->weight('black')
                             ->size(\Filament\Infolists\Components\TextEntry\TextEntrySize::Large)
-                            ->color(fn($record) => $record->type === 'topup' ? 'success' : 'danger'),
+                            ->color('danger'),
                         \Filament\Infolists\Components\TextEntry::make('info')
                             ->label(__('Keterangan'))
+                            ->formatStateUsing(fn ($state) => __($state))
                             ->color('gray'),
                         \Filament\Infolists\Components\TextEntry::make('notes')
                             ->label(__('Catatan'))
-                            ->placeholder(__('Tidak ada catatan'))
+                            ->formatStateUsing(fn ($state) => __($state))
+
                             ->columnSpanFull(),
                     ]),
             ]);

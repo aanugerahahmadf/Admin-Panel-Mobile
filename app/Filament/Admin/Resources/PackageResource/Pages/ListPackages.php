@@ -1,0 +1,32 @@
+<?php
+
+namespace App\Filament\Admin\Resources\PackageResource\Pages;
+
+use App\Filament\Admin\Resources\PackageResource;
+use Filament\Actions;
+use Filament\Resources\Pages\ListRecords;
+
+class ListPackages extends ListRecords
+{
+    protected static string $resource = PackageResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\ExportAction::make()
+                ->exporter(\App\Filament\Admin\Exports\PackageExporter::class)
+                ->label(__('Ekspor Data'))
+                ->icon('heroicon-o-arrow-down-tray')
+                ->color('success'),
+            Actions\CreateAction::make()
+                ->label(__('Tambah Paket'))
+                ->icon('heroicon-o-plus')
+                ->successNotification(
+                    \Filament\Notifications\Notification::make()
+                        ->success()
+                        ->title(__('Paket Ditambahkan'))
+                        ->body(__('Paket baru telah berhasil ditambahkan.'))
+                ),
+        ];
+    }
+}

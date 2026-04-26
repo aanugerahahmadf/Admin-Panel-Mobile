@@ -30,7 +30,7 @@ class ReviewResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) static::getModel()::where('user_id', auth()->id())->count();
+        return (string) static::getModel()::where('user_id', \Filament\Facades\Filament::auth()->id())->count();
     }
 
     public static function getNavigationBadgeTooltip(): ?string
@@ -43,9 +43,19 @@ class ReviewResource extends Resource
         return __('Ulasan Saya');
     }
 
+    public static function getPluralModelLabel(): string
+    {
+        return __('Ulasan Saya');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('Ulasan Saya');
+    }
+
     public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
     {
-        return parent::getEloquentQuery()->where('user_id', auth()->id());
+        return parent::getEloquentQuery()->where('user_id', \Filament\Facades\Filament::auth()->id());
     }
 
     public static function form(Form $form): Form
@@ -57,8 +67,9 @@ class ReviewResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('package_id')
                             ->searchable()
-                            ->relationship('package', 'name', fn($query) => $query->whereHas('orders', fn($q) => $q->where('user_id', auth()->id())))
-                            ->required()
+                            ->relationship('package', 'name', fn($query) => $query->whereHas('orders', fn($q) => $q->where('user_id', \Filament\Facades\Filament::auth()->id())))
+                            ->required()
+
                             ->preload()
                             ->label(__('Layanan Paket'))
                             ->prefixIcon('heroicon-o-gift')
@@ -68,25 +79,25 @@ class ReviewResource extends Resource
                     ->schema([
                         Forms\Components\Placeholder::make('organizer_info')
                             ->label(__('Informasi Studio'))
-                            ->content('Devi Make Up & Wedding'),
+                            ->content(__('Wedding Organizer Devi')),
                         Forms\Components\Select::make('rating')
                             ->searchable()
                             ->label(__('Berikan Rating Bintang'))
                             ->options([
-                                5 => '⭐⭐⭐⭐⭐ (Sangat Puas)',
-                                4 => '⭐⭐⭐⭐ (Puas)',
-                                3 => '⭐⭐⭐ (Cukup)',
-                                2 => '⭐⭐ (Kurang)',
-                                1 => '⭐ (Sangat Kurang)',
+                                5 => __('5 Bintang') . ' (' . __('Sangat Puas') . ')',
+                                4 => __('4 Bintang') . ' (' . __('Puas') . ')',
+                                3 => __('3 Bintang') . ' (' . __('Cukup') . ')',
+                                2 => __('2 Bintang') . ' (' . __('Kurang') . ')',
+                                1 => __('1 Bintang') . ' (' . __('Sangat Kurang') . ')',
                             ])
-                            ->required()
+                            ->required()
+
                             ->native(false)
                             ->prefixIcon('heroicon-o-star')
                             ->extraAttributes(['class' => 'text-warning-600 font-bold']),
                         Forms\Components\Textarea::make('comment')
+                            ->label(__('Komentar Anda'))
                             ->required()
-                            ->label(__('Ceritakan ulasan Anda'))
-                            ->placeholder(__('Bagikan pengalaman berkesan Anda bersama paket ini...'))
                             ->rows(5)
                             ->columnSpanFull(),
                     ])
@@ -96,25 +107,29 @@ class ReviewResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->description(new \Illuminate\Support\HtmlString('<style>.fi-ta-ctn, .fi-ta-content, .fi-ta-header-toolbar, .fi-ta-pagination { background-color: transparent !important; box-shadow: none !important; border-color: transparent !important; }</style>'))
             ->emptyStateHeading(__('Belum ada ulasan'))
             ->emptyStateDescription(__('Bagikan pengalamanmu dengan kami!'))
             ->contentGrid([
-                'md' => 1,
-                'lg' => 2,
+                'sm' => 1,
+                'md' => 2,
+                'lg' => 3,
+                'xl' => 4,
             ])
             ->columns([
                 Tables\Columns\Layout\Stack::make([
                     // Header (Package info & Rating)
                     Tables\Columns\Layout\Split::make([
                         Tables\Columns\TextColumn::make('package.name')
+                            ->formatStateUsing(fn ($state) => __($state))
                             ->weight(FontWeight::Bold)
                             ->size('md')
                             ->icon('heroicon-s-briefcase')
-                            ->color('gray')
+                            ->color('gray')
                             ->grow(false),
                         Tables\Columns\TextColumn::make('rating')
                             ->badge()
-                            ->icon('emoji-star')
+                            ->icon('heroicon-m-star')
                             ->color('warning')
                             ->alignEnd(),
                     ])->extraAttributes(['class' => 'mb-2 border-b border-gray-100 dark:border-gray-800 pb-2']),
@@ -122,7 +137,9 @@ class ReviewResource extends Resource
                     // Middle Box (The Review Content)
                     Tables\Columns\Layout\Stack::make([
                         Tables\Columns\TextColumn::make('comment')
-                            ->size('sm')
+                            ->formatStateUsing(fn ($state) => __($state))
+                            ->size('sm'),
+
 
                     ])->extraAttributes(['class' => 'bg-gray-50 dark:bg-gray-900 rounded-xl p-3']),
 
@@ -142,13 +159,19 @@ class ReviewResource extends Resource
                     ->label(__('Ubah'))
                     ->button()
                     ->color('warning')
-                    ->size('lg')
+                    ->size('sm')
+                    ->extraAttributes(['class' => 'flex-1 justify-center rounded-lg shadow-sm font-bold'])
                     ->slideOver(),
                 Tables\Actions\DeleteAction::make()
                     ->label(__('Hapus'))
                     ->button()
-                    ->outlined()
-                    ->size('lg'),
+                    ->color('danger')
+                    ->size('sm')
+                    ->extraAttributes(['class' => 'flex-1 justify-center rounded-lg shadow-sm font-bold']),
+            ])
+            ->actionsAlignment('center')
+            ->extraAttributes([
+                'class' => 'filament-table-actions-container !flex !flex-row !gap-1 !p-3 !bg-gray-50/50 dark:!bg-white/5 !border-t dark:!border-gray-800'
             ])
             ->headerActions([
                 Tables\Actions\CreateAction::make()
@@ -159,7 +182,7 @@ class ReviewResource extends Resource
                     ->icon('heroicon-m-pencil-square')
                     ->slideOver()
                     ->mutateFormDataUsing(function (array $data): array {
-                        $data['user_id'] = auth()->id();
+                        $data['user_id'] = \Filament\Facades\Filament::auth()->id();
                         return $data;
                     }),
             ]);

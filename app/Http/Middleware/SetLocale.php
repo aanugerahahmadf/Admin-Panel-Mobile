@@ -15,14 +15,15 @@ class SetLocale
         $sessionLocale = (string) session()->get('locale');
         $locale = $sessionLocale ?: null;
 
-        // Force check across all defined guards
+        // Force check across all defined guards to find the authenticated user
         $user = null;
-        $guards = ['web'];
+        $guards = ['web', 'filament', 'admin', 'mobile', 'nativephp', 'api'];
         foreach ($guards as $guard) {
             try {
-                if (Auth::guard($guard)->check()) {
-                    $user = Auth::guard($guard)->user();
-                    break; // Found the user
+                $guardInstance = Auth::guard($guard);
+                if ($guardInstance->check()) {
+                    $user = $guardInstance->user();
+                    break;
                 }
             } catch (\Exception $e) {
                 continue;
@@ -30,25 +31,33 @@ class SetLocale
         }
 
         if ($user) {
-            // Get current DB locale via accessor
+            // Get current DB locale via accessor. Assuming user model has a 'lang' property or relation.
             $dbLocale = $user->lang; 
 
             if ($sessionLocale && $sessionLocale !== $dbLocale) {
-                // SINKRON: Session changed (Welcome page switch). Persist to DB.
-                \App\Models\UserLanguage::updateOrCreate(
-                    ['model_id' => (string) $user->id, 'model_type' => 'App\Models\User'],
-                    ['lang' => $sessionLocale]
-                );
+                // SYNC: Session changed (e.g. from Welcome page switcher). Persist to Database.
+                try {
+                    \App\Models\UserLanguage::updateOrCreate(
+                        ['model_id' => (string) $user->id, 'model_type' => get_class($user)],
+                        ['lang' => $sessionLocale]
+                    );
+                    // Update user instance in memory if it's cached or loaded
+                    $user->setRawAttributes(['lang' => $sessionLocale], true);
+                } catch (\Exception $e) {
+                    // Fail silently if DB is not reachable
+                }
                 $locale = $sessionLocale;
             } elseif ($dbLocale) {
-                // SINKRON: DB changed (from another device/session). Persist to Session.
-                $locale = $dbLocale;
+                // SYNC: Database is source of truth if session is empty or old. Persist to Session.
+                $locale = (string) $dbLocale;
+                session()->put('locale', $locale);
             }
         }
 
-        // Detect from browser if everything else fails
+        // Detect from browser if everything else fails (new visitor)
         if (!$locale) {
-            $supported = array_keys(config('filament-language-switcher.locals', []));
+            $localsConfig = config('filament-language-switcher.locals', ['id' => [], 'en' => []]);
+            $supported = array_keys($localsConfig);
             $locale = $request->getPreferredLanguage($supported ?: ['id', 'en']);
         }
 
@@ -56,8 +65,12 @@ class SetLocale
             app()->setLocale($locale);
             session()->put('locale', (string) $locale);
             
-            // Extreme force for Filament context
+            // Force update for all related parts of the system
             config(['app.locale' => $locale]);
+            // Ensure Filament context also respects this
+            if (class_exists(\Filament\Facades\Filament::class)) {
+                 \Illuminate\Support\Facades\App::setLocale($locale);
+            }
         }
 
         return $next($request);

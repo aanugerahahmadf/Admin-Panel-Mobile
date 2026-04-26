@@ -66,7 +66,7 @@ return [
 
         'mysql_proxy' => [
             'driver' => 'mysql_proxy',
-            'database' => env('DB_DATABASE', 'admin_panel_cbir'),
+            'database' => env('DB_DATABASE', 'Wedding_organizer'),
             'proxy_url' => env('MYSQL_PROXY_URL'),
             'proxy_secret' => env('MYSQL_PROXY_SECRET'),
             'prefix' => '',

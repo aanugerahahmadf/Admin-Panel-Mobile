@@ -14,31 +14,28 @@ class AutoTranslator extends Translator
         $this->autoService = $service;
     }
 
-    /**
-     * Override get() — Optimasi Ekstrim untuk mencapai 0,01 ms per baris.
-     *
-     * @param  string  $key
-     * @param  string|null  $locale
-     * @param  bool  $fallback
-     */
     public function get($key, array $replace = [], $locale = null, $fallback = true): string|array|null
     {
         $targetLocale = $locale ?? $this->getLocale();
 
-        // JIKA LAYANAN AUTO BELUM SIAP (Gagal di Singleton)
-        if ($this->autoService === null) {
-            return parent::get($key, $replace, $targetLocale, $fallback);
-        }
+        // 1. PRIORITAS UTAMA: Gunakan Laravel Asli (Cek file JSON/PHP di /lang)
+        // Ini memastikan terjemahan yang sudah dikurasi manual selalu menang.
+        $translated = parent::get($key, $replace, $targetLocale, $fallback);
 
-        // 🚀 OPTIMASI 0,01 MS: Langsung ke Memory-Map Layanan Auto
-        // Jika teks sudah pernah diterjemahkan sebelumnya, kita bypass seluruh logika Laravel.
-        $translated = $this->autoService->translate($key, $targetLocale);
-
+        // Jika Laravel berhasil menerjemahkan (hasil != key), langsung kembalikan.
         if ($translated !== $key) {
-            return $this->makeReplacements($translated, $replace);
+            return $translated;
         }
 
-        // JIKA TIDAK ADA DI AUTO-SERVICE: Gunakan Laravel Asli (Fallback ke file JSON/PHP)
-        return parent::get($key, $replace, $targetLocale, $fallback);
+        // 2. FALLBACK: Jika tidak ada di file, gunakan Layanan Auto-Translation
+        if ($this->autoService !== null) {
+            $autoTranslated = $this->autoService->translate($key, $targetLocale);
+            
+            if ($autoTranslated !== $key) {
+                return $this->makeReplacements($autoTranslated, $replace);
+            }
+        }
+
+        return $translated;
     }
 }

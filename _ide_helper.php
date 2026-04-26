@@ -10812,11 +10812,6 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Override get() — Optimasi Ekstrim untuk mencapai 0,01 ms per baris.
-         *
-         * @param string $key
-         * @param string|null $locale
-         * @param bool $fallback
          * @static
          */
         public static function get($key, $replace = [], $locale = null, $fallback = true)
@@ -26830,6 +26825,20 @@ namespace Illuminate\Support {
             return \Illuminate\Support\Collection::storeExcel($filePath, $disk, $writerType, $withHeadings);
         }
 
+        /**
+         * @see \Laravel\Ai\AiServiceProvider::boot()
+         * @param \Closure|array|string $by
+         * @param string $query
+         * @param int|null $limit
+         * @param \Laravel\Ai\Enums\Lab|array|string|null $provider
+         * @param string|null $model
+         * @static
+         */
+        public static function rerank($by, $query, $limit = null, $provider = null, $model = null)
+        {
+            return \Illuminate\Support\Collection::rerank($by, $query, $limit, $provider, $model);
+        }
+
             }
     /**
      */
@@ -26857,6 +26866,20 @@ namespace Illuminate\Support {
         public static function sanitizeHtml()
         {
             return \Illuminate\Support\Stringable::sanitizeHtml();
+        }
+
+        /**
+         * @see \Laravel\Ai\AiServiceProvider::boot()
+         * @param \Laravel\Ai\Enums\Lab|array|string|null $provider
+         * @param int|null $dimensions
+         * @param string|null $model
+         * @param int|bool|null $cache
+         * @param int|null $timeout
+         * @static
+         */
+        public static function toEmbeddings($provider = null, $dimensions = null, $model = null, $cache = null, $timeout = null)
+        {
+            return \Illuminate\Support\Stringable::toEmbeddings($provider, $dimensions, $model, $cache, $timeout);
         }
 
             }
@@ -29840,6 +29863,16 @@ namespace Filament\Resources\Pages {
     /**
      * @property Form $form
      */
+    class CreateRecord extends \Filament\Resources\Pages\Page {
+            }
+    /**
+     * @property Form $form
+     */
+    class EditRecord extends \Filament\Resources\Pages\Page {
+            }
+    /**
+     * @property Form $form
+     */
     class ViewRecord extends \Filament\Resources\Pages\Page {
             }
     }
@@ -29860,13 +29893,6 @@ namespace Filament\Pages {
     /**
      */
     class SimplePage extends \Filament\Pages\BasePage {
-            }
-    }
-
-namespace App\Filament\Admin\Resources\BankResource\Pages {
-    /**
-     */
-    class ManageBanks extends \Filament\Resources\Pages\ManageRecords {
             }
     }
 
@@ -29897,7 +29923,7 @@ namespace App\Filament\Admin\Resources\OrderResource\Pages {
 namespace App\Filament\Admin\Resources\OrderResource\RelationManagers {
     /**
      */
-    class PaymentsRelationManager extends \Filament\Resources\RelationManagers\RelationManager {
+    class TransactionsRelationManager extends \Filament\Resources\RelationManagers\RelationManager {
             }
     }
 
@@ -29910,25 +29936,20 @@ namespace Filament\Resources\RelationManagers {
 
 namespace App\Filament\Admin\Resources\PackageResource\Pages {
     /**
-     * @property-read \App\Filament\Resources\PackageResource $resource
      */
-    class ManagePackages extends \Filament\Resources\Pages\ManageRecords {
+    class CreatePackage extends \Filament\Resources\Pages\CreateRecord {
             }
-    }
-
-namespace App\Filament\Admin\Resources\PaymentMethodResource\Pages {
     /**
-     * @property-read \App\Filament\Resources\PaymentMethodResource $resource
      */
-    class ManagePaymentMethods extends \Filament\Resources\Pages\ManageRecords {
+    class EditPackage extends \Filament\Resources\Pages\EditRecord {
             }
-    }
-
-namespace App\Filament\Admin\Resources\PaymentResource\Pages {
     /**
-     * @property-read \App\Filament\Resources\PaymentResource $resource
      */
-    class ManagePayments extends \Filament\Resources\Pages\ManageRecords {
+    class ListPackages extends \Filament\Resources\Pages\ListRecords {
+            }
+    /**
+     */
+    class ViewPackage extends \Filament\Resources\Pages\ViewRecord {
             }
     }
 
@@ -29936,6 +29957,21 @@ namespace App\Filament\Admin\Resources\PrivacyPolicyResource\Pages {
     /**
      */
     class ManagePrivacyPolicies extends \Filament\Resources\Pages\ManageRecords {
+            }
+    }
+
+namespace App\Filament\Admin\Resources\ProductResource\Pages {
+    /**
+     */
+    class CreateProduct extends \Filament\Resources\Pages\CreateRecord {
+            }
+    /**
+     */
+    class EditProduct extends \Filament\Resources\Pages\EditRecord {
+            }
+    /**
+     */
+    class ListProducts extends \Filament\Resources\Pages\ListRecords {
             }
     }
 
@@ -29954,11 +29990,10 @@ namespace App\Filament\Admin\Resources\TermsOfServiceResource\Pages {
             }
     }
 
-namespace App\Filament\Admin\Resources\TopupResource\Pages {
+namespace App\Filament\Admin\Resources\TransactionResource\Pages {
     /**
-     * @property-read \App\Filament\Resources\TopupResource $resource
      */
-    class ManageTopups extends \Filament\Resources\Pages\ManageRecords {
+    class ListTransactions extends \Filament\Resources\Pages\ListRecords {
             }
     }
 
@@ -29979,6 +30014,10 @@ namespace App\Filament\Admin\Resources\VoucherResource\Pages {
     }
 
 namespace App\Filament\Admin\Resources\WeddingOrganizerResource\Pages {
+    /**
+     */
+    class EditWeddingOrganizer extends \Filament\Resources\Pages\EditRecord {
+            }
     /**
      * @property-read \App\Filament\Resources\WeddingOrganizerResource $resource
      */
@@ -30150,6 +30189,13 @@ namespace App\Filament\User\Resources\ArticleResource\Pages {
             }
     }
 
+namespace App\Filament\User\Resources\CartResource\Pages {
+    /**
+     */
+    class ManageCarts extends \Filament\Resources\Pages\ManageRecords {
+            }
+    }
+
 namespace App\Filament\User\Resources\HistoryResource\Pages {
     /**
      */
@@ -30175,14 +30221,14 @@ namespace App\Filament\User\Resources\PackageResource\Pages {
             }
     }
 
-namespace App\Filament\User\Resources\PaymentResource\Pages {
+namespace App\Filament\User\Resources\ProductResource\Pages {
     /**
      */
-    class ListPayments extends \Filament\Resources\Pages\ListRecords {
+    class ManageProducts extends \Filament\Resources\Pages\ManageRecords {
             }
     /**
      */
-    class ManagePayments extends \Filament\Resources\Pages\ManageRecords {
+    class ViewProduct extends \Filament\Resources\Pages\ViewRecord {
             }
     }
 
@@ -30190,13 +30236,6 @@ namespace App\Filament\User\Resources\ReviewResource\Pages {
     /**
      */
     class ManageReviews extends \Filament\Resources\Pages\ManageRecords {
-            }
-    }
-
-namespace App\Filament\User\Resources\TopupResource\Pages {
-    /**
-     */
-    class ManageTopups extends \Filament\Resources\Pages\ManageRecords {
             }
     }
 
@@ -30257,14 +30296,6 @@ namespace App\Filament\User\Pages {
     /**
      */
     class MessagesPage extends \Filament\Pages\Page {
-            }
-    /**
-     */
-    class Privacy extends \Filament\Pages\Page {
-            }
-    /**
-     */
-    class Terms extends \Filament\Pages\Page {
             }
     }
 
@@ -36017,6 +36048,11 @@ namespace  {
 }
 
 
+namespace Facades\Livewire\Features\SupportFileUploads {
+    /**
+     * @mixin \Livewire\Features\SupportFileUploads\GenerateSignedUploadUrl     */
+    class GenerateSignedUploadUrl extends \Livewire\Features\SupportFileUploads\GenerateSignedUploadUrl {}
+}
 
 namespace {
     

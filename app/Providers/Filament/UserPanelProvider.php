@@ -50,7 +50,7 @@ class UserPanelProvider extends PanelProvider
             )
             ->emailVerification(OtpEmailVerificationPrompt::class)
             // ->sidebarFullyCollapsibleOnDesktop()
-            ->brandName(fn() => __('Devi Make Up Wedding Organizer'))
+            ->brandName(fn() => __('Dekorasi Bunga Pernikahan'))
             ->brandLogo(asset('images/logo.png'))
             ->brandLogoHeight('3rem')
             // ->simplePageMaxContentWidth(MaxWidth::Small)
@@ -68,10 +68,7 @@ class UserPanelProvider extends PanelProvider
             ->maxContentWidth(MaxWidth::Full)
             ->spa()
             ->databaseNotifications()
-            ->renderHook(
-                'panels::global-search.before',
-                fn (): View => view('filament.user.balance-badge')
-            )
+
             ->renderHook(
                 'panels::global-search.after',
                 fn (): View => view('filament.filament-language-switcher.language-switcher')
@@ -79,6 +76,10 @@ class UserPanelProvider extends PanelProvider
             ->renderHook(
                 'panels::auth.form.before',
                 fn (): View => view('filament.filament-language-switcher.language-switcher')
+            )
+            ->renderHook(
+                'panels::head.end',
+                fn () => view('filament.snap-script'),
             )
             ->renderHook(
                 'panels::styles.after',

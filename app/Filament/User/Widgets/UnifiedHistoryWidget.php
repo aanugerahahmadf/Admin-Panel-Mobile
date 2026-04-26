@@ -2,7 +2,7 @@
 
 namespace App\Filament\User\Widgets;
 
-use App\Models\Topup;
+use App\Models\Transaction;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -22,32 +22,28 @@ class UnifiedHistoryWidget extends BaseWidget
 
     public function table(Table $table): Table
     {
-        $userId = auth()->id();
+        $userId = \Filament\Facades\Filament::auth()->id();
 
-        $topups = DB::table('topups')
-            ->select(['id', 'amount', 'reference_number as ref', 'status', 'created_at', DB::raw("'topup' as type")])
-            ->where('user_id', $userId);
+        $unified = Transaction::where('user_id', $userId)
+            ->select(['id', 'total_amount as amount', 'reference_number as ref', 'status', 'created_at', 'type']);
 
-        $withdrawals = DB::table('withdrawals')
-            ->select([DB::raw('id + 1000000 as id'), 'amount', 'reference_number as ref', 'status', 'created_at', DB::raw("'withdrawal' as type")])
-            ->where('user_id', $userId);
-
-        $orders = DB::table('orders')
-            ->select([DB::raw('id + 2000000 as id'), 'total_price as amount', 'order_number as ref', 'status', 'created_at', DB::raw("'order' as type")])
-            ->where('user_id', $userId);
-
-        $unified = $topups->unionAll($withdrawals)->unionAll($orders);
+        if (\Illuminate\Support\Facades\Schema::hasTable('withdrawals')) {
+            $withdrawals = DB::table('withdrawals')
+                ->select([DB::raw('id + 1000000 as id'), 'amount', 'reference_number as ref', 'status', 'created_at', DB::raw("'withdrawal' as type")])
+                ->where('user_id', $userId);
+            $unified = $unified->unionAll($withdrawals);
+        }
 
         return $table
             ->query(
-                Topup::query()
+                Transaction::query()
                     ->fromSub($unified, 'unified_history')
                     ->orderByDesc('created_at')
             )
             ->columns([
                 Tables\Columns\TextColumn::make('ref')
                     ->label(__('ID Transaksi'))
-                    ->weight(FontWeight::Bold)
+                    ->weight('bold')
                     ->color('gray')
                     ->icon(fn($record) => match($record->type) {
                         'topup' => 'heroicon-m-arrow-down-left',
@@ -80,7 +76,7 @@ class UnifiedHistoryWidget extends BaseWidget
                     ->label(__('Nominal'))
                     ->formatStateUsing(fn ($state, $record) => ($record->type === 'topup' ? '+' : '-') . ' Rp ' . number_format($state, 0, ',', '.'))
                     ->color(fn ($record) => $record->type === 'topup' ? 'success' : 'danger')
-                    ->weight(FontWeight::Black),
+                    ->weight('black'),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->formatStateUsing(function ($state) {
@@ -117,12 +113,10 @@ class UnifiedHistoryWidget extends BaseWidget
                     ->url(function($record) {
                         $actualId = $record->id;
                         if ($record->type === 'withdrawal') $actualId -= 1000000;
-                        if ($record->type === 'order') $actualId -= 2000000;
 
                         return match($record->type) {
-                            'topup' => route('filament.user.resources.topups.index', ['tableFilters[id][value]' => $actualId]),
-                            'order' => route('filament.user.resources.orders.index', ['tableFilters[id][value]' => $actualId]),
-                            'withdrawal' => route('filament.user.resources.topups.index', ['activeTab' => 'withdraw']), // Withdraw is a header action in TopupResource
+                            'topup', 'order' => route('filament.user.resources.transactions.index', ['tableFilters[id][value]' => $actualId]),
+                            'withdrawal' => route('filament.user.resources.transactions.index'), // Fallback if no specific withdrawal resource
                             default => '#',
                         };
                     })

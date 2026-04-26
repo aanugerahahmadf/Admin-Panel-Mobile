@@ -33,6 +33,16 @@ class ArticleResource extends Resource
         return __('Tips & Inspiration');
     }
 
+    public static function getPluralModelLabel(): string
+    {
+        return __('Tips & Inspiration');
+    }
+
+    public static function getModelLabel(): string
+    {
+        return __('Tips & Inspiration');
+    }
+
 
     public static function getNavigationBadge(): ?string
     {
@@ -62,12 +72,13 @@ class ArticleResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->description(new \Illuminate\Support\HtmlString('<style>.fi-ta-ctn, .fi-ta-content, .fi-ta-header-toolbar, .fi-ta-pagination { background-color: transparent !important; box-shadow: none !important; border-color: transparent !important; }</style>'))
             ->emptyStateHeading(__('Belum ada artikel'))
             ->contentGrid([
-                'sm' => 2,
-                'md' => 3,
-                'lg' => 4,
-                'xl' => 6,
+                'sm' => 1,
+                'md' => 2,
+                'lg' => 3,
+                'xl' => 4,
             ])
             ->columns([
                 Tables\Columns\Layout\Stack::make([
@@ -80,7 +91,7 @@ class ArticleResource extends Resource
                             ->alignment('center')
                             ->getStateUsing(fn($record) => $record->image_url)
                             ->extraAttributes([
-                                'class' => 'w-full h-full overflow-hidden bg-white/5 flex items-center justify-center rounded-t-xl shadow-inner',
+                                'class' => 'w-full h-full overflow-hidden bg-white/5 flex products-center justify-center rounded-t-xl shadow-inner',
                             ])
                             ->extraImgAttributes([
                                 'class' => 'w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-110 blur-0',
@@ -104,18 +115,21 @@ class ArticleResource extends Resource
                     Tables\Columns\Layout\Stack::make([
                         // Category Badge - Now clearly at the top of content section
                         Tables\Columns\TextColumn::make('category.name')
+                            ->formatStateUsing(fn ($state) => __($state))
                             ->badge()
                             ->color('info')
                             ->size('xs')
                             ->extraAttributes(['class' => 'mb-2']),
 
                         Tables\Columns\TextColumn::make('title')
+                            ->formatStateUsing(fn ($state) => __($state))
                             ->searchable()
                             ->weight(FontWeight::Bold)
                             ->size('sm')
                             ->lineClamp(2),
                         
                         Tables\Columns\TextColumn::make('excerpt')
+                            ->formatStateUsing(fn ($state) => __($state))
                             ->size('xs')
                             ->color('gray')
                             ->lineClamp(2)
@@ -152,14 +166,17 @@ class ArticleResource extends Resource
                     ->label(__('Baca Artikel'))
                     ->button()
                     ->color('warning')
-                    ->size('lg')
+                    ->size('sm')
                     ->icon('heroicon-m-book-open')
-                    ->extraAttributes(['class' => 'w-full justify-center !rounded-lg'])
+                    ->extraAttributes(['class' => 'flex-1 justify-center rounded-lg shadow-sm font-bold'])
                     ->slideOver()
                     ->modalWidth('2xl')
                     ->modalHeading(__('Membaca Artikel')),
             ])
-            ->actionsAlignment('center');
+            ->actionsAlignment('center')
+            ->extraAttributes([
+                'class' => 'filament-table-actions-container !flex !flex-row !gap-1 !p-3 !bg-gray-50/50 dark:!bg-white/5 !border-t dark:!border-gray-800'
+            ]);
     }
 
     public static function getEloquentQuery(): Builder
@@ -187,6 +204,7 @@ class ArticleResource extends Resource
                         \Filament\Infolists\Components\Grid::make(2)
                             ->schema([
                                 \Filament\Infolists\Components\TextEntry::make('category.name')
+                                    ->formatStateUsing(fn ($state) => __($state))
                                     ->label(__('Kategori'))
                                     ->badge()
                                     ->color('info'),
@@ -197,6 +215,7 @@ class ArticleResource extends Resource
                             ]),
 
                         \Filament\Infolists\Components\TextEntry::make('title')
+                            ->formatStateUsing(fn ($state) => __($state))
                             ->hiddenLabel()
                             ->weight(\Filament\Support\Enums\FontWeight::Bold)
                             ->size(\Filament\Infolists\Components\TextEntry\TextEntrySize::Large)
@@ -209,6 +228,7 @@ class ArticleResource extends Resource
                             ->color('gray'),
                         
                         \Filament\Infolists\Components\TextEntry::make('excerpt')
+                            ->formatStateUsing(fn ($state) => __($state))
                             ->label(__('Ringkasan'))
                             ->color('gray')
                             ->extraAttributes(['class' => 'bg-gray-50 dark:bg-white/5 p-4 rounded-xl border-l-4 border-warning-500 mt-4']),
@@ -219,6 +239,7 @@ class ArticleResource extends Resource
                 \Filament\Infolists\Components\Section::make()
                     ->schema([
                         \Filament\Infolists\Components\TextEntry::make('content')
+                            ->formatStateUsing(fn ($state) => __($state))
                             ->hiddenLabel()
                             ->html()
                             ->prose()

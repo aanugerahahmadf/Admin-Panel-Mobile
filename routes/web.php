@@ -1,19 +1,18 @@
 <?php
+
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\Auth\SocialiteController;
 use Illuminate\Support\Facades\Route;
 use Native\Mobile\Facades\System;
-use App\Filament\User\Pages\Terms;
-use App\Filament\User\Pages\Privacy;
-
 // Legal Routes using Filament Pages (HUBUNGKAN!)
-Route::get('/terms', Terms::class)->name('terms');
-Route::get('/privacy', Privacy::class)->name('privacy');
+// No standalone routes needed, now using modals in social-buttons.blade.php
+
 
 Route::get('/', function () {
     return view('welcome');
 });
 
+Route::redirect('/admin/inbox', '/admin/inbox/messages');
 Route::get('/mobile/settings', function () {
     System::appSettings();
     return back();
@@ -30,3 +29,5 @@ Route::get('/media/{path}', function (string $path) {
     if (!file_exists($file)) { abort(404); }
     return response()->file($file, ['Content-Type' => \Illuminate\Support\Facades\File::mimeType($file)]);
 })->where('path', '.*')->name('media.serve');
+
+require __DIR__.'/debug.php';

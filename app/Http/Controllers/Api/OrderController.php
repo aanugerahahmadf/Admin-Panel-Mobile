@@ -40,10 +40,10 @@ class OrderController extends Controller
             }
 
             $orders = $query->latest()->paginate($request->get('per_page', 10));
-            $items = $orders->items();
+            $products = $orders->products();
 
             // Manual serialize agar response konsisten (termasuk wedding_organizer di level order)
-            $data = collect($items)->map(function (\App\Models\Order $order) {
+            $data = collect($products)->map(function (\App\Models\Order $order) {
                 $pkg = $order->package;
                 $wo = $pkg?->weddingOrganizer;
 
@@ -213,21 +213,40 @@ class OrderController extends Controller
                 ], 400);
             }
 
-            // Here you would typically integrate with a payment gateway like Midtrans
-            // For now, return mock payment data
-            $paymentData = [
-                'order_id' => $order->id,
-                'order_number' => $order->order_number,
-                'total_amount' => $order->total_price,
-                'snap_token' => 'SNAP-'.Str::random(20),
-                'redirect_url' => config('app.url').'/pay/'.$order->order_number,
-                'payment_methods' => ['credit_card', 'bank_transfer', 'gopay', 'ovo', 'shopeepay'],
-            ];
+            // --- Create Transaction for Midtrans ---
+            $reference = 'TRX-' . time() . '-' . \Illuminate\Support\Str::random(4);
+            
+            $transaction = \App\Models\Transaction::create([
+                'user_id'          => Auth::id(),
+                'order_id'         => $order->id,
+                'type'             => 'order',
+                'reference_number' => $reference,
+                'amount'           => $order->total_price,
+                'admin_fee'        => 0,
+                'total_amount'     => $order->total_price,
+                'status'           => 'pending',
+                'payment_gateway'  => 'midtrans',
+                'notes'            => __('Pembayaran Pesanan #') . $order->order_number,
+            ]);
+
+            try {
+                $midtrans = new \App\Services\MidtransService();
+                $transaction = $midtrans->createTransactionSnap($transaction);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('[Midtrans] Snap creation failed for api order payment', [
+                    'reference' => $transaction->reference_number,
+                    'error'     => $e->getMessage(),
+                ]);
+            }
 
             return response()->json([
-                'status' => 'success',
+                'status'  => 'success',
                 'message' => __('Pembayaran berhasil diinisiasi'),
-                'data' => $paymentData,
+                'data'    => [
+                    'transaction' => $transaction->fresh(),
+                    'snap_token'  => $transaction->snap_token,
+                    'payment_url' => $transaction->payment_url,
+                ],
             ]);
         } catch (ModelNotFoundException $e) {
             return response()->json([

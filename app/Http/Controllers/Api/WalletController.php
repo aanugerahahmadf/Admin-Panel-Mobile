@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\PaymentMethod;
-use App\Models\Topup;
+use App\Models\Transaction;
 use App\Models\Withdrawal;
+use App\Services\MidtransService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class WalletController extends Controller
@@ -24,7 +25,8 @@ class WalletController extends Controller
 
     public function getHistory(Request $request)
     {
-        $history = Topup::where('user_id', $request->user()->id)
+        $history = Transaction::where('user_id', $request->user()->id)
+            ->where('type', 'topup')
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
@@ -38,73 +40,57 @@ class WalletController extends Controller
     {
         $request->validate([
             'amount' => 'required|numeric|min:10000',
-            'payment_method' => 'required|string',
         ]);
 
         try {
             DB::beginTransaction();
 
-            $user = $request->user();
+            $user   = $request->user();
             $amount = $request->amount;
 
-            // Generate reference number
-            $referenceNumber = 'TOPUP-'.strtoupper(Str::random(10));
+            $referenceNumber = 'TRX-' . time() . '-' . strtoupper(Str::random(5));
 
-            // Fetch admin fee from PaymentMethod model
-            $method = PaymentMethod::where('code', $request->payment_method)->first(['*']);
-            $adminFee = $method ? floatval($method->fee) : 0;
-
-            $totalAmount = $amount + $adminFee;
-
-            $topup = Topup::create([
-                'user_id' => $user->id,
+            $transaction = Transaction::create([
+                'user_id'          => $user->id,
+                'type'             => 'topup',
                 'reference_number' => $referenceNumber,
-                'amount' => $amount,
-                'admin_fee' => $adminFee,
-                'total_amount' => $totalAmount,
-                'payment_method' => $request->payment_method,
-                'status' => 'pending',
+                'amount'           => $amount,
+                'admin_fee'        => 0,
+                'total_amount'     => $amount,
+                'status'           => 'pending',
+                'payment_gateway'  => 'midtrans',
             ]);
+
+            try {
+                $midtrans = new MidtransService();
+                $transaction = $midtrans->createTransactionSnap($transaction);
+            } catch (\Exception $e) {
+                Log::error('[Midtrans] Snap creation failed for api topup', [
+                    'reference' => $transaction->reference_number,
+                    'error'     => $e->getMessage(),
+                ]);
+            }
 
             DB::commit();
 
             return response()->json([
-                'status' => 'success',
+                'status'  => 'success',
                 'message' => __('Permintaan topup berhasil dibuat'),
-                'data' => $topup,
+                'data'    => [
+                    'transaction' => $transaction->fresh(),
+                    'snap_token'  => $transaction->snap_token,
+                    'payment_url' => $transaction->payment_url,
+                ],
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
 
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => $e->getMessage(),
             ], 500);
         }
-    }
-
-    public function uploadProof(Request $request, $id)
-    {
-        $request->validate([
-            'payment_proof' => 'required|image|max:2048',
-        ]);
-
-        $topup = Topup::where('user_id', $request->user()->id)->findOrFail($id, ['*']);
-
-        if ($request->hasFile('payment_proof')) {
-            $path = $request->file('payment_proof')->store('payment-proofs', 'public');
-            $topup->update([
-                'payment_proof' => $path,
-                'status' => 'pending', // Re-verify if needed
-            ]);
-        }
-
-        return response()->json([
-            'status' => 'success',
-            'message' => __('Bukti pembayaran berhasil diunggah'),
-            'data' => $topup,
-        ]);
     }
 
     public function requestWithdrawal(Request $request)
@@ -126,16 +112,16 @@ class WalletController extends Controller
             if ($user->balance < $amount) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => __('Saldo tidak cukup'),
+                    'message' => __('Saldo Anda tidak mencukupi untuk penarikan ini'),
                 ], 400);
             }
 
-            $referenceNumber = 'WD-'.strtoupper(Str::random(10));
-
             $withdrawal = Withdrawal::create([
                 'user_id' => $user->id,
-                'reference_number' => $referenceNumber,
+                'reference_number' => 'WD-' . time() . '-' . strtoupper(Str::random(5)),
                 'amount' => $amount,
+                'admin_fee' => 0, // Set fixed fee or calculate if necessary
+                'total_amount' => $amount,
                 'bank_name' => $request->bank_name,
                 'account_number' => $request->account_number,
                 'account_holder' => $request->account_holder,
@@ -150,29 +136,18 @@ class WalletController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'message' => __('Permintaan penarikan berhasil dibuat'),
+                'message' => __('Permintaan penarikan dana berhasil dibuat'),
                 'data' => $withdrawal,
-            ]);
+            ], 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
 
             return response()->json([
                 'status' => 'error',
-                'message' => $e->getMessage(),
+                'message' => __('Gagal membuat permintaan penarikan dana'),
+                'error' => $e->getMessage(),
             ], 500);
         }
-    }
-
-    public function getWithdrawalHistory(Request $request)
-    {
-        $history = Withdrawal::where('user_id', $request->user()->id)
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
-
-        return response()->json([
-            'status' => 'success',
-            'data' => $history,
-        ]);
     }
 }

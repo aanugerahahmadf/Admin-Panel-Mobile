@@ -40,7 +40,6 @@ class AdminPanelProvider extends PanelProvider
     public function panel(Panel $panel): Panel
     {
         return $panel
-            ->default()
             ->id('admin')
             ->path('admin')
             ->authGuard('web')
@@ -52,7 +51,7 @@ class AdminPanelProvider extends PanelProvider
             )
             ->emailVerification(OtpEmailVerificationPrompt::class)
             // ->sidebarFullyCollapsibleOnDesktop()
-            ->brandName(fn() => __('Devi Make Up Wedding Organizer'))
+            ->brandName(fn() => __('Dekorasi Bunga Pernikahan'))
             ->brandLogo(asset('images/logo.png'))
             ->brandLogoHeight('3rem')
             // ->simplePageMaxContentWidth(MaxWidth::Small)
@@ -79,6 +78,10 @@ class AdminPanelProvider extends PanelProvider
             )
             ->renderHook(
                 'panels::styles.after',
+                fn (): \Illuminate\Contracts\View\View => view('filament.snap-script')
+            )
+            ->renderHook(
+                'panels::styles.after',
                 fn (): string => \Illuminate\Support\Facades\Blade::render('@vite(\'resources/css/app.css\')')
             )
             ->renderHook(
@@ -101,6 +104,7 @@ class AdminPanelProvider extends PanelProvider
                 NavigationGroup::make()->label(fn () => __('Data Master')),
                 NavigationGroup::make()->label(fn () => __('Transaksi')),
                 NavigationGroup::make()->label(fn () => __('Pesan')),
+                NavigationGroup::make()->label(fn () => __('Manajemen Legal')),
             ])
             ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\\Filament\\Admin\\Resources')
             ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\\Filament\\Admin\\Pages')

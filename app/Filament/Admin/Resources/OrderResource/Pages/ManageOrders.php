@@ -40,36 +40,26 @@ class ManageOrders extends ManageRecords
     {
         return [
             'all' => \Filament\Resources\Components\Tab::make(__('Semua'))
-                ->badge(\App\Models\Order::count()),
+                ->badge(fn() => \App\Models\Order::count()),
             'pending' => \Filament\Resources\Components\Tab::make(\App\Enums\OrderStatus::PENDING->getLabel())
                 ->icon(\App\Enums\OrderStatus::PENDING->getIcon())
                 ->modifyQueryUsing(fn ($query) => $query->where('status', \App\Enums\OrderStatus::PENDING))
-                ->badge(\App\Models\Order::where('status', \App\Enums\OrderStatus::PENDING)->count())
+                ->badge(fn() => \App\Models\Order::where('status', \App\Enums\OrderStatus::PENDING)->count())
                 ->badgeColor(\App\Enums\OrderStatus::PENDING->getColor()),
             'confirmed' => \Filament\Resources\Components\Tab::make(\App\Enums\OrderStatus::CONFIRMED->getLabel())
                 ->icon(\App\Enums\OrderStatus::CONFIRMED->getIcon())
                 ->modifyQueryUsing(fn ($query) => $query->where('status', \App\Enums\OrderStatus::CONFIRMED))
-                ->badge(\App\Models\Order::where('status', \App\Enums\OrderStatus::CONFIRMED)->count())
+                ->badge(fn() => \App\Models\Order::where('status', \App\Enums\OrderStatus::CONFIRMED)->count())
                 ->badgeColor(\App\Enums\OrderStatus::CONFIRMED->getColor()),
-            'preparing' => \Filament\Resources\Components\Tab::make(\App\Enums\OrderStatus::PREPARING->getLabel())
-                ->icon(\App\Enums\OrderStatus::PREPARING->getIcon())
-                ->modifyQueryUsing(fn ($query) => $query->where('status', \App\Enums\OrderStatus::PREPARING))
-                ->badge(\App\Models\Order::where('status', \App\Enums\OrderStatus::PREPARING)->count())
-                ->badgeColor(\App\Enums\OrderStatus::PREPARING->getColor()),
-            'event_day' => \Filament\Resources\Components\Tab::make(\App\Enums\OrderStatus::EVENT_DAY->getLabel())
-                ->icon(\App\Enums\OrderStatus::EVENT_DAY->getIcon())
-                ->modifyQueryUsing(fn ($query) => $query->where('status', \App\Enums\OrderStatus::EVENT_DAY))
-                ->badge(\App\Models\Order::where('status', \App\Enums\OrderStatus::EVENT_DAY)->count())
-                ->badgeColor(\App\Enums\OrderStatus::EVENT_DAY->getColor()),
             'completed' => \Filament\Resources\Components\Tab::make(\App\Enums\OrderStatus::COMPLETED->getLabel())
                 ->icon(\App\Enums\OrderStatus::COMPLETED->getIcon())
                 ->modifyQueryUsing(fn ($query) => $query->where('status', \App\Enums\OrderStatus::COMPLETED))
-                ->badge(\App\Models\Order::where('status', \App\Enums\OrderStatus::COMPLETED)->count())
+                ->badge(fn() => \App\Models\Order::where('status', \App\Enums\OrderStatus::COMPLETED)->count())
                 ->badgeColor(\App\Enums\OrderStatus::COMPLETED->getColor()),
             'cancelled' => \Filament\Resources\Components\Tab::make(\App\Enums\OrderStatus::CANCELLED->getLabel())
                 ->icon(\App\Enums\OrderStatus::CANCELLED->getIcon())
                 ->modifyQueryUsing(fn ($query) => $query->where('status', \App\Enums\OrderStatus::CANCELLED))
-                ->badge(\App\Models\Order::where('status', \App\Enums\OrderStatus::CANCELLED)->count())
+                ->badge(fn() => \App\Models\Order::where('status', \App\Enums\OrderStatus::CANCELLED)->count())
                 ->badgeColor(\App\Enums\OrderStatus::CANCELLED->getColor()),
         ];
     }

@@ -9,18 +9,19 @@ trait CanMarkAsRead
 {
     public function markAsRead(): void
     {
-        $this->selectedConversation?->messages()->each(function (Message $message): void {
-            $message->where(['inbox_id' => $message->inbox_id])->whereJsonDoesntContain('read_by', Auth::id())
-                ->update([
-                    'read_by' => [
-                        ...$message->read_by,
-                        Auth::id(),
-                    ],
-                    'read_at' => [
-                        ...$message->read_at,
-                        now(),
-                    ],
+        $authId = Auth::id();
+        
+        $this->selectedConversation?->messages()
+            ->whereJsonDoesntContain('read_by', $authId)
+            ->get()
+            ->each(function (Message $message) use ($authId): void {
+                $readBy = is_array($message->read_by) ? $message->read_by : [];
+                $readAt = is_array($message->read_at) ? $message->read_at : [];
+
+                $message->update([
+                    'read_by' => [...$readBy, $authId],
+                    'read_at' => [...$readAt, now()->toIso8601String()],
                 ]);
-        });
+            });
     }
 }

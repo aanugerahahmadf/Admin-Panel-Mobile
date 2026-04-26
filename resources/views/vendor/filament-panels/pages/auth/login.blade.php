@@ -17,9 +17,11 @@
             :full-width="$this->hasFullWidthFormActions()"
         />
 
-        <div class="mt-4">
-            @include('filament.user.social-buttons')
-        </div>
+        @if (filament()->getCurrentPanel()->getId() !== 'admin')
+            <div class="mt-4">
+                @include('filament.user.social-buttons')
+            </div>
+        @endif
     </x-filament-panels::form>
 
     {{ \Filament\Support\Facades\FilamentView::renderHook(\Filament\View\PanelsRenderHook::AUTH_LOGIN_FORM_AFTER, scopes: $this->getRenderHookScopes()) }}

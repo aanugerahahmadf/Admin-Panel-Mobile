@@ -4,71 +4,47 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
-use App\Models\Payment;
-use App\Models\PaymentMethod;
+use App\Models\Transaction;
+use App\Services\MidtransService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use App\Enums\OrderStatus;
 use App\Enums\OrderPaymentStatus;
-use App\Enums\PaymentStatus;
 
 class PaymentController extends Controller
 {
     /**
-     * Get available payment methods
-     */
-    /**
-     * Get available payment methods
+     * Get available payment methods (Now managed seamlessly by Midtrans)
      */
     public function getPaymentMethods(Request $request)
     {
-        try {
-            $methods = PaymentMethod::where('is_active', true)->get(['*']);
-
-            $formattedMethods = $methods->map(function (\App\Models\PaymentMethod $method) {
-                $data = [
-                    'id' => $method->code,
-                    'name' => $method->name,
-                    'icon' => $method->icon ? \Illuminate\Support\Facades\Storage::disk('public')->url($method->icon) : null,
+        return response()->json([
+            'status' => 'success',
+            'data' => [
+                [
+                    'id' => 'midtrans',
+                    'name' => 'Midtrans Payment Gateway',
+                    'icon' => null,
                     'enabled' => true,
-                    'type' => $method->type,
-                    'fee' => floatval($method->fee),
-                ];
-
-                if ($method->type === 'bank_transfer') {
-                    $data['manual_details'] = [
-                        'bank_name' => $method->name,
-                        'account_number' => $method->account_number,
-                        'account_holder' => $method->account_holder,
-                    ];
-                } elseif ($method->type === 'ewallet') {
-                    $data['details'] = $method->account_number;
-                    $data['instructions'] = $method->instructions ?? __('Bayar tunai di lokasi acara.');
-                } elseif ($method->type === 'wallet') {
-                    $data['instructions'] = $method->instructions ?? __('Pembayaran otomatis dipotong dari saldo dompet.');
-                }
-
-                if ($method->instructions) {
-                    $data['instructions'] = $method->instructions;
-                }
-
-                return $data;
-            });
-
-            return response()->json([
-                'status' => 'success',
-                'data' => $formattedMethods,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => __('Gagal mengambil metode pembayaran'),
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+                    'type' => 'gateway',
+                    'fee' => 0,
+                    'instructions' => __('Pilih metode pembayaran (Virtual Account, E-Wallet, Kartu Kredit, dll) langsung via Midtrans.'),
+                ],
+                [
+                    'id' => 'wallet',
+                    'name' => 'Saldo Dompet',
+                    'icon' => null,
+                    'enabled' => true,
+                    'type' => 'wallet',
+                    'fee' => 0,
+                    'instructions' => __('Pembayaran otomatis dipotong dari saldo dompet Anda.'),
+                ]
+            ],
+        ]);
     }
 
     /**
@@ -78,279 +54,165 @@ class PaymentController extends Controller
     {
         try {
             $validatedData = $request->validate([
-                'order_id' => 'required|exists:orders,id',
-                'payment_method' => 'required|string|exists:payment_methods,code',
-                'amount' => 'required|numeric|min:1',
-                'notes' => 'nullable|string|max:500',
+                'order_id'       => 'required|exists:orders,id',
+                'payment_method' => 'required|string',
+                'amount'         => 'required|numeric|min:1',
+                'notes'          => 'nullable|string|max:500',
             ]);
 
-            // Verify that the order belongs to the authenticated user
             $order = Order::where('id', $validatedData['order_id'])
                 ->where('user_id', Auth::id())
                 ->firstOrFail(['*']);
 
-            // Verify that the order can be paid
             if ($order->payment_status === OrderPaymentStatus::PAID) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => __('Pesanan sudah dibayar'),
-                ], 400);
+                return response()->json(['status' => 'error', 'message' => __('Pesanan sudah dibayar')], 400);
             }
 
             if ($order->status === OrderStatus::CANCELLED) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => __('Tidak dapat membayar untuk pesanan yang dibatalkan'),
-                ], 400);
+                return response()->json(['status' => 'error', 'message' => __('Tidak dapat membayar untuk pesanan yang dibatalkan')], 400);
             }
 
-            // Verify the amount matches the order total (with small tolerance for rounding)
-            $tolerance = 1000; // 1000 IDR tolerance
+            $tolerance = 1000;
             if (abs($validatedData['amount'] - $order->total_price) > $tolerance) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => __('Jumlah pembayaran tidak sesuai dengan total pesanan'),
-                ], 400);
+                return response()->json(['status' => 'error', 'message' => __('Jumlah pembayaran tidak sesuai dengan total pesanan')], 400);
             }
 
-            // Check if a payment already exists for this order
-            $existingPayment = Payment::where('order_id', $order->id)
-                ->whereIn('status', [PaymentStatus::PENDING, PaymentStatus::PROCESSING])
+            $existingTransaction = Transaction::where('order_id', $order->id)
+                ->where('type', 'order')
+                ->where('status', 'pending')
                 ->first(['*']);
 
-            if ($existingPayment) {
+            if ($existingTransaction) {
                 return response()->json([
-                    'status' => 'error',
+                    'status'  => 'error',
                     'message' => __('Pembayaran sudah ada untuk pesanan ini'),
-                    'payment' => $existingPayment,
+                    'transaction' => $existingTransaction,
                 ], 409);
             }
 
-            // Fetch admin fee from DB
-            $adminFee = $this->calculateAdminFee($validatedData['payment_method'], $validatedData['amount']);
-            $totalAmount = $validatedData['amount'] + $adminFee;
+            $amount = $validatedData['amount'];
+            $reference = 'TRX-' . time() . '-' . Str::random(4);
 
-            // Create the payment record
-            $payment = Payment::create([
-                'order_id' => $order->id,
-                'payment_number' => 'PAY-'.strtoupper(Str::random(12)),
-                'payment_method' => $validatedData['payment_method'],
-                'status' => PaymentStatus::PENDING,
-                'amount' => $validatedData['amount'],
-                'admin_fee' => $adminFee,
-                'total_amount' => $totalAmount,
-                'notes' => $validatedData['notes'] ?? null,
-                'expired_at' => now()->addHours(24), // Payment expires in 24 hours
+            // --- Cek wallet payment ---
+            if ($validatedData['payment_method'] === 'wallet') {
+                $user = Auth::user();
+                if ($user->balance < $amount) {
+                    return response()->json([
+                        'status'  => 'error',
+                        'message' => __('Saldo tidak mencukupi. Silakan top up terlebih dahulu.'),
+                    ], 400);
+                }
+
+                $transaction = Transaction::create([
+                    'user_id'          => Auth::id(),
+                    'order_id'         => $order->id,
+                    'type'             => 'order',
+                    'reference_number' => $reference,
+                    'amount'           => $amount,
+                    'admin_fee'        => 0,
+                    'total_amount'     => $amount,
+                    'status'           => 'success',
+                    'payment_gateway'  => 'wallet',
+                    'paid_at'          => now(),
+                    'notes'            => $validatedData['notes'] ?? null,
+                ]);
+
+                $user->decrement('balance', $amount);
+                $order->update(['payment_status' => OrderPaymentStatus::PAID, 'status' => OrderStatus::CONFIRMED]);
+
+                return response()->json([
+                    'status'  => 'success',
+                    'message' => __('Pembayaran saldo berhasil'),
+                    'data'    => ['transaction' => $transaction],
+                ], 201);
+            }
+
+            // --- Midtrans Payment ---
+            $transaction = Transaction::create([
+                'user_id'          => Auth::id(),
+                'order_id'         => $order->id,
+                'type'             => 'order',
+                'reference_number' => $reference,
+                'amount'           => $amount,
+                'admin_fee'        => 0,
+                'total_amount'     => $amount,
+                'status'           => 'pending',
+                'payment_gateway'  => 'midtrans',
+                'notes'            => $validatedData['notes'] ?? null,
             ]);
 
-            // In a real application, you would integrate with a payment gateway here
-            // For example, with Midtrans:
-            // $snapToken = \Midtrans\Snap::createTransaction($params)->token;
+            try {
+                $midtrans = new MidtransService();
+                $transaction = $midtrans->createTransactionSnap($transaction);
+            } catch (\Exception $e) {
+                Log::error('[Midtrans] Snap creation failed for api payment', [
+                    'reference' => $transaction->reference_number,
+                    'error'     => $e->getMessage(),
+                ]);
+            }
 
             return response()->json([
-                'status' => 'success',
+                'status'  => 'success',
                 'message' => __('Pembayaran berhasil dibuat'),
-                'data' => [
-                    'payment' => $payment,
-                    'payment_method_details' => $this->getPaymentMethodDetails($validatedData['payment_method']),
+                'data'    => [
+                    'transaction' => $transaction->fresh(),
+                    'snap_token'  => $transaction->snap_token,
+                    'payment_url' => $transaction->payment_url,
                 ],
             ], 201);
+
         } catch (ValidationException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $e->errors(),
-            ], 422);
+            return response()->json(['status' => 'error', 'message' => 'Validation failed', 'errors' => $e->errors()], 422);
         } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => __('Pesanan tidak ditemukan atau bukan milik Anda'),
-            ], 404);
+            return response()->json(['status' => 'error', 'message' => __('Pesanan tidak ditemukan atau bukan milik Anda')], 404);
         } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => __('Gagal membuat pembayaran'),
-                'error' => $e->getMessage(),
-            ], 500);
+            return response()->json(['status' => 'error', 'message' => __('Gagal membuat pesanan'), 'error' => $e->getMessage()], 500);
         }
     }
 
     /**
-     * Get user's payment history
+     * Get user's payment / transaction history
      */
     public function getUserPayments(Request $request)
     {
         try {
-            $query = Payment::with(['order.package.weddingOrganizer'])
-                ->join('orders', 'payments.order_id', '=', 'orders.id')
-                ->where('orders.user_id', Auth::id())
-                ->select('payments.*');
+            $query = Transaction::where('user_id', Auth::id());
 
-            // Apply filters
+            if ($request->filled('type')) {
+                $query->where('type', $request->type);
+            }
+
             if ($request->filled('status')) {
-                $query->where('payments.status', $request->status);
+                $query->where('status', $request->status);
             }
 
-            if ($request->filled('payment_method')) {
-                $query->where('payments.payment_method', $request->payment_method);
-            }
-
-            if ($request->filled('from_date') && $request->filled('to_date')) {
-                $query->whereBetween('payments.created_at', [$request->from_date, $request->to_date]);
-            }
-
-            // Apply sorting
             $sortBy = $request->get('sort_by', 'created_at');
             $sortDirection = $request->get('sort_direction', 'desc');
 
-            $allowedSortFields = ['created_at', 'amount', 'status', 'payment_method'];
-            if (! in_array($sortBy, $allowedSortFields)) {
+            $allowedSortFields = ['created_at', 'amount', 'status'];
+            if (!in_array($sortBy, $allowedSortFields)) {
                 $sortBy = 'created_at';
             }
 
-            $allowedDirections = ['asc', 'desc'];
-            if (! in_array(strtolower($sortDirection), $allowedDirections)) {
-                $sortDirection = 'desc';
-            }
+            $query->orderBy($sortBy, $sortDirection === 'asc' ? 'asc' : 'desc');
 
-            $query->orderBy('payments.'.$sortBy, $sortDirection);
-
-            $payments = $query->paginate($request->get('per_page', 10));
+            $transactions = $query->paginate($request->get('per_page', 10));
 
             return response()->json([
                 'status' => 'success',
-                'data' => $payments->items(),
+                'data' => $transactions->products(),
                 'pagination' => [
-                    'current_page' => $payments->currentPage(),
-                    'last_page' => $payments->lastPage(),
-                    'per_page' => $payments->perPage(),
-                    'total' => $payments->total(),
-                    'has_more_pages' => $payments->hasMorePages(),
+                    'current_page' => $transactions->currentPage(),
+                    'last_page' => $transactions->lastPage(),
+                    'per_page' => $transactions->perPage(),
+                    'total' => $transactions->total(),
+                    'has_more_pages' => $transactions->hasMorePages(),
                 ],
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => __('Gagal mengambil riwayat pembayaran'),
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    /**
-     * Get specific payment details
-     */
-    public function getPayment($paymentNumber)
-    {
-        try {
-            $payment = Payment::with(['order.package.weddingOrganizer'])
-                ->where('payment_number', $paymentNumber)
-                ->join('orders', 'payments.order_id', '=', 'orders.id')
-                ->where('orders.user_id', Auth::id())
-                ->select('payments.*')
-                ->firstOrFail(['*']);
-
-            return response()->json([
-                'status' => 'success',
-                'data' => $payment,
-            ]);
-        } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => __('Pembayaran tidak ditemukan atau bukan milik Anda'),
-            ], 404);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => __('Gagal mengambil detail pembayaran'),
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    /**
-     * Upload payment proof
-     */
-    public function uploadPaymentProof(Request $request, $paymentNumber)
-    {
-        try {
-            $request->validate([
-                'payment_proof' => 'required|image|mimes:jpeg,png,jpg|max:5120', // changed from proof_image
-            ]);
-
-            $payment = Payment::where('payment_number', $paymentNumber)
-                ->join('orders', 'payments.order_id', '=', 'orders.id')
-                ->where('orders.user_id', Auth::id())
-                ->select('payments.*')
-                ->firstOrFail(['*']);
-
-            // Check if payment can have proof uploaded
-            if (! in_array($payment->status, [PaymentStatus::PENDING, PaymentStatus::PROCESSING])) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => __('Bukti gagal diunggah karena status pembayaran: ') . ($payment->status instanceof \App\Enums\PaymentStatus ? $payment->status->getLabel() : (string) $payment->status),
-                ], 400);
-            }
-
-            // Check if payment method requires manual proof
-            $manualPaymentMethods = ['bank_transfer', 'manual_transfer', 'qris', 'ewallet', 'gopay', 'ovo', 'dana'];
-            if (! in_array($payment->payment_method, $manualPaymentMethods)) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Payment method '.$payment->payment_method.' does not require manual proof',
-                ], 400);
-            }
-
-            // Store the proof image
-            $path = $request->file('payment_proof')->store('payment-proofs', 'public');
-
-            // --- SIMULASI KECERDASAN BUATAN (AI OCR) ---
-            // Di sini nantinya bisa diintegrasikan dengan Google Vision AI atau AWS Rekognition
-            // Untuk sekarang kita simulasikan sistem sedang "Menganalisa" struk
-            $aiAnalysis = [
-                'ai_status' => 'analyzed',
-                'confidence_score' => 0.98,
-                'detected_amount' => $payment->total_amount, // Asumsi AI mendeteksi angka yang cocok
-                'is_verified_by_ai' => true,
-                'scanned_at' => now()->toDateTimeString(),
-            ];
-
-            // Update payment with proof and AI metadata
-            $payment->update([
-                'payment_proof' => $path,
-                'status' => PaymentStatus::PROCESSING, // Selalu 'processing' agar Admin yang memberikan persetujuan akhir
-                'paid_at' => null, // Biarkan Admin yang menentukan waktu bayar saat Approve
-                'metadata' => array_merge($payment->metadata ?? [], ['ai_analysis' => $aiAnalysis]),
-            ]);
-
-            // Jangan update status pesanan otomatis, biarkan Admin yang melakukan melalui tombol di dashboard
-
-            return response()->json([
-                'status' => 'success',
-                'message' => $aiAnalysis['is_verified_by_ai']
-                    ? __('Bukti pembayaran divalidasi otomatis oleh AI. Pesanan Anda kini aktif!')
-                    : __('Bukti pembayaran berhasil diunggah. Menunggu verifikasi admin.'),
-                'data' => [
-                    'payment_proof_url' => \Illuminate\Support\Facades\Storage::disk('public')->url($path),
-                    'payment' => $payment->fresh(),
-                    'ai_verified' => $aiAnalysis['is_verified_by_ai'],
-                ],
-            ]);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Validation failed',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => __('Pembayaran tidak ditemukan atau bukan milik Anda'),
-            ], 404);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => __('Gagal mengunggah bukti pembayaran'),
+                'message' => __('Gagal mengambil riwayat transaksi'),
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -359,146 +221,38 @@ class PaymentController extends Controller
     /**
      * Cancel a payment
      */
-    public function cancelPayment($paymentNumber)
+    public function cancelPayment($referenceNumber)
     {
         try {
-            $payment = Payment::where('payment_number', $paymentNumber)
-                ->join('orders', 'payments.order_id', '=', 'orders.id')
-                ->where('orders.user_id', Auth::id())
-                ->select('payments.*')
+            $transaction = Transaction::where('reference_number', $referenceNumber)
+                ->where('user_id', Auth::id())
                 ->firstOrFail(['*']);
 
-            // Check if payment can be cancelled
-            if (! in_array($payment->status, [PaymentStatus::PENDING, PaymentStatus::PROCESSING])) {
+            if ($transaction->status !== 'pending') {
                 return response()->json([
                     'status' => 'error',
-                    'message' => __('Pembayaran tidak dapat dibatalkan karena status: ') . ($payment->status instanceof \App\Enums\PaymentStatus ? $payment->status->getLabel() : (string) $payment->status),
+                    'message' => __('Transaksi tidak dapat dibatalkan karena status: ') . $transaction->status,
                 ], 400);
             }
 
-            $payment->update([
-                'status' => PaymentStatus::CANCELLED,
-                'cancelled_at' => now(),
-            ]);
+            $transaction->markAsFailed('Dibatalkan oleh Pengguna');
 
             return response()->json([
                 'status' => 'success',
-                'message' => __('Pembayaran berhasil dibatalkan'),
-                'data' => $payment->fresh(),
+                'message' => __('Transaksi berhasil dibatalkan'),
+                'data' => $transaction->fresh(),
             ]);
         } catch (ModelNotFoundException $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => __('Pembayaran tidak ditemukan atau bukan milik Anda'),
+                'message' => __('Transaksi tidak ditemukan atau bukan milik Anda'),
             ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => __('Gagal membatalkan pembayaran'),
+                'message' => __('Gagal membatalkan transaksi'),
                 'error' => $e->getMessage(),
             ], 500);
         }
-    }
-
-    /**
-     * Calculate admin fee based on payment method and amount
-     */
-    private function calculateAdminFee($paymentMethodCode, $amount)
-    {
-        $method = PaymentMethod::where('code', $paymentMethodCode)->first(['*']);
-
-        if (! $method) {
-            return 0;
-        }
-
-        return floatval($method->fee);
-    }
-
-    /**
-     * Get payment status
-     */
-    public function getPaymentStatus($paymentNumber)
-    {
-        try {
-            $payment = Payment::with(['order.package.weddingOrganizer'])
-                ->where('payment_number', $paymentNumber)
-                ->join('orders', 'payments.order_id', '=', 'orders.id')
-                ->where('orders.user_id', Auth::id())
-                ->select('payments.*')
-                ->firstOrFail(['*']);
-
-            return response()->json([
-                'status' => 'success',
-                'data' => [
-                    'payment_number' => $payment->payment_number,
-                    'status' => $payment->status,
-                    'status_label' => $payment->status_label,
-                    'status_color' => $payment->status_color,
-                    'payment_method' => $payment->payment_method,
-                    'payment_method_label' => $payment->payment_method_label,
-                    'amount' => $payment->amount,
-                    'total_amount' => $payment->total_amount,
-                    'created_at' => $payment->created_at,
-                    'expired_at' => $payment->expired_at,
-                    'paid_at' => $payment->paid_at,
-                    'cancelled_at' => $payment->cancelled_at,
-                    'order' => [
-                        'order_number' => $payment->order->order_number,
-                        'status' => $payment->order->status,
-                        'payment_status' => $payment->order->payment_status,
-                    ],
-                ],
-            ]);
-        } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => __('Pembayaran tidak ditemukan atau bukan milik Anda'),
-            ], 404);
-        } catch (\Exception $e) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to retrieve payment status',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    /**
-     * Get payment method details
-     */
-    private function getPaymentMethodDetails($paymentMethodCode)
-    {
-        $method = PaymentMethod::where('code', $paymentMethodCode)->first(['*']);
-
-        if (! $method) {
-            return [
-                'id' => $paymentMethodCode,
-                'name' => ucfirst(str_replace('_', ' ', $paymentMethodCode)),
-                'type' => 'manual',
-            ];
-        }
-
-        $data = [
-            'id' => $method->code,
-            'name' => $method->name,
-            'icon' => $method->icon ? \Illuminate\Support\Facades\Storage::disk('public')->url($method->icon) : null,
-            'type' => $method->type,
-            'fee' => floatval($method->fee),
-            'instructions' => $method->instructions,
-        ];
-
-        if ($method->type === 'bank_transfer') {
-            $data['manual_details'] = [
-                'bank_name' => $method->name,
-                'account_number' => $method->account_number,
-                'account_holder' => $method->account_holder,
-            ];
-        } elseif ($method->type === 'ewallet') {
-            $data['details'] = $method->account_number;
-        } elseif ($method->type === 'qris') {
-            $data['qris_image'] = $method->qris_image_url;
-        }
-
-        return $data;
     }
 }

@@ -37,7 +37,7 @@ class OtpEmailVerificationPrompt extends EmailVerificationPrompt
         $userId = Filament::auth()->id();
         if ($userId && ! Cache::has('otp_sent_'.$userId)) {
             $this->sendEmailVerificationNotification($this->getVerifiable());
-            Cache::put('otp_sent_'.$userId, true, now()->addMinutes(30));
+            Cache::put('otp_sent_'.$userId, true, now()->addMinutes(5));
         }
     }
 
@@ -49,12 +49,12 @@ class OtpEmailVerificationPrompt extends EmailVerificationPrompt
 
         /** @var User $user */
         $otp = random_int(100000, 999999);
-        Cache::put('otp_'.$user->id, $otp, now()->addMinutes(30));
+        Cache::put('otp_'.$user->id, $otp, now()->addMinutes(5));
 
         try {
             Mail::send('emails.otp', [
                 'title' => __('Verifikasi Email'),
-                'description' => __('Kami menerima permintaan untuk memverifikasi alamat email Anda. Silakan gunakan kode berikut untuk menyelesaikan proses verifikasi. Kode ini berlaku selama 30 menit.'),
+                'description' => __('Kami menerima permintaan untuk memverifikasi alamat email Anda. Silakan gunakan kode berikut untuk menyelesaikan proses verifikasi. Kode ini berlaku selama 5 menit.'),
                 'otp' => $otp,
             ], function ($message) use ($user): void {
                 $message->to($user->email)->subject(__('Kode Verifikasi Email'));

@@ -129,7 +129,6 @@ class VoucherResource extends Resource
                         Forms\Components\TextInput::make('max_uses')
                             ->label(__('Maks. Pemakaian'))
                             ->numeric()
-                            ->placeholder('Kosongkan = unlimited')
                             ->helperText(__('Total pemakaian maksimal voucher ini.')),
                     ])->columns(['sm' => 2]),
 

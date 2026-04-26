@@ -30,7 +30,9 @@ class ChatController extends Controller
             }])
             ->get(['*']);
 
-        $adminUser = User::role('super_admin')->first(['*']);
+        $adminUser = User::whereHas('roles', function($q) {
+            $q->where('name', 'super_admin');
+        })->first(['*']);
         $adminId = $adminUser?->id ?? 1;
         $isAdmin = $user->hasRole('super_admin');
         $data = $inboxes->map(function (\App\Models\Inbox $inbox) use ($user, $adminId, $isAdmin) {
@@ -139,7 +141,9 @@ class ChatController extends Controller
     {
         /** @var User $user */
         $user = Auth::user();
-        $adminUser = User::role('super_admin')->first(['*']);
+        $adminUser = User::whereHas('roles', function($q) {
+            $q->where('name', 'super_admin');
+        })->first(['*']);
         $adminId = $adminUser ? (int) $adminUser->id : 1;
         $isAdmin = $user->hasRole('super_admin');
 
@@ -199,7 +203,9 @@ class ChatController extends Controller
         if (! $user->hasRole('super_admin')) {
             return response()->json(['success' => false, 'message' => __('Tidak terautentikasi')], 403);
         }
-        $customers = User::role('customer')
+        $customers = User::whereHas('roles', function($q) {
+            $q->where('name', 'customer');
+        })
             ->where('id', '!=', $user->id)
             ->orderBy('full_name')
             ->get(['id', 'full_name', 'username', 'email']);

@@ -151,6 +151,30 @@ class UserResource extends Resource
                                     ->prefixIcon('heroicon-o-check-badge'),
                             ]),
 
+                        Forms\Components\Section::make(__('Koneksi Sosial'))
+                            ->description(__('Informasi akun yang terhubung melalui pihak ketiga.'))
+                            ->icon('heroicon-o-link')
+                            ->schema([
+                                Forms\Components\Grid::make(2)
+                                    ->schema([
+                                        Forms\Components\TextInput::make('social_type')
+                                            ->label(__('Metode Login'))
+                                            ->placeholder(__('Manual'))
+                                            ->formatStateUsing(fn ($state) => $state === 'google' ? 'Google' : $state)
+                                            ->disabled()
+                                            ->dehydrated(false)
+                                            ->prefixIcon('heroicon-o-globe-alt'),
+                                        Forms\Components\TextInput::make('social_id')
+                                            ->label(__('ID Akun Google'))
+                                            ->placeholder(__('N/A'))
+                                            ->disabled()
+                                            ->dehydrated(false)
+                                            ->prefixIcon('heroicon-o-identification'),
+                                    ]),
+                            ])
+                            ->collapsible()
+                            ->collapsed(fn (?User $record) => blank($record?->social_id)),
+
                         Forms\Components\Section::make(__('Otorisasi'))
                             ->icon('heroicon-o-identification')
                             ->schema([
@@ -164,7 +188,6 @@ class UserResource extends Resource
                                 Forms\Components\Toggle::make('active_status')
                                     ->label(__('Status Akun Aktif'))
                                     ->required()
-                                    ->default(true)
                                     ->disabled(fn (?User $record) => $record?->hasRole('super_admin') ?? false)
                                     ->helperText(__('Super admin tidak dapat dinonaktifkan demi alasan keamanan.'))
                                     ->onIcon('heroicon-s-check')
@@ -207,7 +230,16 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('email_verified_at')
                     ->label(__('Diverifikasi Pada'))
                     ->dateTime()
-                    ->alignment('center'),
+                    ->alignment('center')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('social_type')
+                    ->label(__('Metode Login'))
+                    ->badge()
+                    ->color(fn (string $state): string => $state === 'google' ? 'danger' : 'gray')
+                    ->formatStateUsing(fn (string $state): string => $state === 'google' ? 'Google' : $state)
+                    ->alignment('center')
+                    ->placeholder(__('Manual')),
 
                 Tables\Columns\TextColumn::make('roles.name')
                     ->searchable()

@@ -44,8 +44,19 @@ class MessagesPage extends Page
             "user_{$userId}_unread_messages_count",
             now()->addMinutes(1),
             function () use ($userId) {
-                return \App\Models\Inbox::whereJsonContains('user_ids', $userId)
-                    ->whereHas('messages', function (\Illuminate\Database\Eloquent\Builder $query) use ($userId) {
+                $query = \App\Models\Inbox::whereJsonContains('user_ids', $userId);
+                
+                // User panel should only count messages that include an admin
+                $adminIds = \App\Models\User::whereHas('roles', function($q) {
+                    $q->where('name', 'super_admin');
+                })->pluck('id')->toArray();
+                $query->where(function($q) use ($adminIds) {
+                    foreach ($adminIds as $adminId) {
+                        $q->orWhereJsonContains('user_ids', $adminId);
+                    }
+                });
+
+                return $query->whereHas('messages', function (\Illuminate\Database\Eloquent\Builder $query) use ($userId) {
                         $query->whereJsonDoesntContain('read_by', $userId);
                     })
                     ->count();
@@ -72,6 +83,27 @@ class MessagesPage extends Page
     {
         if ($id) {
             $this->selectedConversation = Inbox::findOrFail($id, ['*']);
+            return;
+        }
+
+        // If no ID is provided, find or create conversation with Super Admin
+        $userId = Auth::id();
+        $admin = \App\Models\User::whereHas('roles', function($q) {
+            $q->where('name', 'super_admin');
+        })->first();
+
+        if ($admin) {
+            $inbox = Inbox::whereJsonContains('user_ids', $userId)
+                ->whereJsonContains('user_ids', $admin->id)
+                ->first();
+
+            if (!$inbox) {
+                $inbox = Inbox::create([
+                    'user_ids' => [$userId, $admin->id],
+                ]);
+            }
+
+            $this->redirect(static::getUrl(['id' => $inbox->id]));
         }
     }
 

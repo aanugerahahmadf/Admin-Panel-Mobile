@@ -65,15 +65,25 @@ class TranslateJsonKeys extends Command
                         "/->tooltip\(\s*['\"](.*?)['\"]\s*\)/",
                         "/->heading\(\s*['\"](.*?)['\"]\s*\)/",
                         "/->title\(\s*['\"](.*?)['\"]\s*\)/",
-                        "/->modalHeading\(\s*['\"](.*?)['\"]\s*\)/"
+                        "/->modalHeading\(\s*['\"](.*?)['\"]\s*\)/",
+                        "/->modalButton\(\s*['\"](.*?)['\"]\s*\)/",
+                        "/->modalDescription\(\s*['\"](.*?)['\"]\s*\)/",
+                        "/->modalSubmitActionLabel\(\s*['\"](.*?)['\"]\s*\)/",
+                        "/->modalCancelActionLabel\(\s*['\"](.*?)['\"]\s*\)/",
+                        "/->emptyStateHeading\(\s*['\"](.*?)['\"]\s*\)/",
+                        "/->emptyStateDescription\(\s*['\"](.*?)['\"]\s*\)/",
+                        "/->navigationLabel\(\s*['\"](.*?)['\"]\s*\)/",
+                        "/->navigationGroup\(\s*['\"](.*?)['\"]\s*\)/",
+                        "/->breadcrumb\(\s*['\"](.*?)['\"]\s*\)/",
+                        "/->loadingMessage\(\s*['\"](.*?)['\"]\s*\)/"
                     ];
 
                     foreach ($patterns as $pattern) {
                         preg_match_all($pattern, $content, $matches);
                         if (!empty($matches[1])) {
                             foreach ($matches[1] as $key) {
-                                // Abaikan teks teknis, variabel, path, atau yang terlalu pendek
-                                if (str_contains($key, '$') || str_contains($key, '/') || strlen($key) <= 1) continue;
+                                // Abaikan teks teknis, variabel, atau yang kosong
+                                if (str_contains($key, '$') || strlen($key) < 1) continue;
                                 $foundKeys[$key] = $key;
                             }
                         }

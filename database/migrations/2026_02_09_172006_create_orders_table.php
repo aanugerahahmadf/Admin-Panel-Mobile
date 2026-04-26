@@ -14,11 +14,12 @@ return new class extends Migration
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('package_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('package_id')->nullable()->constrained()->cascadeOnDelete();
+            $table->unsignedBigInteger('product_id')->nullable();
             $table->string('order_number')->unique();
             $table->decimal('total_price', 15, 2);
             $table->enum('status', ['pending', 'confirmed', 'preparing', 'event_day', 'completed', 'cancelled'])->default('pending');
-            $table->enum('payment_status', ['unpaid', 'partial', 'paid', 'refunded'])->default('unpaid');
+            $table->enum('payment_status', ['unpaid', 'pending', 'partial', 'paid', 'failed', 'refunded'])->default('unpaid');
             $table->date('booking_date');
             $table->text('notes')->nullable();
             $table->timestamps();

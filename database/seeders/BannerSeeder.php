@@ -11,13 +11,13 @@ class BannerSeeder extends Seeder
     {
         $banners = [
             [
-                'title' => 'Nikmati Hari Spesial Anda Bersama Kami',
+                'title' => __('Nikmati Hari Spesial Anda Bersama Kami'),
                 'image_url' => 'https://images.unsplash.com/photo-1594463750939-ebb28c3f7f05?q=80&w=1000&auto=format&fit=crop',
                 'is_active' => true,
                 'sort_order' => 1,
             ],
             [
-                'title' => 'The Perfect Make Up for Your Wedding',
+                'title' => __('The Perfect Decoration for Your Wedding'),
                 'image_url' => 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1000&auto=format&fit=crop',
                 'is_active' => true,
                 'sort_order' => 2,

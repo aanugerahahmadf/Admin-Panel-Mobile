@@ -276,10 +276,11 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
                 // Determine the raw path (from avatar_url column or fallback to avatar column)
                 $path = $value ?: $this->avatar;
 
-                // Handle placeholders as null
-                if (! $path || in_array($path, ['avatar.png', 'default.png', 'placeholder.png'])) {
+                // Handle empty paths as null
+                if (! $path) {
                     return null;
                 }
+
 
                 // External URLs return immediately
                 if (filter_var($path, FILTER_VALIDATE_URL)) {
@@ -293,14 +294,9 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
         );
     }
 
-    public function payments()
+    public function transactions()
     {
-        return $this->hasMany(Payment::class);
-    }
-
-    public function paymentMethods()
-    {
-        return $this->hasMany(PaymentMethod::class);
+        return $this->hasMany(Transaction::class);
     }
 
     /**

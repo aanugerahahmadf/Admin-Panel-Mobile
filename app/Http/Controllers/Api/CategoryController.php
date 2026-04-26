@@ -45,7 +45,7 @@ class CategoryController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $categories->items(),
+                'data' => $categories->products(),
                 'pagination' => [
                     'current_page' => $categories->currentPage(),
                     'last_page' => $categories->lastPage(),

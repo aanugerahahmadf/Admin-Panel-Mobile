@@ -31,7 +31,7 @@ class ManageWeddingOrganizers extends ManageRecords
                     Notification::make()
                         ->success()
                         ->title(__('Studio Ditambahkan'))
-                        ->body(__('Data studio rias baru telah berhasil ditambahkan.'))
+                        ->body(__('Data vendor dekorasi baru telah berhasil ditambahkan.'))
                 ),
         ];
     }

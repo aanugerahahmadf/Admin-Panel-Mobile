@@ -17,9 +17,17 @@ class MediaObserver
 
     public function created(Media $media)
     {
-        if ($media->collection_name === 'gallery' && $media->model_type === WeddingOrganizer::class) {
+        $targetCollections = ['gallery', 'product_image', 'package_image', 'category_image'];
+        
+        if (in_array($media->collection_name, $targetCollections)) {
             // Index the image for CBIR
             $this->cbirService->indexMedia($media);
         }
+    }
+
+    public function deleted(Media $media)
+    {
+        // Remove from CBIR index when media is deleted
+        $this->cbirService->removeFromIndex($media->id);
     }
 }

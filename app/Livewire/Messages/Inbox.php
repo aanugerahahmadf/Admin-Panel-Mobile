@@ -2,7 +2,8 @@
 
 namespace App\Livewire\Messages;
 
-use App\Filament\Pages\MessagesPage;
+use App\Filament\Admin\Pages\MessagesPage as AdminMessagesPage;
+use App\Filament\User\Pages\MessagesPage as UserMessagesPage;
 use App\Livewire\Traits\CanMarkAsRead;
 use App\Livewire\Traits\CanValidateFiles;
 use App\Livewire\Traits\HasPollInterval;
@@ -12,6 +13,7 @@ use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Forms;
+use Filament\Facades\Filament;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
@@ -35,8 +37,11 @@ class Inbox extends Component implements HasActions, HasForms
 
     public $selectedConversation;
 
+    public string $panelId = 'admin';
+
     public function mount(): void
     {
+        $this->panelId = filament()->getCurrentPanel()?->getId() ?? 'admin';
         $this->setPollInterval();
         $this->loadConversations();
     }
@@ -44,9 +49,21 @@ class Inbox extends Component implements HasActions, HasForms
     public function unreadCount(): int
     {
         $userId = Auth::id();
+        $isAdmin = $this->panelId === 'admin';
 
         /** @var Builder $query */
         $query = InboxModel::whereJsonContains('user_ids', $userId, 'and', false);
+
+        if (!$isAdmin) {
+            $adminIds = User::whereHas('roles', function($q) {
+                $q->where('name', 'super_admin');
+            })->pluck('id')->toArray();
+            $query->where(function($q) use ($adminIds) {
+                foreach ($adminIds as $adminId) {
+                    $q->orWhereJsonContains('user_ids', $adminId);
+                }
+            });
+        }
 
         return $query->whereHas('messages', function (Builder $q) use ($userId): void {
             $q->whereJsonDoesntContain('read_by', $userId, 'and', false);
@@ -56,7 +73,21 @@ class Inbox extends Component implements HasActions, HasForms
     #[On('refresh-inbox')]
     public function loadConversations(): void
     {
-        $this->conversations = Auth::user()->allConversations()->get(['*']);
+        $isAdmin = Filament::getCurrentPanel()?->getId() === 'admin';
+        $query = Auth::user()->allConversations();
+
+        if (!$isAdmin) {
+            $adminIds = User::whereHas('roles', function($q) {
+                $q->where('name', 'super_admin');
+            })->pluck('id')->toArray();
+            $query->where(function($q) use ($adminIds) {
+                foreach ($adminIds as $adminId) {
+                    $q->orWhereJsonContains('user_ids', $adminId);
+                }
+            });
+        }
+
+        $this->conversations = $query->get(['*']);
         $this->markAsRead();
     }
 
@@ -67,10 +98,23 @@ class Inbox extends Component implements HasActions, HasForms
             ->label(__('Create'))
             ->form([
                 Forms\Components\Select::make('user_ids')
-                    ->label(__('Select User(s)'))
-                    ->options(fn () => User::query()->pluck('full_name', 'id')->toArray())
+                    ->label(__('Select User'))
+                    ->options(function() {
+                        $isAdmin = Filament::getCurrentPanel()?->getId() === 'admin';
+                        $query = User::query();
+                        
+                        if ($isAdmin) {
+                            // Admin can talk to anyone except themselves
+                            return $query->where('id', '!=', Auth::id())->pluck('full_name', 'id')->toArray();
+                        } else {
+                            // User can ONLY talk to admins (super_admin role)
+                            return $query->whereHas('roles', function($q) {
+                                $q->where('name', 'super_admin');
+                            })->pluck('full_name', 'id')->toArray();
+                        }
+                    })
                     ->multiple()
-                    ->preload(false)
+                    ->preload()
                     ->searchable()
                     ->required()
                     ->live(),
@@ -124,10 +168,13 @@ class Inbox extends Component implements HasActions, HasForms
                     'notified' => [Auth::id()],
                 ]);
 
-                return redirect()->to(MessagesPage::getUrl(['id' => $inboxId]));
-            })->extraAttributes([
-                'class' => 'w-full',
-            ]);
+                $isAdmin = Filament::getCurrentPanel()?->getId() === 'admin';
+                $redirectUrl = $isAdmin 
+                    ? AdminMessagesPage::getUrl() . '/' . $inboxId 
+                    : UserMessagesPage::getUrl() . '/' . $inboxId;
+
+                return redirect()->to($redirectUrl);
+            })->button();
     }
 
     public function deleteConversation(int $id)
@@ -143,7 +190,12 @@ class Inbox extends Component implements HasActions, HasForms
                 ->success()
                 ->send();
 
-            return $this->redirect(MessagesPage::getUrl());
+            $isAdmin = Filament::getCurrentPanel()?->getId() === 'admin';
+            $redirectUrl = $isAdmin 
+                ? AdminMessagesPage::getUrl() 
+                : UserMessagesPage::getUrl();
+
+            return $this->redirect($redirectUrl);
         }
     }
 

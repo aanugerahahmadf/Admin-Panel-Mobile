@@ -98,7 +98,7 @@ class WeddingOrganizerController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $organizers->items(),
+                'data' => $organizers->products(),
                 'pagination' => [
                     'current_page' => $organizers->currentPage(),
                     'last_page' => $organizers->lastPage(),
@@ -231,7 +231,7 @@ class WeddingOrganizerController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $packages->items(),
+                'data' => $packages->products(),
                 'pagination' => [
                     'current_page' => $packages->currentPage(),
                     'last_page' => $packages->lastPage(),
@@ -317,7 +317,7 @@ class WeddingOrganizerController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $reviews->items(),
+                'data' => $reviews->products(),
                 'pagination' => [
                     'current_page' => $reviews->currentPage(),
                     'last_page' => $reviews->lastPage(),
@@ -354,14 +354,14 @@ class WeddingOrganizerController extends Controller
         try {
             $organizers = WeddingOrganizer::with(['media'])
                 ->withCount(['reviews', 'packages'])
-                ->where('id', 1) // Only featured Devi Make Up
+                ->where('id', 1) // Only featured Dekorasi Bunga Pernikahan
 
                 ->orderBy('rating', 'desc')
                 ->paginate($request->get('per_page', 10), ['*']);
 
             return response()->json([
                 'status' => 'success',
-                'data' => $organizers->items(),
+                'data' => $organizers->products(),
                 'pagination' => [
                     'current_page' => $organizers->currentPage(),
                     'last_page' => $organizers->lastPage(),
@@ -395,7 +395,7 @@ class WeddingOrganizerController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $organizers->items(),
+                'data' => $organizers->products(),
                 'pagination' => [
                     'current_page' => $organizers->currentPage(),
                     'last_page' => $organizers->lastPage(),
@@ -436,7 +436,7 @@ class WeddingOrganizerController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $organizers->items(),
+                'data' => $organizers->products(),
                 'pagination' => [
                     'current_page' => $organizers->currentPage(),
                     'last_page' => $organizers->lastPage(),

@@ -25,6 +25,8 @@ use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\WithPagination;
+use App\Models\Message;
+use App\Jobs\SendBotReply;
 
 /**
  * @mixin \Livewire\Component
@@ -47,8 +49,11 @@ class Messages extends Component implements HasForms
 
     public bool $showCamera = false;
 
+    public string $panelId = 'admin';
+
     public function mount(): void
     {
+        $this->panelId = filament()->getCurrentPanel()?->getId() ?? 'admin';
         $this->setPollInterval();
         $this->form->fill();
         if ($this->selectedConversation) {
@@ -60,6 +65,8 @@ class Messages extends Component implements HasForms
 
     public function pollMessages(): void
     {
+        if (!$this->selectedConversation) return;
+
         $latestId = $this->conversationMessages->pluck('id')->first();
 
         /** @var Builder $query */
@@ -71,6 +78,29 @@ class Messages extends Component implements HasForms
                 ...$polledMessages,
                 ...$this->conversationMessages,
             ]);
+            
+            // Mark new incoming messages as read
+            $this->markAsRead();
+        }
+
+        // Optional: Check if the status of the sender's last unread message has changed to 'read'
+        // Since we are polling, we need to refresh the messages to see the 'Dilihat' status
+        // if the other person has read it in the meantime.
+        $unreadOutgoingExists = $this->conversationMessages
+            ->where('user_id', auth()->id())
+            ->filter(fn($msg) => empty($msg->read_by) || count(array_filter($msg->read_by, fn($id) => $id !== auth()->id())) === 0)
+            ->isNotEmpty();
+        
+        if ($unreadOutgoingExists) {
+            // Re-fetch the message objects to get updated read_by status
+            $this->conversationMessages = $this->conversationMessages->map(function($msg) {
+                // Only re-fetch if it was previously unread by others
+                $wasUnread = empty($msg->read_by) || count(array_filter($msg->read_by, fn($id) => $id !== auth()->id())) === 0;
+                if ($wasUnread && $msg->user_id === auth()->id()) {
+                    return Message::find($msg->id);
+                }
+                return $msg;
+            });
         }
     }
 
@@ -145,6 +175,11 @@ class Messages extends Component implements HasForms
                     'notified' => [Auth::id()],
                 ]);
 
+                // Dispatch bot reply if user is not admin
+                if (!auth()->user()->hasRole('super_admin')) {
+                    SendBotReply::dispatch($newMessage->id)->delay(now()->addSeconds(5));
+                }
+
                 $this->conversationMessages->prepend($newMessage);
                 collect($rawData['attachments'] ?? [])->each(function ($attachment) use ($newMessage): void {
                     $newMessage->addMedia($attachment)->usingFileName(Str::slug(config('messages.slug'), '_').'_'.Str::random(20).'.'.$attachment->extension())->toMediaCollection(MediaCollectionType::FILAMENT_MESSAGES->value);
@@ -184,9 +219,10 @@ class Messages extends Component implements HasForms
         return $query->latest()->paginate(10, ['*'], 'page', $this->currentPage);
     }
 
-    public function downloadAttachment(string $filePath, string $fileName)
+    public function downloadAttachment(int $mediaId)
     {
-        return response()->download($filePath, $fileName);
+        $media = \Spatie\MediaLibrary\MediaCollections\Models\Media::findOrFail($mediaId);
+        return response()->download($media->getPath(), $media->file_name);
     }
 
     public function validateMessage(): bool
@@ -199,6 +235,25 @@ class Messages extends Component implements HasForms
 
         // Return true (disabled) only if ALL are empty
         return !($hasAttachments || $hasCameraImage || $hasMessage);
+    }
+
+    public function deleteConversation()
+    {
+        if ($this->selectedConversation && in_array(Auth::id(), $this->selectedConversation->user_ids)) {
+            $this->selectedConversation->delete();
+
+            Notification::make()
+                ->title(__('Conversation deleted'))
+                ->success()
+                ->send();
+
+            $isAdmin = \Filament\Facades\Filament::getCurrentPanel()?->getId() === 'admin';
+            $redirectUrl = $isAdmin 
+                ? \App\Filament\Admin\Pages\MessagesPage::getUrl() 
+                : \App\Filament\User\Pages\MessagesPage::getUrl();
+
+            return $this->redirect($redirectUrl);
+        }
     }
 
     public function render(): Application|Factory|View|\Illuminate\View\View

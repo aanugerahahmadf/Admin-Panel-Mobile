@@ -21,7 +21,8 @@ class ManageWithdrawals extends ManageRecords
     {
         return [
             'all' => Tab::make(__('Semua'))
-                ->icon('heroicon-m-list-bullet'),
+                ->icon('heroicon-m-list-bullet')
+                ->badge(fn() => \App\Models\Withdrawal::count()),
             'pending' => Tab::make(__('Perlu Persetujuan'))
                 ->icon('heroicon-m-clock')
                 ->badge(fn() => \App\Models\Withdrawal::where('status', \App\Enums\WithdrawalStatus::PENDING)->count())
@@ -29,9 +30,13 @@ class ManageWithdrawals extends ManageRecords
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('status', \App\Enums\WithdrawalStatus::PENDING)),
             'completed' => Tab::make(__('Tercairkan'))
                 ->icon('heroicon-m-check-badge')
+                ->badge(fn() => \App\Models\Withdrawal::where('status', \App\Enums\WithdrawalStatus::COMPLETED)->count())
+                ->badgeColor('success')
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('status', \App\Enums\WithdrawalStatus::COMPLETED)),
             'rejected' => Tab::make(__('Ditolak'))
                 ->icon('heroicon-m-x-circle')
+                ->badge(fn() => \App\Models\Withdrawal::where('status', \App\Enums\WithdrawalStatus::REJECTED)->count())
+                ->badgeColor('danger')
                 ->modifyQueryUsing(fn (Builder $query) => $query->where('status', \App\Enums\WithdrawalStatus::REJECTED)),
         ];
     }

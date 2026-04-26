@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-
 class DatabaseSeeder extends Seeder
 {
     use WithoutModelEvents;
@@ -17,15 +16,12 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolesAndPermissionsSeeder::class,
             SuperAdminSeeder::class,
-            WeddingOrganizerSeeder::class, // 1. Profil Studio Utama
-            CategorySeeder::class,         // 2. Service Category
-            PackageSeeder::class,          // 3. Makeup Package
-            BannerSeeder::class,           // 4. Promotional Banner
-            ArticleSeeder::class,          // 5. Blog Article
-            BankSeeder::class,             // 6. Rekening Bank
-            PaymentMethodSeeder::class,    // 7. Cara Pembayaran
+            WeddingOrganizerSeeder::class,  // Wedding Organizer + logo
+            ProductSeeder::class,           // Products + images/product/product-N.png
+            PackageSeeder::class,           // Packages + images/package/package-N.png
+            BannerSeeder::class,
+            ArticleSeeder::class,
             TermsAndConditionsSeeder::class,
-            
         ]);
     }
 }

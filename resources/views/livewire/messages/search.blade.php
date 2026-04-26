@@ -1,6 +1,5 @@
     @php
-        $panelId = filament()->getCurrentPanel()?->getId();
-        $messagesPage = match($panelId) {
+        $messagesPage = match($this->panelId) {
             'admin' => \App\Filament\Admin\Pages\MessagesPage::class,
             'user' => \App\Filament\User\Pages\MessagesPage::class,
             default => \App\Filament\User\Pages\MessagesPage::class,
@@ -20,14 +19,16 @@
             <ul class="bg-white dark:bg-gray-900 divide-y dark:divide-white/10">
                 @foreach($messages as $message)
                     <li wire:key="{{ $message->id }}" class="hover:bg-gray-100 dark:hover:bg-white/10">
-                        <a wire:navigate href="{{ $messagesPage::getUrl(tenant: filament()->getTenant()) . '/' . $message->inbox->id }}">
+                        <a wire:navigate href="{{ $messagesPage::getUrl(panel: $this->panelId, tenant: filament()->getTenant()) . '/' . $message->inbox->id }}">
                             <div class="grid grid-cols-[--cols-default] lg:grid-cols-[--cols-lg] p-3" style="--cols-default: repeat(1, minmax(0, 1fr)); --cols-lg: repeat(5, minmax(0, 1fr));">
                                 <div style="--col-span-default: span 4 / span 4;" class="col-[--col-span-default]">
                                     <div class="flex gap-3">
                                         @php
-                                            $avatar = "https://ui-avatars.com/api/?name=" . urlencode($message->inbox->inbox_title);
+                                            $avatar = $message->inbox->primary_avatar;
                                             $alt = urlencode($message->inbox->inbox_title);
                                         @endphp
+
+
                                         <x-filament::avatar
                                             src="{{ $avatar }}"
                                             alt="{{ $alt }}" size="lg" />
@@ -35,8 +36,9 @@
                                             <p class="text-sm font-semibold truncate">{{ $message->inbox->inbox_title }}</p>
                                             <p class="text-sm text-gray-600 truncate dark:text-gray-400">
                                                 @if ($message->user_id == auth()->id())
-                                                    <span class="font-bold">You:</span>
+                                                    <span class="font-bold">{{ __('You:') }}</span>
                                                 @else
+
                                                     <span class="font-bold">{{ $message->sender->name }}:</span>
                                                 @endif
                                                 {{ $message->message }}
@@ -46,8 +48,9 @@
                                 </div>
                                 <div style="--col-span-default: span 1 / span 1;" class="col-[--col-span-default]">
                                     <p class="text-sm font-light text-gray-600 dark:text-gray-500 text-end">
-                                        {{ \Carbon\Carbon::parse($message->updated_at)->setTimezone(config('messages.timezone', 'app.timezone'))->format('F j, Y') }}
+                                        {{ \Carbon\Carbon::parse($message->updated_at)->setTimezone(config('messages.timezone', 'app.timezone'))->translatedFormat('F j, Y') }}
                                     </p>
+
                                 </div>
                             </div>
                         </a>
