@@ -61,53 +61,5 @@ jobs:
           DB_DATABASE: ":memory:"
         run: php artisan test
 
-  deploy:
-    name: Deploy to Production Server
-    needs: tests
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.REMOTE_HOST }}
-          username: ${{ secrets.REMOTE_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.REMOTE_PORT || 22 }}
-          script: |
-            cd ${{ secrets.REMOTE_TARGET }}
-            
-            # Put application into maintenance mode
-            php artisan down --message="Sedang memperbarui aplikasi..." || true
-            
-            # Update code
-            git pull origin main
-            
-            # Install dependencies
-            composer install --no-dev --optimize-autoloader --no-interaction
-            
-            # Build assets
-            npm install
-            npm run build
-            
-            # Run migrations
-            php artisan migrate --force
-            
-            # Clear and optimize cache
-            php artisan optimize:clear
-            php artisan optimize
-            php artisan view:cache
-            php artisan event:cache
-            php artisan config:cache
-            php artisan route:cache
-            
-            # Update Filament icons if necessary
-            php artisan filament:upgrade
-            
-            # Bring application out of maintenance mode
-            php artisan up
-            
-            echo "Deployment successful!"
+# Catatan: Bagian Deployment (CD) dihapus sementara karena belum ada server.
+# Nanti kalau sudah punya VPS, kita bisa tambahkan job 'deploy' di sini.

@@ -11,8 +11,6 @@ class ManageCarts extends ManageRecords
 
     protected function getHeaderActions(): array
     {
-        return [
-            //
-        ];
+        return [];
     }
 }
