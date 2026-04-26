@@ -2,8 +2,9 @@
 
 namespace App\Observers;
 
-use App\Models\Withdrawal;
+use App\Enums\WithdrawalStatus;
 use App\Models\History;
+use App\Models\Withdrawal;
 use Filament\Notifications\Notification;
 
 class WithdrawalObserver
@@ -30,8 +31,8 @@ class WithdrawalObserver
 
         // Jika langsung dibuat dalam status DITOLAK, kembalikan saldo
         $isRefundStatus = in_array($withdrawal->status, [
-            \App\Enums\WithdrawalStatus::REJECTED,
-            'rejected'
+            WithdrawalStatus::REJECTED,
+            'rejected',
         ]);
 
         if ($isRefundStatus) {
@@ -40,7 +41,7 @@ class WithdrawalObserver
                 $user->increment('balance', $withdrawal->amount);
                 Notification::make()
                     ->title(__('Penarikan Saldo Ditolak'))
-                    ->body(__('Saldo sebesar Rp ') . number_format($withdrawal->amount, 0, ',', '.') . __(' telah dikembalikan ke akun Anda.'))
+                    ->body(__('Saldo sebesar Rp ').number_format($withdrawal->amount, 0, ',', '.').__(' telah dikembalikan ke akun Anda.'))
                     ->warning()
                     ->icon('heroicon-o-arrow-uturn-left')
                     ->sendToDatabase($user);
@@ -67,25 +68,25 @@ class WithdrawalObserver
 
         // Jika DITOLAK atau DIBATALKAN, kembalikan saldo (Refund)
         $isRefundStatus = in_array($withdrawal->status, [
-            \App\Enums\WithdrawalStatus::REJECTED,
-            \App\Enums\WithdrawalStatus::CANCELLED ?? 'cancelled' // Fallback if enum doesn't have cancelled
+            WithdrawalStatus::REJECTED,
+            WithdrawalStatus::CANCELLED ?? 'cancelled', // Fallback if enum doesn't have cancelled
         ]);
 
         $originalStatus = $withdrawal->getOriginal('status');
         $wasRefundStatus = in_array($originalStatus, [
-             \App\Enums\WithdrawalStatus::REJECTED,
-             \App\Enums\WithdrawalStatus::CANCELLED ?? 'cancelled'
+            WithdrawalStatus::REJECTED,
+            WithdrawalStatus::CANCELLED ?? 'cancelled',
         ]);
 
-        if ($isRefundStatus && !$wasRefundStatus) {
+        if ($isRefundStatus && ! $wasRefundStatus) {
             $user = $withdrawal->user;
             if ($user) {
                 $user->increment('balance', $withdrawal->amount);
 
                 // 🔔 Notify User: Withdrawal Rejected/Cancelled
-                \Filament\Notifications\Notification::make()
+                Notification::make()
                     ->title(__('Penarikan Saldo Ditolak'))
-                    ->body(__('Saldo sebesar Rp ') . number_format($withdrawal->amount, 2, ',', '.') . __(' telah dikembalikan ke akun Anda.'))
+                    ->body(__('Saldo sebesar Rp ').number_format($withdrawal->amount, 2, ',', '.').__(' telah dikembalikan ke akun Anda.'))
                     ->warning()
                     ->icon('heroicon-o-arrow-uturn-left')
                     ->sendToDatabase($user);
@@ -102,19 +103,19 @@ class WithdrawalObserver
     public function deleted(Withdrawal $withdrawal): void
     {
         History::where('type', 'withdrawal')
-               ->where('transaction_id', $withdrawal->id)
-               ->delete();
+            ->where('transaction_id', $withdrawal->id)
+            ->delete();
 
         // 🔄 OTOMATIS REFUND PADA SAAT DELETE
         // Jika data dihapus saat statusnya PENDING atau PROCESSING (belum dibayarkan),
         // maka kembalikan saldo ke user agar uang tidak "hilang" dari balance mereka.
         $needsRefund = in_array($withdrawal->status, [
-            \App\Enums\WithdrawalStatus::PENDING,
-            \App\Enums\WithdrawalStatus::PROCESSING,
+            WithdrawalStatus::PENDING,
+            WithdrawalStatus::PROCESSING,
         ]);
 
         if ($needsRefund) {
-             $withdrawal->user->increment('balance', $withdrawal->amount);
+            $withdrawal->user->increment('balance', $withdrawal->amount);
         }
     }
 
@@ -124,9 +125,9 @@ class WithdrawalObserver
     public function restored(Withdrawal $withdrawal): void
     {
         History::withTrashed()
-               ->where('type', 'withdrawal')
-               ->where('transaction_id', $withdrawal->id)
-               ->restore();
+            ->where('type', 'withdrawal')
+            ->where('transaction_id', $withdrawal->id)
+            ->restore();
     }
 
     /**
@@ -135,8 +136,8 @@ class WithdrawalObserver
     public function forceDeleted(Withdrawal $withdrawal): void
     {
         History::withTrashed()
-               ->where('type', 'withdrawal')
-               ->where('transaction_id', $withdrawal->id)
-               ->forceDelete();
+            ->where('type', 'withdrawal')
+            ->where('transaction_id', $withdrawal->id)
+            ->forceDelete();
     }
 }

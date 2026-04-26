@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Hash;
 use Livewire\Component;
 
 /**
- * @mixin \Livewire\Component
+ * @mixin Component
  */
 class DeleteAccountComponent extends Component implements HasActions, HasForms
 {

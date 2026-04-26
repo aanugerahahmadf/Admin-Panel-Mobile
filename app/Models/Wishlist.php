@@ -14,6 +14,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Package $package
  * @property-read User $user
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Wishlist newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Wishlist newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Wishlist query()
@@ -22,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Wishlist wherePackageId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Wishlist whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Wishlist whereUserId($value)
+ *
  * @property int $id
  * @property int $user_id
  * @property int $package_id
@@ -29,6 +31,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Package $package
  * @property-read User $user
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Wishlist newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Wishlist newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Wishlist query()
@@ -37,10 +40,12 @@ use Illuminate\Support\Carbon;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Wishlist wherePackageId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Wishlist whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Wishlist whereUserId($value)
+ *
  * @property int $userId
  * @property int $packageId
- * @property \Illuminate\Support\Carbon|null $createdAt
- * @property \Illuminate\Support\Carbon|null $updatedAt
+ * @property Carbon|null $createdAt
+ * @property Carbon|null $updatedAt
+ *
  * @mixin \Eloquent
  */
 class Wishlist extends Model

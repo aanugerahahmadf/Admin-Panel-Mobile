@@ -3,11 +3,14 @@
 namespace App\Livewire\Messages;
 
 use App\Enums\Messages\MediaCollectionType;
-use emmanpbarrameda\FilamentTakePictureField\Forms\Components\TakePicture;
-use TangoDevIt\FilamentEmojiPicker\EmojiPickerAction;
+use App\Filament\Admin\Pages\MessagesPage;
+use App\Jobs\SendBotReply;
 use App\Livewire\Traits\CanMarkAsRead;
 use App\Livewire\Traits\CanValidateFiles;
 use App\Livewire\Traits\HasPollInterval;
+use App\Models\Message;
+use emmanpbarrameda\FilamentTakePictureField\Forms\Components\TakePicture;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -25,11 +28,11 @@ use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\WithPagination;
-use App\Models\Message;
-use App\Jobs\SendBotReply;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
+use TangoDevIt\FilamentEmojiPicker\EmojiPickerAction;
 
 /**
- * @mixin \Livewire\Component
+ * @mixin Component
  */
 class Messages extends Component implements HasForms
 {
@@ -65,7 +68,9 @@ class Messages extends Component implements HasForms
 
     public function pollMessages(): void
     {
-        if (!$this->selectedConversation) return;
+        if (! $this->selectedConversation) {
+            return;
+        }
 
         $latestId = $this->conversationMessages->pluck('id')->first();
 
@@ -78,7 +83,7 @@ class Messages extends Component implements HasForms
                 ...$polledMessages,
                 ...$this->conversationMessages,
             ]);
-            
+
             // Mark new incoming messages as read
             $this->markAsRead();
         }
@@ -88,17 +93,18 @@ class Messages extends Component implements HasForms
         // if the other person has read it in the meantime.
         $unreadOutgoingExists = $this->conversationMessages
             ->where('user_id', auth()->id())
-            ->filter(fn($msg) => empty($msg->read_by) || count(array_filter($msg->read_by, fn($id) => $id !== auth()->id())) === 0)
+            ->filter(fn ($msg) => empty($msg->read_by) || count(array_filter($msg->read_by, fn ($id) => $id !== auth()->id())) === 0)
             ->isNotEmpty();
-        
+
         if ($unreadOutgoingExists) {
             // Re-fetch the message objects to get updated read_by status
-            $this->conversationMessages = $this->conversationMessages->map(function($msg) {
+            $this->conversationMessages = $this->conversationMessages->map(function ($msg) {
                 // Only re-fetch if it was previously unread by others
-                $wasUnread = empty($msg->read_by) || count(array_filter($msg->read_by, fn($id) => $id !== auth()->id())) === 0;
+                $wasUnread = empty($msg->read_by) || count(array_filter($msg->read_by, fn ($id) => $id !== auth()->id())) === 0;
                 if ($wasUnread && $msg->user_id === auth()->id()) {
                     return Message::find($msg->id);
                 }
+
                 return $msg;
             });
         }
@@ -176,7 +182,7 @@ class Messages extends Component implements HasForms
                 ]);
 
                 // Dispatch bot reply if user is not admin
-                if (!auth()->user()->hasRole('super_admin')) {
+                if (! auth()->user()->hasRole('super_admin')) {
                     SendBotReply::dispatch($newMessage->id)->delay(now()->addSeconds(5));
                 }
 
@@ -185,10 +191,10 @@ class Messages extends Component implements HasForms
                     $newMessage->addMedia($attachment)->usingFileName(Str::slug(config('messages.slug'), '_').'_'.Str::random(20).'.'.$attachment->extension())->toMediaCollection(MediaCollectionType::FILAMENT_MESSAGES->value);
                 });
 
-                if (!empty($data['camera_image'])) {
+                if (! empty($data['camera_image'])) {
                     // Ambil config 'disk' aplikasi/gambar - jika pakai default public
                     $newMessage->addMediaFromDisk($data['camera_image'], 'public')
-                         ->toMediaCollection(MediaCollectionType::FILAMENT_MESSAGES->value);
+                        ->toMediaCollection(MediaCollectionType::FILAMENT_MESSAGES->value);
                 }
 
                 $this->showCamera = false;
@@ -221,20 +227,21 @@ class Messages extends Component implements HasForms
 
     public function downloadAttachment(int $mediaId)
     {
-        $media = \Spatie\MediaLibrary\MediaCollections\Models\Media::findOrFail($mediaId);
+        $media = Media::findOrFail($mediaId);
+
         return response()->download($media->getPath(), $media->file_name);
     }
 
     public function validateMessage(): bool
     {
         $rawData = $this->form->getRawState();
-        
-        $hasAttachments = !empty($rawData['attachments']);
-        $hasCameraImage = !empty($rawData['camera_image']);
-        $hasMessage = !empty($rawData['message']);
+
+        $hasAttachments = ! empty($rawData['attachments']);
+        $hasCameraImage = ! empty($rawData['camera_image']);
+        $hasMessage = ! empty($rawData['message']);
 
         // Return true (disabled) only if ALL are empty
-        return !($hasAttachments || $hasCameraImage || $hasMessage);
+        return ! ($hasAttachments || $hasCameraImage || $hasMessage);
     }
 
     public function deleteConversation()
@@ -247,9 +254,9 @@ class Messages extends Component implements HasForms
                 ->success()
                 ->send();
 
-            $isAdmin = \Filament\Facades\Filament::getCurrentPanel()?->getId() === 'admin';
-            $redirectUrl = $isAdmin 
-                ? \App\Filament\Admin\Pages\MessagesPage::getUrl() 
+            $isAdmin = Filament::getCurrentPanel()?->getId() === 'admin';
+            $redirectUrl = $isAdmin
+                ? MessagesPage::getUrl()
                 : \App\Filament\User\Pages\MessagesPage::getUrl();
 
             return $this->redirect($redirectUrl);

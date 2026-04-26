@@ -5,14 +5,13 @@ namespace App\Filament\User\Widgets;
 use App\Models\Order;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class UserOrdersChart extends ChartWidget
 {
-
     protected static ?int $navigationSort = 2;
-    
+
     protected static ?string $pollingInterval = null;
 
     protected static ?int $sort = 2;
@@ -25,7 +24,7 @@ class UserOrdersChart extends ChartWidget
     protected function getData(): array
     {
         $userId = Auth::id();
-        
+
         $driver = DB::connection()->getDriverName();
         $monthExpr = $driver === 'sqlite' ? 'strftime("%m", created_at)' : 'MONTH(created_at)';
 

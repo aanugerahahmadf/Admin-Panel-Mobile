@@ -7,6 +7,7 @@ use App\Models\Transaction;
 use App\Services\MidtransService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Midtrans\Notification;
 
 class PaymentWebhookController extends Controller
 {
@@ -17,17 +18,17 @@ class PaymentWebhookController extends Controller
     {
         try {
             // This will automatically handle signature verification if the SDK is configured
-            $midtrans = new MidtransService();
-            $notification = new \Midtrans\Notification();
+            $midtrans = new MidtransService;
+            $notification = new Notification;
 
-            $status      = $notification->transaction_status;
+            $status = $notification->transaction_status;
             $fraudStatus = $notification->fraud_status;
-            $orderId     = $notification->order_id;
+            $orderId = $notification->order_id;
 
             Log::info('[Midtrans] Webhook received via SDK', [
                 'order_id' => $orderId,
-                'status'   => $status,
-                'fraud'    => $fraudStatus
+                'status' => $status,
+                'fraud' => $fraudStatus,
             ]);
 
             // Look up the transaction using the exact reference_number sent to Midtrans as order_id
@@ -35,6 +36,7 @@ class PaymentWebhookController extends Controller
 
             if (! $transaction) {
                 Log::warning('[Midtrans] Transaction not found in database', ['order_id' => $orderId]);
+
                 return response()->json(['success' => false, 'message' => 'Transaction not found'], 404);
             }
 
@@ -51,7 +53,7 @@ class PaymentWebhookController extends Controller
                     $transaction->markAsSuccess();
                 }
             } elseif (in_array($status, ['deny', 'expire', 'cancel'])) {
-                $transaction->markAsFailed('Midtrans: ' . $status);
+                $transaction->markAsFailed('Midtrans: '.$status);
             } else {
                 $transaction->update(['status' => 'pending']);
             }

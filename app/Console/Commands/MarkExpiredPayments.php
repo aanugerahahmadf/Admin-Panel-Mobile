@@ -2,10 +2,10 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Payment;
 use App\Enums\PaymentStatus;
-use Illuminate\Console\Command;
+use App\Models\Payment;
 use Carbon\Carbon;
+use Illuminate\Console\Command;
 
 class MarkExpiredPayments extends Command
 {
@@ -36,6 +36,7 @@ class MarkExpiredPayments extends Command
 
         if ($expiredPayments->isEmpty()) {
             $this->info('No expired payments found.');
+
             return;
         }
 

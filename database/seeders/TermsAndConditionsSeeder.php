@@ -2,8 +2,8 @@
 
 namespace Database\Seeders;
 
-use App\Models\TermsOfService;
 use App\Models\PrivacyPolicy;
+use App\Models\TermsOfService;
 use Illuminate\Database\Seeder;
 
 class TermsAndConditionsSeeder extends Seeder

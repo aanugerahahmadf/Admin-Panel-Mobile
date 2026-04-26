@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 
 /**
- * @mixin \Livewire\Component
+ * @mixin Component
  */
 class UsernameComponent extends Component implements HasForms
 {

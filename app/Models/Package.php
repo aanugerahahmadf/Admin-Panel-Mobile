@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToBrand;
+use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
@@ -42,6 +44,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @property-read WeddingOrganizer $weddingOrganizer
  * @property-read Collection<int, Wishlist> $wishlists
  * @property-read int|null $wishlists_count
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Package newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Package newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Package query()
@@ -64,14 +67,15 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @method static \App\Models\Package|null first(array|string $columns = ['*'])
  * @method static \App\Models\Package firstOrFail(array|string $columns = ['*'])
  * @method static \Illuminate\Database\Eloquent\Collection<int, \App\Models\Package> get(array|string $columns = ['*'])
+ *
  * @property int $weddingOrganizerId
  * @property int|null $categoryId
  * @property numeric|null $discountPrice
  * @property bool $isFeatured
  * @property int|null $minCapacity
  * @property int|null $maxCapacity
- * @property \Illuminate\Support\Carbon|null $createdAt
- * @property \Illuminate\Support\Carbon|null $updatedAt
+ * @property Carbon|null $createdAt
+ * @property Carbon|null $updatedAt
  * @property-read mixed $imageUrl
  * @property-read bool $isWishlisted
  * @property-read string|null $videoUrl
@@ -83,14 +87,16 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @property-read bool|null $reviewsExists
  * @property-read int|null $wishlistsCount
  * @property-read bool|null $wishlistsExists
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|\App\Models\Package whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|\App\Models\Package whereWeddingOrganizerId($value)
+ *
  * @mixin \Eloquent
  */
 class Package extends Model implements HasMedia
 {
+    use BelongsToBrand;
     use InteractsWithMedia;
-    use \App\Traits\BelongsToBrand;
 
     public function registerMediaCollections(): void
     {
@@ -154,8 +160,8 @@ class Package extends Model implements HasMedia
     public function getIsWishlistedAttribute(): bool
     {
         // Try Filament (Web/Native)
-        if (class_exists(\Filament\Facades\Filament::class) && \Filament\Facades\Filament::auth()->check()) {
-            return $this->wishlists()->where('user_id', \Filament\Facades\Filament::auth()->id())->exists();
+        if (class_exists(Filament::class) && Filament::auth()->check()) {
+            return $this->wishlists()->where('user_id', Filament::auth()->id())->exists();
         }
 
         // Try Sanctum (Mobile API)
@@ -204,7 +210,7 @@ class Package extends Model implements HasMedia
     public function getBadgeStyleAttribute(): string
     {
         $color = $this->category_color;
-        
+
         return "background: linear-gradient(135deg, {$color} 0%, {$color}cc 100%); 
                 color: white; 
                 box-shadow: 0 4px 12px {$color}40; 
@@ -234,7 +240,7 @@ class Package extends Model implements HasMedia
         }
 
         // Otherwise, resolve via the public storage disk using asset() helper for maximum compatibility
-        return asset('storage/' . ltrim($url, '/'));
+        return asset('storage/'.ltrim($url, '/'));
     }
 
     private function getValidMediaUrl(?Media $media): ?string

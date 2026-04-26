@@ -2,26 +2,28 @@
 
 namespace App\Filament\User\Resources;
 
-use App\Filament\User\Resources\PackageResource;
-
+use App\Filament\User\Pages\MessagesPage;
 use App\Filament\User\Resources\WeddingOrganizerResource\Pages;
-use App\Filament\User\Resources\WeddingOrganizerResource\RelationManagers;
+use App\Models\Message;
 use App\Models\WeddingOrganizer;
+use Dotswan\MapPicker\Infolists\MapEntry;
+use Filament\Facades\Filament;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
-use Filament\Tables\Table;
-use Filament\Forms;
-use Filament\Tables;
-use Filament\Support\Enums\FontWeight;
-use Illuminate\Database\Eloquent\Builder;
-use Filament\Infolists\Infolist;
-use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\Actions;
+use Filament\Infolists\Components\Actions\Action;
 use Filament\Infolists\Components\Grid;
 use Filament\Infolists\Components\Group;
 use Filament\Infolists\Components\ImageEntry;
-use Filament\Infolists\Components\TextEntry;
-use Filament\Infolists\Components\Tabs;
 use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\Split;
+use Filament\Infolists\Components\Tabs;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Infolist;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class WeddingOrganizerResource extends Resource
 {
@@ -30,6 +32,7 @@ class WeddingOrganizerResource extends Resource
     protected static ?string $slug = 'home';
 
     protected static ?string $navigationIcon = 'heroicon-o-home';
+
     public static function shouldRegisterNavigation(): bool
     {
         return true;
@@ -37,9 +40,9 @@ class WeddingOrganizerResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = \App\Models\Message::query()
-            ->whereJsonDoesntContain('read_by', \Filament\Facades\Filament::auth()->id())
-            ->where('user_id', '!=', \Filament\Facades\Filament::auth()->id())
+        $count = Message::query()
+            ->whereJsonDoesntContain('read_by', Filament::auth()->id())
+            ->where('user_id', '!=', Filament::auth()->id())
             ->count();
 
         return $count > 0 ? (string) $count : null;
@@ -107,7 +110,7 @@ class WeddingOrganizerResource extends Resource
                         ->extraAttributes(['class' => 'w-full overflow-hidden rounded-t-xl'])
                         ->extraImgAttributes([
                             'class' => 'w-full h-full object-cover transition-transform duration-500 group-hover:scale-105',
-                            'style' => 'width: 100%; height: 100%; object-fit: cover;'
+                            'style' => 'width: 100%; height: 100%; object-fit: cover;',
                         ]),
 
                     // Info block
@@ -136,7 +139,7 @@ class WeddingOrganizerResource extends Resource
                         ]),
                     ])->space(1)->extraAttributes(['class' => 'p-2']),
                 ])->extraAttributes([
-                    'class' => 'bg-white dark:bg-gray-900 rounded-xl shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-800 transition-all duration-300 group overflow-hidden cursor-pointer'
+                    'class' => 'bg-white dark:bg-gray-900 rounded-xl shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-800 transition-all duration-300 group overflow-hidden cursor-pointer',
                 ]),
             ])
             ->actions([
@@ -159,10 +162,10 @@ class WeddingOrganizerResource extends Resource
         return $infolist
             ->schema([
                 // SHOPEE HEADER (PURE FILAMENT NATIVE ARCHITECTURE)
-                \Filament\Infolists\Components\Section::make()
+                Section::make()
                     ->schema([
                         // BANNER PREVIEW
-                        \Filament\Infolists\Components\ImageEntry::make('cover_image_url')
+                        ImageEntry::make('cover_image_url')
                             ->hiddenLabel()
                             ->columnSpanFull()
                             ->alignCenter()
@@ -172,18 +175,18 @@ class WeddingOrganizerResource extends Resource
                             ]),
 
                         // IDENTITY SPLIT
-                        \Filament\Infolists\Components\Split::make([
+                        Split::make([
                             // INFO
-                            \Filament\Infolists\Components\Group::make([
-                                \Filament\Infolists\Components\TextEntry::make('name')
+                            Group::make([
+                                TextEntry::make('name')
                                     ->label('')
                                     ->hiddenLabel()
                                     ->weight('bold')
                                     ->size('3xl'),
 
-                                \Filament\Infolists\Components\Grid::make(1)
+                                Grid::make(1)
                                     ->schema([
-                                        \Filament\Infolists\Components\TextEntry::make('is_verified')
+                                        TextEntry::make('is_verified')
                                             ->label('')
                                             ->hiddenLabel()
                                             ->badge()
@@ -192,7 +195,7 @@ class WeddingOrganizerResource extends Resource
                                             ->getStateUsing(fn ($record) => $record->is_verified ? __('Terverifikasi') : '')
                                             ->visible(fn ($record) => $record->is_verified),
 
-                                        \Filament\Infolists\Components\TextEntry::make('city')
+                                        TextEntry::make('city')
                                             ->label('')
                                             ->hiddenLabel()
                                             ->formatStateUsing(fn ($state) => __($state))
@@ -203,17 +206,17 @@ class WeddingOrganizerResource extends Resource
                             ])->grow(),
 
                             // ACTIONS
-                            \Filament\Infolists\Components\Actions::make([
-                                \Filament\Infolists\Components\Actions\Action::make('chat')
+                            Actions::make([
+                                Action::make('chat')
                                     ->label(__('Pesan'))
                                     ->icon('heroicon-m-chat-bubble-left-right')
                                     ->button()
                                     ->color('primary')
-                                    ->url(fn () => \App\Filament\User\Pages\MessagesPage::getUrl())
+                                    ->url(fn () => MessagesPage::getUrl())
                                     ->openUrlInNewTab(false),
                             ])->grow(false),
                         ])
-                        ->extraAttributes(['class' => 'products-center gap-6 p-6']),
+                            ->extraAttributes(['class' => 'products-center gap-6 p-6']),
                     ])
                     ->compact()
                     ->extraAttributes(['class' => 'shadow-md border-gray-100 dark:border-gray-800 rounded-3xl overflow-hidden mb-4']),
@@ -233,11 +236,11 @@ class WeddingOrganizerResource extends Resource
                                 Section::make(__('Lokasi'))
                                     ->icon('heroicon-o-map-pin')
                                     ->schema([
-                                        \Filament\Infolists\Components\TextEntry::make('address')
+                                        TextEntry::make('address')
                                             ->label(__('Alamat Studio'))
                                             ->size('lg')
                                             ->columnSpanFull(),
-                                        \Dotswan\MapPicker\Infolists\MapEntry::make('location')
+                                        MapEntry::make('location')
                                             ->state(fn ($record) => [
                                                 'lat' => (float) ($record->latitude),
                                                 'lng' => (float) ($record->longitude),
@@ -265,14 +268,14 @@ class WeddingOrganizerResource extends Resource
                                                     ->hiddenLabel()
                                                     ->alignCenter()
                                                     ->extraImgAttributes(['class' => 'h-40 object-contain mx-auto rounded-xl shadow-md border border-gray-100 dark:border-gray-800 bg-white']),
-                                                
+
                                                 Group::make([
                                                     TextEntry::make('name')
                                                         ->formatStateUsing(fn ($state) => __($state))
                                                         ->weight('bold')
                                                         ->size('lg')
                                                         ->lineClamp(1),
-                                                    
+
                                                     TextEntry::make('price')
                                                         ->money('idr')
                                                         ->color('primary')
@@ -280,13 +283,13 @@ class WeddingOrganizerResource extends Resource
                                                         ->size('lg'),
                                                 ]),
 
-                                                \Filament\Infolists\Components\Actions::make([
-                                                    \Filament\Infolists\Components\Actions\Action::make('view_details')
+                                                Actions::make([
+                                                    Action::make('view_details')
                                                         ->label(__('Lihat Detail'))
                                                         ->icon('heroicon-m-eye')
                                                         ->button()
                                                         ->color('primary')
-                                                        ->url(fn ($record) => PackageResource::getUrl('view', ['record' => $record->id]))
+                                                        ->url(fn ($record) => PackageResource::getUrl('view', ['record' => $record->id])),
                                                 ])->fullWidth(),
                                             ])
                                             ->collapsible()
@@ -323,13 +326,13 @@ class WeddingOrganizerResource extends Resource
                                                         ->size('lg'),
                                                 ]),
 
-                                                \Filament\Infolists\Components\Actions::make([
-                                                    \Filament\Infolists\Components\Actions\Action::make('view_product_detail')
+                                                Actions::make([
+                                                    Action::make('view_product_detail')
                                                         ->label(__('Lihat Detail'))
                                                         ->icon('heroicon-m-eye')
                                                         ->button()
                                                         ->color('success')
-                                                        ->url(fn ($record) => \App\Filament\User\Resources\ProductResource::getUrl('view', ['record' => $record->id]))
+                                                        ->url(fn ($record) => ProductResource::getUrl('view', ['record' => $record->id])),
                                                 ])->fullWidth(),
                                             ])
                                             ->collapsible()
@@ -360,16 +363,16 @@ class WeddingOrganizerResource extends Resource
                                                     ->icon('ri-instagram-line')
                                                     ->getStateUsing(fn ($record) => $record->instagram ? "@{$record->instagram}" : '-'),
 
-                                                \Filament\Infolists\Components\Actions::make([
-                                                    \Filament\Infolists\Components\Actions\Action::make('whatsapp_contact')
+                                                Actions::make([
+                                                    Action::make('whatsapp_contact')
                                                         ->label(__('Chat via WhatsApp'))
                                                         ->icon('heroicon-m-chat-bubble-left-right')
                                                         ->button()
                                                         ->color('success')
-                                                        ->url(fn ($record) => "https://wa.me/" . preg_replace('/[^0-9]/', '', $record->whatsapp ?: $record->phone))
+                                                        ->url(fn ($record) => 'https://wa.me/'.preg_replace('/[^0-9]/', '', $record->whatsapp ?: $record->phone))
                                                         ->openUrlInNewTab()
                                                         ->visible(fn ($record) => filled($record->whatsapp) || filled($record->phone)),
-                                                    \Filament\Infolists\Components\Actions\Action::make('email_contact')
+                                                    Action::make('email_contact')
                                                         ->label(__('Kirim Email'))
                                                         ->icon('heroicon-m-envelope')
                                                         ->button()
@@ -377,7 +380,7 @@ class WeddingOrganizerResource extends Resource
                                                         ->url(fn ($record) => "mailto:{$record->email}")
                                                         ->openUrlInNewTab()
                                                         ->visible(fn ($record) => filled($record->email)),
-                                                    \Filament\Infolists\Components\Actions\Action::make('instagram_contact')
+                                                    Action::make('instagram_contact')
                                                         ->label(__('Lihat Instagram'))
                                                         ->icon('ri-instagram-line')
                                                         ->button()

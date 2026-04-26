@@ -13,12 +13,12 @@ class Dashboard extends BaseDashboard
     protected static ?string $slug = 'home';
 
     protected static ?string $navigationIcon = 'heroicon-o-home';
-    
+
     public static function shouldRegisterNavigation(): bool
     {
         return true;
     }
-    
+
     public static function getNavigationGroup(): ?string
     {
         return __('Beranda');

@@ -8,6 +8,7 @@ use Filament\Support\Enums\MaxWidth;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class MessagesPage extends Page
 {
@@ -37,15 +38,17 @@ class MessagesPage extends Page
 
     public static function getNavigationBadge(): ?string
     {
-        $userId = \Illuminate\Support\Facades\Auth::id();
-        if (!$userId) return null;
+        $userId = Auth::id();
+        if (! $userId) {
+            return null;
+        }
 
-        return (string) \Illuminate\Support\Facades\Cache::remember(
+        return (string) Cache::remember(
             "admin_{$userId}_unread_messages_count",
             now()->addMinutes(1),
             function () use ($userId) {
-                return \App\Models\Inbox::whereJsonContains('user_ids', $userId)
-                    ->whereHas('messages', function (\Illuminate\Database\Eloquent\Builder $query) use ($userId) {
+                return Inbox::whereJsonContains('user_ids', $userId)
+                    ->whereHas('messages', function (Builder $query) use ($userId) {
                         $query->whereJsonDoesntContain('read_by', $userId);
                     })
                     ->count();

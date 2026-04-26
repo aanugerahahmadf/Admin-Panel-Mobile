@@ -69,14 +69,18 @@ class AutoTranslationService
      * Budget waktu maksimal API per request (detik).
      */
     protected float $maxApiTimePerRequest = 3.0;
+
     protected float $apiTimeSpent = 0.0;
+
     protected int $maxApiCallsPerRequest = 8;
+
     protected int $apiCallCount = 0;
 
     /**
      * Cache terjemahan aktif di memory (Static agar awet di NativePHP/Octane).
      */
     protected static array $activeMap = [];
+
     protected static ?string $activeLocale = null;
 
     /**
@@ -90,7 +94,7 @@ class AutoTranslationService
     public function translate(string $text, string $targetLocale): string
     {
         $cleanText = trim($text);
-        
+
         // 1. Filter dasar
         if ($targetLocale === 'id' || empty($cleanText) || is_numeric($cleanText)) {
             return $text;
@@ -116,17 +120,17 @@ class AutoTranslationService
         }
 
         // 3. Prevent DB/Cache access during boot/console commands that don't need it (like package:discover)
-        if (app()->runningInConsole() && !app()->bound('translator')) {
+        if (app()->runningInConsole() && ! app()->bound('translator')) {
             return $text;
         }
 
         // 4. Load Mapping (0,01ms Strategy)
         if (self::$activeLocale !== $targetLocale) {
             $cacheKey = "active_trans_map_{$targetLocale}";
-            
+
             try {
                 self::$activeMap = Cache::get($cacheKey, []);
-                
+
                 if (empty(self::$activeMap)) {
                     self::$activeMap = Translation::query()->whereTargetLocale($targetLocale)
                         ->pluck('translated_text', 'source_text')
@@ -153,29 +157,31 @@ class AutoTranslationService
         $this->apiCallCount++;
         $startTime = microtime(true);
         $targetLang = $this->localeMap[$targetLocale] ?? $targetLocale;
-        
+
         $translated = $this->callApi($cleanText, $targetLang);
         $this->apiTimeSpent += (microtime(true) - $startTime);
 
-        if ($translated !== $cleanText && !empty($translated)) {
+        if ($translated !== $cleanText && ! empty($translated)) {
             try {
                 // Simpan permanen
                 Translation::updateOrCreate(
                     ['source_hash' => md5($text), 'target_locale' => $targetLocale],
                     ['source_text' => $text, 'translated_text' => $translated]
                 );
-                
+
                 // Update local memory map
                 self::$activeMap[$text] = $translated;
-                
+
                 // Update Cache Global per-product tanpa menghapus yang sudah ada
                 $cacheKey = "active_trans_map_{$targetLocale}";
                 try {
                     $currentCache = Cache::get($cacheKey, []);
                     $currentCache[$text] = $translated;
                     Cache::put($cacheKey, $currentCache, now()->addHours(24));
-                } catch (\Throwable $e) {}
-            } catch (\Throwable $e) {}
+                } catch (\Throwable $e) {
+                }
+            } catch (\Throwable $e) {
+            }
         }
 
         return $translated;
@@ -189,9 +195,9 @@ class AutoTranslationService
         if ($this->ignoredLabels === null) {
             $this->ignoredLabels = collect(config('filament-language-switcher.locals', []))
                 ->pluck('label')
-                ->map(fn($l) => trim($l))
+                ->map(fn ($l) => trim($l))
                 ->toArray();
-            
+
             // Tambahkan label navigasi sensitif lainnya
             $this->ignoredLabels[] = 'Indonesian';
             $this->ignoredLabels[] = 'English (US)';
@@ -219,10 +225,10 @@ class AutoTranslationService
             if ($response->successful()) {
                 $data = $response->json();
                 $result = $data['responseData']['translatedText'] ?? null;
-                
+
                 if ($result && ($data['responseStatus'] ?? 0) == 200) {
                     $result = html_entity_decode(strip_tags($result), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-                    
+
                     // VALIDASI: Jika hasil berisi teks sampah/warning dari MyMemory, abaikan.
                     $trash = ['QUERY SPECIFIED', 'MYMEMORY WARNING', 'FRIEND REQUEST', 'API LIMIT', 'PLEASE WAIT'];
                     foreach ($trash as $word) {
@@ -239,7 +245,8 @@ class AutoTranslationService
                     return $result;
                 }
             }
-        } catch (\Throwable $e) {}
+        } catch (\Throwable $e) {
+        }
 
         return $text;
     }

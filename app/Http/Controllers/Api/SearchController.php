@@ -20,14 +20,14 @@ class SearchController extends Controller
 
         /** @var Collection $organizers */
         $organizers = WeddingOrganizer::where('id', 1) // Only search in the one brand
-            ->where(function($q) use ($query) {
+            ->where(function ($q) use ($query) {
                 $q->where('name', 'like', "%{$query}%")
-                  ->orWhere('description', 'like', "%{$query}%")
-                  ->orWhere('address', 'like', "%{$query}%");
+                    ->orWhere('description', 'like', "%{$query}%")
+                    ->orWhere('address', 'like', "%{$query}%");
             })
             ->get(['*']);
 
-        $formattedResults = $organizers->map(function (\App\Models\WeddingOrganizer $wo) {
+        $formattedResults = $organizers->map(function (WeddingOrganizer $wo) {
             return [
                 'organizer' => $wo,
                 'package' => $wo->packages()->first(['*']),

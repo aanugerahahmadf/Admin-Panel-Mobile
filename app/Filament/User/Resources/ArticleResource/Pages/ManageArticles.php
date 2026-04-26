@@ -3,7 +3,6 @@
 namespace App\Filament\User\Resources\ArticleResource\Pages;
 
 use App\Filament\User\Resources\ArticleResource;
-use Filament\Actions;
 use Filament\Resources\Pages\ManageRecords;
 
 class ManageArticles extends ManageRecords

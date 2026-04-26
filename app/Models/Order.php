@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\OrderPaymentStatus;
+use App\Enums\OrderStatus;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -25,6 +27,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property-read int|null $transactions_count
  * @property-read User $user
  * @property-read WeddingOrganizer|null $weddingOrganizer
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order query()
@@ -42,6 +45,7 @@ use Illuminate\Database\Eloquent\Model;
  * @method static \App\Models\Order|null first(array|string $columns = ['*'])
  * @method static \App\Models\Order firstOrFail(array|string $columns = ['*'])
  * @method static \Illuminate\Database\Eloquent\Collection<int, \App\Models\Order> get(array|string $columns = ['*'])
+ *
  * @property int $userId
  * @property int $packageId
  * @property string $orderNumber
@@ -53,8 +57,10 @@ use Illuminate\Database\Eloquent\Model;
  * @property-read mixed $eventDate
  * @property-read int|null $transactionsCount
  * @property-read bool|null $transactionsExists
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|\App\Models\Order whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|\App\Models\Order whereUserId($value)
+ *
  * @mixin \Eloquent
  */
 class Order extends Model
@@ -74,8 +80,8 @@ class Order extends Model
     protected $casts = [
         'booking_date' => 'date',
         'total_price' => 'decimal:2',
-        'status' => \App\Enums\OrderStatus::class,
-        'payment_status' => \App\Enums\OrderPaymentStatus::class,
+        'status' => OrderStatus::class,
+        'payment_status' => OrderPaymentStatus::class,
     ];
 
     protected $appends = ['event_date'];

@@ -1,10 +1,17 @@
 <?php
 
+use App\Providers\AppServiceProvider;
+use App\Providers\AutoTranslationServiceProvider;
+use App\Providers\Filament\AdminPanelProvider;
+use App\Providers\Filament\UserPanelProvider;
+use App\Providers\NativeServiceProvider;
+use App\Providers\VoltServiceProvider;
+
 return [
-    App\Providers\AppServiceProvider::class,
-    App\Providers\AutoTranslationServiceProvider::class,
-    App\Providers\Filament\AdminPanelProvider::class,
-    App\Providers\Filament\UserPanelProvider::class,
-    App\Providers\NativeServiceProvider::class,
-    App\Providers\VoltServiceProvider::class,
+    AppServiceProvider::class,
+    AutoTranslationServiceProvider::class,
+    AdminPanelProvider::class,
+    UserPanelProvider::class,
+    NativeServiceProvider::class,
+    VoltServiceProvider::class,
 ];

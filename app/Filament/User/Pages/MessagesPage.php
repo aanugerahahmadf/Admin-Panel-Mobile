@@ -3,11 +3,13 @@
 namespace App\Filament\User\Pages;
 
 use App\Models\Inbox;
+use App\Models\User;
 use Filament\Pages\Page;
 use Filament\Support\Enums\MaxWidth;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 
 class MessagesPage extends Page
 {
@@ -37,28 +39,30 @@ class MessagesPage extends Page
 
     public static function getNavigationBadge(): ?string
     {
-        $userId = \Illuminate\Support\Facades\Auth::id();
-        if (!$userId) return null;
+        $userId = Auth::id();
+        if (! $userId) {
+            return null;
+        }
 
-        return (string) \Illuminate\Support\Facades\Cache::remember(
+        return (string) Cache::remember(
             "user_{$userId}_unread_messages_count",
             now()->addMinutes(1),
             function () use ($userId) {
-                $query = \App\Models\Inbox::whereJsonContains('user_ids', $userId);
-                
+                $query = Inbox::whereJsonContains('user_ids', $userId);
+
                 // User panel should only count messages that include an admin
-                $adminIds = \App\Models\User::whereHas('roles', function($q) {
+                $adminIds = User::whereHas('roles', function ($q) {
                     $q->where('name', 'super_admin');
                 })->pluck('id')->toArray();
-                $query->where(function($q) use ($adminIds) {
+                $query->where(function ($q) use ($adminIds) {
                     foreach ($adminIds as $adminId) {
                         $q->orWhereJsonContains('user_ids', $adminId);
                     }
                 });
 
-                return $query->whereHas('messages', function (\Illuminate\Database\Eloquent\Builder $query) use ($userId) {
-                        $query->whereJsonDoesntContain('read_by', $userId);
-                    })
+                return $query->whereHas('messages', function (Builder $query) use ($userId) {
+                    $query->whereJsonDoesntContain('read_by', $userId);
+                })
                     ->count();
             }
         );
@@ -83,12 +87,13 @@ class MessagesPage extends Page
     {
         if ($id) {
             $this->selectedConversation = Inbox::findOrFail($id, ['*']);
+
             return;
         }
 
         // If no ID is provided, find or create conversation with Super Admin
         $userId = Auth::id();
-        $admin = \App\Models\User::whereHas('roles', function($q) {
+        $admin = User::whereHas('roles', function ($q) {
             $q->where('name', 'super_admin');
         })->first();
 
@@ -97,7 +102,7 @@ class MessagesPage extends Page
                 ->whereJsonContains('user_ids', $admin->id)
                 ->first();
 
-            if (!$inbox) {
+            if (! $inbox) {
                 $inbox = Inbox::create([
                     'user_ids' => [$userId, $admin->id],
                 ]);

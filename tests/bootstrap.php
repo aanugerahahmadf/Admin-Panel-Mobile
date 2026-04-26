@@ -9,7 +9,7 @@ if (PHP_VERSION_ID >= 80400) {
         if ($errno === E_NOTICE && str_contains($errstr, 'tempnam()')) {
             return true;
         }
-        
+
         // Suppress PHP 8.5 deprecation warning for PDO::MYSQL_ATTR_SSL_CA
         if ($errno === E_DEPRECATED && str_contains($errstr, 'PDO::MYSQL_ATTR_SSL_CA is deprecated')) {
             return true;

@@ -4,15 +4,16 @@ namespace App\Filament\User\Resources;
 
 use App\Filament\User\Resources\CartResource\Pages;
 use App\Models\Cart;
-use App\Filament\User\Resources\ProductResource;
-use App\Filament\User\Resources\PackageResource;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\HtmlString;
+use Livewire\Component;
 
 class CartResource extends Resource
 {
@@ -24,7 +25,7 @@ class CartResource extends Resource
     {
         return __('Keranjang');
     }
-    
+
     public static function getPluralModelLabel(): string
     {
         return __('Keranjang');
@@ -34,6 +35,7 @@ class CartResource extends Resource
     {
         return __('Keranjang');
     }
+
     public static function getGloballySearchableAttributes(): array
     {
         return ['product.name', 'package.name'];
@@ -46,7 +48,7 @@ class CartResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) static::getModel()::where('user_id', \Filament\Facades\Filament::auth()->id())->count();
+        return (string) static::getModel()::where('user_id', Filament::auth()->id())->count();
     }
 
     public static function getNavigationBadgeTooltip(): ?string
@@ -68,7 +70,7 @@ class CartResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->description(new \Illuminate\Support\HtmlString('<style>.fi-ta-ctn, .fi-ta-content, .fi-ta-header-toolbar, .fi-ta-pagination { background-color: transparent !important; box-shadow: none !important; border-color: transparent !important; }</style>'))
+            ->description(new HtmlString('<style>.fi-ta-ctn, .fi-ta-content, .fi-ta-header-toolbar, .fi-ta-pagination { background-color: transparent !important; box-shadow: none !important; border-color: transparent !important; }</style>'))
             ->emptyStateHeading(__('Keranjang Kosong'))
             ->emptyStateDescription(__('Mulai belanja dan temukan dekorasi impian Anda sekarang!'))
             ->emptyStateIcon('heroicon-o-shopping-cart')
@@ -118,17 +120,17 @@ class CartResource extends Resource
                     ->extraAttributes(['class' => 'flex-1 justify-center rounded-lg shadow-sm font-bold'])
                     ->slideOver()
                     ->modalHeading(fn (Cart $record) => $record->product_id ? __('Checkout Produk') : __('Checkout Layanan'))
-                    ->steps(fn (Cart $record) => $record->product_id 
+                    ->steps(fn (Cart $record) => $record->product_id
                         ? ProductResource::getCheckoutWizardSteps($record->product)
                         : PackageResource::getCheckoutWizardSteps($record->package)
                     )
-                    ->action(function (Cart $record, array $data, \Livewire\Component $livewire) {
+                    ->action(function (Cart $record, array $data, Component $livewire) {
                         if ($record->product_id) {
                             $response = ProductResource::handleCheckout($record->product, $data, $livewire);
                         } else {
                             $response = PackageResource::handleCheckout($record->package, $data, $livewire);
                         }
-                        
+
                         // Remove from cart after successful checkout
                         $record->delete();
 
@@ -137,7 +139,7 @@ class CartResource extends Resource
             ])
             ->actionsAlignment('center')
             ->extraAttributes([
-                'class' => 'filament-table-actions-container !flex !flex-row !gap-1 !p-3 !bg-gray-50/50 dark:!bg-white/5 !border-t dark:!border-gray-800'
+                'class' => 'filament-table-actions-container !flex !flex-row !gap-1 !p-3 !bg-gray-50/50 dark:!bg-white/5 !border-t dark:!border-gray-800',
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -151,11 +153,11 @@ class CartResource extends Resource
                     ->icon('heroicon-m-credit-card')
                     ->action(function () {
                         // For now, just a placeholder or logic to convert cart to order
-                        \Filament\Notifications\Notification::make()
+                        Notification::make()
                             ->title(__('Fitur Checkout Massal Sedang Dikembangkan'))
                             ->info()
                             ->send();
-                    })
+                    }),
             ]);
     }
 

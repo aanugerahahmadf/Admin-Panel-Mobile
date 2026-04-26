@@ -2,10 +2,10 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Order;
 use App\Enums\OrderStatus;
-use Illuminate\Console\Command;
+use App\Models\Order;
 use Carbon\Carbon;
+use Illuminate\Console\Command;
 
 class UpdateOrderStatus extends Command
 {
@@ -46,7 +46,7 @@ class UpdateOrderStatus extends Command
             ->update(['status' => OrderStatus::CANCELLED]);
 
         if ($cancelledCount > 0) {
-             $this->info("Successfully cancelled {$cancelledCount} unpaid orders.");
+            $this->info("Successfully cancelled {$cancelledCount} unpaid orders.");
         }
 
         $this->info('Order status update completed.');

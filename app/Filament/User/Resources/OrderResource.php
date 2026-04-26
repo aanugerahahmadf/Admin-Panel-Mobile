@@ -2,14 +2,24 @@
 
 namespace App\Filament\User\Resources;
 
+use App\Enums\OrderPaymentStatus;
+use App\Enums\OrderStatus;
+use App\Filament\User\Resources\OrderResource\Pages\ManageOrders;
 use App\Models\Order;
+use App\Models\Transaction;
+use App\Services\MidtransService;
+use Filament\Facades\Filament;
 use Filament\Forms;
-use Filament\Resources\Resource;
-use Filament\Tables;
-use Filament\Tables\Table;
 use Filament\Infolists;
 use Filament\Infolists\Infolist;
+use Filament\Notifications\Notification;
+use Filament\Resources\Resource;
 use Filament\Support\Enums\FontWeight;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\HtmlString;
+use Livewire\Component;
 
 class OrderResource extends Resource
 {
@@ -22,8 +32,6 @@ class OrderResource extends Resource
         return ['order_number', 'package.name', 'package.weddingOrganizer.name'];
     }
 
-
-
     public static function getNavigationGroup(): ?string
     {
         return __('Transaksi & Aktivitas');
@@ -31,7 +39,7 @@ class OrderResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) static::getModel()::where('user_id', \Filament\Facades\Filament::auth()->id())->count();
+        return (string) static::getModel()::where('user_id', Filament::auth()->id())->count();
     }
 
     public static function getNavigationBadgeTooltip(): ?string
@@ -75,15 +83,15 @@ class OrderResource extends Resource
             ]);
     }
 
-    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->where('user_id', \Filament\Facades\Filament::auth()->id());
+        return parent::getEloquentQuery()->where('user_id', Filament::auth()->id());
     }
 
     public static function table(Table $table): Table
     {
         return $table
-            ->description(new \Illuminate\Support\HtmlString('<style>.fi-ta-ctn, .fi-ta-content, .fi-ta-header-toolbar, .fi-ta-pagination { background-color: transparent !important; box-shadow: none !important; border-color: transparent !important; }</style>'))
+            ->description(new HtmlString('<style>.fi-ta-ctn, .fi-ta-content, .fi-ta-header-toolbar, .fi-ta-pagination { background-color: transparent !important; box-shadow: none !important; border-color: transparent !important; }</style>'))
             ->poll('5s')
             ->emptyStateHeading(__('Belum ada pesanan'))
             ->emptyStateDescription(__('Wujudkan acara impianmu dengan paket terbaik dari kami. Mulai pesan sekarang!'))
@@ -114,9 +122,8 @@ class OrderResource extends Resource
                             ->extraAttributes(['class' => 'w-full flex justify-center products-center bg-gray-50 dark:bg-gray-800 rounded-t-2xl overflow-hidden'])
                             ->extraImgAttributes([
                                 'class' => 'aspect-square object-contain transition-all duration-500 group-hover:scale-110 !mx-auto',
-                                'style' => 'height: 200px; width: 100%;'
+                                'style' => 'height: 200px; width: 100%;',
                             ]),
-                        
 
                     ])->extraAttributes(['class' => 'relative overflow-hidden group/img-overlay']),
 
@@ -135,7 +142,7 @@ class OrderResource extends Resource
                             ->size('xs')
                             ->weight('bold')
                             ->alignCenter(),
-                            
+
                         // Package Name
                         Tables\Columns\TextColumn::make('package.name')
                             ->formatStateUsing(fn ($state) => __($state))
@@ -168,7 +175,7 @@ class OrderResource extends Resource
                                 ->size('xs')
                                 ->alignCenter(),
                             Tables\Columns\TextColumn::make('total_price')
-                                ->formatStateUsing(fn ($state) => 'Rp ' . number_format($state, 2, ',', '.'))
+                                ->formatStateUsing(fn ($state) => 'Rp '.number_format($state, 2, ',', '.'))
                                 ->weight('black')
                                 ->size('md')
                                 ->color('primary')
@@ -187,21 +194,21 @@ class OrderResource extends Resource
                             ->extraAttributes(['class' => 'pt-3 mt-auto']),
                     ])->space(2)->extraAttributes(['class' => 'p-3 flex-1 flex flex-col']),
                 ])->extraAttributes([
-                    'class' => 'bg-white dark:bg-gray-900 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group border border-transparent dark:border-white/10 h-full flex flex-col'
+                    'class' => 'bg-white dark:bg-gray-900 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group border border-transparent dark:border-white/10 h-full flex flex-col',
                 ]),
             ])
 
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->searchable()
-                    ->options(\App\Enums\OrderStatus::class)
+                    ->options(OrderStatus::class)
                     ->label(__('Status Pesanan')),
                 Tables\Filters\Filter::make('id')
                     ->form([
                         Forms\Components\TextInput::make('value')
                             ->label(__('ID')),
                     ])
-                    ->query(fn (\Illuminate\Database\Eloquent\Builder $query, array $data) => $query->when($data['value'], fn ($q, $id) => $q->where('id', $id)))
+                    ->query(fn (Builder $query, array $data) => $query->when($data['value'], fn ($q, $id) => $q->where('id', $id)))
                     ->hidden(),
             ])
             ->actions([
@@ -225,9 +232,9 @@ class OrderResource extends Resource
                     ->color('warning')
                     ->extraAttributes(['class' => 'order-4 !rounded-lg justify-center gap-0'])
                     ->visible(fn ($record) => in_array($record?->status, [
-                        \App\Enums\OrderStatus::PENDING, 
-                        \App\Enums\OrderStatus::CONFIRMED,
-                        \App\Enums\OrderStatus::COMPLETED
+                        OrderStatus::PENDING,
+                        OrderStatus::CONFIRMED,
+                        OrderStatus::COMPLETED,
                     ])),
 
                 Tables\Actions\DeleteAction::make()
@@ -239,9 +246,9 @@ class OrderResource extends Resource
                     ->color('danger')
                     ->extraAttributes(['class' => 'order-5 !rounded-lg justify-center gap-0'])
                     ->visible(fn ($record) => in_array($record?->status, [
-                        \App\Enums\OrderStatus::PENDING, 
-                        \App\Enums\OrderStatus::CONFIRMED,
-                        \App\Enums\OrderStatus::COMPLETED
+                        OrderStatus::PENDING,
+                        OrderStatus::CONFIRMED,
+                        OrderStatus::COMPLETED,
                     ])),
 
                 Tables\Actions\Action::make('pay_midtrans')
@@ -253,35 +260,35 @@ class OrderResource extends Resource
                     ->icon('heroicon-m-credit-card')
                     ->extraAttributes(['class' => 'flex-1 !rounded-lg shadow-sm font-bold order-1 justify-center gap-0'])
                     ->visible(fn ($record) => in_array($record?->payment_status, [
-                        \App\Enums\OrderPaymentStatus::UNPAID, 
-                        \App\Enums\OrderPaymentStatus::FAILED,
-                        \App\Enums\OrderPaymentStatus::PENDING
+                        OrderPaymentStatus::UNPAID,
+                        OrderPaymentStatus::FAILED,
+                        OrderPaymentStatus::PENDING,
                     ]))
-                    ->action(function (Order $record, \Livewire\Component $livewire) {
+                    ->action(function (Order $record, Component $livewire) {
                         try {
                             // Selalu buat transaksi dengan ref baru biar Midtrans nggak komplain "Duplicate Order ID"
-                            $reference = 'PAY-' . strtoupper(str()->random(5)) . '-' . $record->id;
-                            $transaction = \App\Models\Transaction::create([
-                                'user_id'          => $record->user_id,
-                                'order_id'         => $record->id,
-                                'type'             => 'order',
+                            $reference = 'PAY-'.strtoupper(str()->random(5)).'-'.$record->id;
+                            $transaction = Transaction::create([
+                                'user_id' => $record->user_id,
+                                'order_id' => $record->id,
+                                'type' => 'order',
                                 'reference_number' => $reference,
-                                'amount'           => $record->total_price,
-                                'admin_fee'        => 0,
-                                'total_amount'     => $record->total_price,
-                                'payment_gateway'  => 'midtrans',
-                                'status'           => 'pending',
-                                'notes'            => __('Pembayaran via Midtrans untuk Pesanan #') . $record->order_number,
+                                'amount' => $record->total_price,
+                                'admin_fee' => 0,
+                                'total_amount' => $record->total_price,
+                                'payment_gateway' => 'midtrans',
+                                'status' => 'pending',
+                                'notes' => __('Pembayaran via Midtrans untuk Pesanan #').$record->order_number,
                             ]);
-                            $record->update(['payment_status' => \App\Enums\OrderPaymentStatus::PENDING]);
-                            
-                            $midtrans = new \App\Services\MidtransService();
-                            if (!$transaction->snap_token) {
+                            $record->update(['payment_status' => OrderPaymentStatus::PENDING]);
+
+                            $midtrans = new MidtransService;
+                            if (! $transaction->snap_token) {
                                 $transaction = $midtrans->createTransactionSnap($transaction);
                             }
                             $livewire->dispatch('open-midtrans-snap', token: $transaction->snap_token);
                         } catch (\Exception $e) {
-                            \Filament\Notifications\Notification::make()->title(__('Gagal Memuat Pembayaran'))->body($e->getMessage())->danger()->send();
+                            Notification::make()->title(__('Gagal Memuat Pembayaran'))->body($e->getMessage())->danger()->send();
                         }
                     }),
 
@@ -293,31 +300,33 @@ class OrderResource extends Resource
                     ->button()
                     ->size('sm')
                     ->extraAttributes(['class' => 'flex-1 !rounded-lg shadow-sm font-bold order-2 justify-center gap-0'])
-                    ->visible(fn ($record) => $record?->payment_status === \App\Enums\OrderPaymentStatus::PENDING)
+                    ->visible(fn ($record) => $record?->payment_status === OrderPaymentStatus::PENDING)
                     ->action(function (Order $record) {
                         try {
                             $transaction = $record->latestTransaction;
-                            if (!$transaction) return;
-                            $midtrans = new \App\Services\MidtransService();
+                            if (! $transaction) {
+                                return;
+                            }
+                            $midtrans = new MidtransService;
                             $status = $midtrans->getStatus($midtrans->getMidtransOrderId($transaction));
                             $data = (array) $status;
                             if ($midtrans->isSuccess($data)) {
                                 $transaction->markAsSuccess();
-                                \Filament\Notifications\Notification::make()->title(__('Pembayaran Berhasil!'))->success()->send();
+                                Notification::make()->title(__('Pembayaran Berhasil!'))->success()->send();
                             } elseif ($midtrans->isFailed($data)) {
-                                $transaction->markAsFailed('Midtrans: ' . ($data['transaction_status'] ?? 'failed'));
-                                \Filament\Notifications\Notification::make()->title(__('Pembayaran Gagal/Kadaluarsa'))->danger()->send();
+                                $transaction->markAsFailed('Midtrans: '.($data['transaction_status'] ?? 'failed'));
+                                Notification::make()->title(__('Pembayaran Gagal/Kadaluarsa'))->danger()->send();
                             } else {
-                                \Filament\Notifications\Notification::make()->title(__('Pembayaran Masih Pending'))->info()->send();
+                                Notification::make()->title(__('Pembayaran Masih Pending'))->info()->send();
                             }
                         } catch (\Exception $e) {
-                            \Filament\Notifications\Notification::make()->title(__('Gagal Sinkronisasi'))->body($e->getMessage())->danger()->send();
+                            Notification::make()->title(__('Gagal Sinkronisasi'))->body($e->getMessage())->danger()->send();
                         }
                     }),
             ])
             ->actionsAlignment('center')
             ->extraAttributes([
-                'class' => 'filament-table-actions-container !flex !flex-row !gap-1 !p-3 !bg-gray-50/50 dark:!bg-white/5 !border-t dark:!border-gray-800'
+                'class' => 'filament-table-actions-container !flex !flex-row !gap-1 !p-3 !bg-gray-50/50 dark:!bg-white/5 !border-t dark:!border-gray-800',
             ]);
 
     }
@@ -387,7 +396,7 @@ class OrderResource extends Resource
                     ->schema([
                         Infolists\Components\TextEntry::make('total_price')
                             ->label(__('Total Pembayaran'))
-                            ->formatStateUsing(fn ($state) => 'Rp ' . number_format($state, 2, ',', '.'))
+                            ->formatStateUsing(fn ($state) => 'Rp '.number_format($state, 2, ',', '.'))
                             ->size(Infolists\Components\TextEntry\TextEntrySize::Large)
                             ->weight(FontWeight::Bold)
                             ->color('primary')
@@ -412,7 +421,7 @@ class OrderResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => \App\Filament\User\Resources\OrderResource\Pages\ManageOrders::route('/'),
+            'index' => ManageOrders::route('/'),
         ];
     }
 }

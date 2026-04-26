@@ -16,6 +16,7 @@ class TermsOfServiceResource extends Resource
     protected static ?string $model = TermsOfService::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
+
     public static function getNavigationGroup(): ?string
     {
         return __('Manajemen Legal');
@@ -94,7 +95,7 @@ class TermsOfServiceResource extends Resource
             ])
             ->filters([])
             ->actions([
-               Tables\Actions\ViewAction::make()
+                Tables\Actions\ViewAction::make()
                     ->slideOver()
                     ->button()
                     ->color('info')

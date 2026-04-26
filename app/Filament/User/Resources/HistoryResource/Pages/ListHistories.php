@@ -3,6 +3,9 @@
 namespace App\Filament\User\Resources\HistoryResource\Pages;
 
 use App\Filament\User\Resources\HistoryResource;
+use App\Models\History;
+use Filament\Facades\Filament;
+use Filament\Resources\Components\Tab;
 use Filament\Resources\Pages\ListRecords;
 
 class ListHistories extends ListRecords
@@ -12,11 +15,11 @@ class ListHistories extends ListRecords
     public function getTabs(): array
     {
         return [
-            'all' => \Filament\Resources\Components\Tab::make(__('Semua'))
-                ->badge(fn() => \App\Models\History::where('user_id', \Filament\Facades\Filament::auth()->id())->count()),
-            'order' => \Filament\Resources\Components\Tab::make(__('Pembelian'))
+            'all' => Tab::make(__('Semua'))
+                ->badge(fn () => History::where('user_id', Filament::auth()->id())->count()),
+            'order' => Tab::make(__('Pembelian'))
                 ->modifyQueryUsing(fn ($query) => $query->where('type', 'order'))
-                ->badge(fn() => \App\Models\History::where('user_id', \Filament\Facades\Filament::auth()->id())->where('type', 'order')->count())
+                ->badge(fn () => History::where('user_id', Filament::auth()->id())->where('type', 'order')->count())
                 ->badgeColor('info'),
         ];
     }

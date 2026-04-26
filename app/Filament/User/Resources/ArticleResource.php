@@ -2,26 +2,30 @@
 
 namespace App\Filament\User\Resources;
 
-use App\Filament\User\Resources\PackageResource;
 use App\Filament\User\Resources\ArticleResource\Pages;
-use App\Filament\User\Resources\ArticleResource\RelationManagers;
 use App\Models\Article;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Infolists\Components\Grid;
+use Filament\Infolists\Components\ImageEntry;
+use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\TextEntry\TextEntrySize;
+use Filament\Infolists\Components\ViewEntry;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
+use Filament\Support\Enums\FontWeight;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Support\Enums\FontWeight;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\HtmlString;
 
 class ArticleResource extends Resource
 {
     protected static ?string $model = Article::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-document-text';
-
-
 
     public static function getNavigationGroup(): ?string
     {
@@ -43,7 +47,6 @@ class ArticleResource extends Resource
         return __('Tips & Inspiration');
     }
 
-
     public static function getNavigationBadge(): ?string
     {
         return (string) static::getModel()::count();
@@ -53,7 +56,6 @@ class ArticleResource extends Resource
     {
         return static::getNavigationLabel();
     }
-
 
     public static function form(Form $form): Form
     {
@@ -72,7 +74,7 @@ class ArticleResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->description(new \Illuminate\Support\HtmlString('<style>.fi-ta-ctn, .fi-ta-content, .fi-ta-header-toolbar, .fi-ta-pagination { background-color: transparent !important; box-shadow: none !important; border-color: transparent !important; }</style>'))
+            ->description(new HtmlString('<style>.fi-ta-ctn, .fi-ta-content, .fi-ta-header-toolbar, .fi-ta-pagination { background-color: transparent !important; box-shadow: none !important; border-color: transparent !important; }</style>'))
             ->emptyStateHeading(__('Belum ada artikel'))
             ->contentGrid([
                 'sm' => 1,
@@ -89,18 +91,18 @@ class ArticleResource extends Resource
                             ->height('12rem')
                             ->width('100%')
                             ->alignment('center')
-                            ->getStateUsing(fn($record) => $record->image_url)
+                            ->getStateUsing(fn ($record) => $record->image_url)
                             ->extraAttributes([
                                 'class' => 'w-full h-full overflow-hidden bg-white/5 flex products-center justify-center rounded-t-xl shadow-inner',
                             ])
                             ->extraImgAttributes([
                                 'class' => 'w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-110 blur-0',
                             ]),
-                        
+
                         // Video Indicator (Premium Play Icon)
                         Tables\Columns\TextColumn::make('video_indicator')
                             ->label('')
-                            ->getStateUsing(fn() => '')
+                            ->getStateUsing(fn () => '')
                             ->icon('heroicon-s-play-circle')
                             ->iconColor('warning')
                             ->extraAttributes([
@@ -108,9 +110,9 @@ class ArticleResource extends Resource
                             ])
                             ->visible(fn ($record) => $record && ((bool) $record->video_url || $record->hasMedia('videos'))),
                     ])
-                    ->extraAttributes(['class' => 'relative overflow-hidden rounded-t-xl'])
-                    ->visible(fn($record) => $record && $record->image_url),
-                    
+                        ->extraAttributes(['class' => 'relative overflow-hidden rounded-t-xl'])
+                        ->visible(fn ($record) => $record && $record->image_url),
+
                     // Text content block
                     Tables\Columns\Layout\Stack::make([
                         // Category Badge - Now clearly at the top of content section
@@ -127,7 +129,7 @@ class ArticleResource extends Resource
                             ->weight(FontWeight::Bold)
                             ->size('sm')
                             ->lineClamp(2),
-                        
+
                         Tables\Columns\TextColumn::make('excerpt')
                             ->formatStateUsing(fn ($state) => __($state))
                             ->size('xs')
@@ -141,7 +143,7 @@ class ArticleResource extends Resource
                                 ->color('gray')
                                 ->icon('heroicon-o-user')
                                 ->grow(false),
-                            
+
                             Tables\Columns\TextColumn::make('published_at')
                                 ->date('d M Y')
                                 ->size('xs')
@@ -151,7 +153,7 @@ class ArticleResource extends Resource
                         ])->extraAttributes(['class' => 'mt-4 pt-4 border-t border-gray-100 dark:border-gray-800']),
                     ])->extraAttributes(['class' => 'p-4']),
                 ])->extraAttributes([
-                    'class' => 'bg-white dark:bg-gray-900 rounded-xl shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-800 transition-all duration-300 group overflow-hidden cursor-pointer'
+                    'class' => 'bg-white dark:bg-gray-900 rounded-xl shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-800 transition-all duration-300 group overflow-hidden cursor-pointer',
                 ]),
             ])
             ->filters([
@@ -175,7 +177,7 @@ class ArticleResource extends Resource
             ])
             ->actionsAlignment('center')
             ->extraAttributes([
-                'class' => 'filament-table-actions-container !flex !flex-row !gap-1 !p-3 !bg-gray-50/50 dark:!bg-white/5 !border-t dark:!border-gray-800'
+                'class' => 'filament-table-actions-container !flex !flex-row !gap-1 !p-3 !bg-gray-50/50 dark:!bg-white/5 !border-t dark:!border-gray-800',
             ]);
     }
 
@@ -188,46 +190,46 @@ class ArticleResource extends Resource
             ->where('published_at', '<=', now());
     }
 
-    public static function infolist(\Filament\Infolists\Infolist $infolist): \Filament\Infolists\Infolist
+    public static function infolist(Infolist $infolist): Infolist
     {
         return $infolist
             ->schema([
-                \Filament\Infolists\Components\Section::make()
+                Section::make()
                     ->schema([
                         // Main Visual
-                        \Filament\Infolists\Components\ImageEntry::make('image_url')
+                        ImageEntry::make('image_url')
                             ->hiddenLabel()
                             ->height('20rem')
                             ->width('100%')
                             ->extraImgAttributes(['class' => 'object-contain rounded-2xl mb-4 shadow-lg mx-auto bg-gray-50/30 dark:bg-gray-800/30']),
-                        
-                        \Filament\Infolists\Components\Grid::make(2)
+
+                        Grid::make(2)
                             ->schema([
-                                \Filament\Infolists\Components\TextEntry::make('category.name')
+                                TextEntry::make('category.name')
                                     ->formatStateUsing(fn ($state) => __($state))
                                     ->label(__('Kategori'))
                                     ->badge()
                                     ->color('info'),
-                                \Filament\Infolists\Components\TextEntry::make('author.full_name')
+                                TextEntry::make('author.full_name')
                                     ->label(__('Penulis'))
                                     ->icon('heroicon-o-user')
                                     ->color('gray'),
                             ]),
 
-                        \Filament\Infolists\Components\TextEntry::make('title')
+                        TextEntry::make('title')
                             ->formatStateUsing(fn ($state) => __($state))
                             ->hiddenLabel()
-                            ->weight(\Filament\Support\Enums\FontWeight::Bold)
-                            ->size(\Filament\Infolists\Components\TextEntry\TextEntrySize::Large)
+                            ->weight(FontWeight::Bold)
+                            ->size(TextEntrySize::Large)
                             ->extraAttributes(['class' => 'mt-4']),
 
-                        \Filament\Infolists\Components\TextEntry::make('published_at')
+                        TextEntry::make('published_at')
                             ->hiddenLabel()
                             ->date('d F Y')
                             ->icon('heroicon-o-calendar')
                             ->color('gray'),
-                        
-                        \Filament\Infolists\Components\TextEntry::make('excerpt')
+
+                        TextEntry::make('excerpt')
                             ->formatStateUsing(fn ($state) => __($state))
                             ->label(__('Ringkasan'))
                             ->color('gray')
@@ -236,9 +238,9 @@ class ArticleResource extends Resource
                     ->extraAttributes(['class' => 'border-0 shadow-none p-0']),
 
                 // Content Section
-                \Filament\Infolists\Components\Section::make()
+                Section::make()
                     ->schema([
-                        \Filament\Infolists\Components\TextEntry::make('content')
+                        TextEntry::make('content')
                             ->formatStateUsing(fn ($state) => __($state))
                             ->hiddenLabel()
                             ->html()
@@ -248,33 +250,33 @@ class ArticleResource extends Resource
                     ->extraAttributes(['class' => 'border-0 shadow-none mt-4']),
 
                 // Video Section (If Available)
-                \Filament\Infolists\Components\Section::make(__('Video Pendukung'))
+                Section::make(__('Video Pendukung'))
                     ->icon('heroicon-o-play-circle')
                     ->visible(fn ($record) => (bool) $record->getMediaVideoUrlAttribute())
                     ->schema([
-                        \Filament\Infolists\Components\ViewEntry::make('video_player')
+                        ViewEntry::make('video_player')
                             ->view('filament.user.article-video-player')
                             ->columnSpanFull(),
                     ]),
-                
-                \Filament\Infolists\Components\Section::make(__('Paket Layanan Terkait'))
+
+                Section::make(__('Paket Layanan Terkait'))
                     ->icon('heroicon-o-shopping-bag')
                     ->visible(fn ($record) => $record->packages()->exists())
                     ->schema([
-                        \Filament\Infolists\Components\RepeatableEntry::make('packages')
+                        RepeatableEntry::make('packages')
                             ->hiddenLabel()
                             ->schema([
-                                \Filament\Infolists\Components\TextEntry::make('name')
+                                TextEntry::make('name')
                                     ->weight(FontWeight::Bold)
                                     ->color('primary')
-                                    ->url(fn ($record) => $record ? PackageResource::getUrl('index') . '?tableFilters[id][value]=' . $record->id : null),
-                                \Filament\Infolists\Components\TextEntry::make('final_price')
+                                    ->url(fn ($record) => $record ? PackageResource::getUrl('index').'?tableFilters[id][value]='.$record->id : null),
+                                TextEntry::make('final_price')
                                     ->label(__('Mulai dari'))
-                                    ->formatStateUsing(fn ($state) => 'Rp ' . number_format($state, 2, ',', '.'))
+                                    ->formatStateUsing(fn ($state) => 'Rp '.number_format($state, 2, ',', '.'))
                                     ->color('gray'),
                             ])
                             ->grid(2)
-                            ->columnSpanFull()
+                            ->columnSpanFull(),
                     ]),
             ]);
     }

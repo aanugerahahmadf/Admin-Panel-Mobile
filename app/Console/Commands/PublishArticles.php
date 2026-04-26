@@ -3,12 +3,13 @@
 namespace App\Console\Commands;
 
 use App\Models\Article;
-use Illuminate\Console\Command;
 use Carbon\Carbon;
+use Illuminate\Console\Command;
 
 class PublishArticles extends Command
 {
     protected $signature = 'app:publish-articles';
+
     protected $description = 'Publishes articles that are scheduled but not yet published.';
 
     public function handle()
@@ -22,6 +23,7 @@ class PublishArticles extends Command
 
         if ($scheduledArticles->isEmpty()) {
             $this->info('No articles found for publication.');
+
             return;
         }
 

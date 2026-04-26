@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Package;
+use App\Models\Product;
 use App\Services\CBIRService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class CBIRController extends Controller
 {
@@ -25,7 +27,7 @@ class CBIRController extends Controller
         $topK = $request->input('top_k', 20);
         $apiResponse = $cbirService->searchByImage($request->file('image'), $topK);
 
-        if (isset($apiResponse['error']) || !($apiResponse['success'] ?? false)) {
+        if (isset($apiResponse['error']) || ! ($apiResponse['success'] ?? false)) {
             return response()->json([
                 'success' => false,
                 'message' => $apiResponse['message'] ?? 'Error',
@@ -37,16 +39,16 @@ class CBIRController extends Controller
 
         // Group IDs by type
         $idsByType = collect($results)->groupBy('type');
-        
+
         $packageIds = $idsByType->get('package', collect())->pluck('owner_id')->all();
         $itemIds = $idsByType->get('product', collect())->pluck('owner_id')->all();
 
-        $packages = \App\Models\Package::with(['category', 'weddingOrganizer'])
+        $packages = Package::with(['category', 'weddingOrganizer'])
             ->whereIn('id', $packageIds)
             ->get()
             ->keyBy('id');
-            
-        $products = \App\Models\Product::with(['category', 'weddingOrganizer'])
+
+        $products = Product::with(['category', 'weddingOrganizer'])
             ->whereIn('id', $itemIds)
             ->get()
             ->keyBy('id');
@@ -54,10 +56,10 @@ class CBIRController extends Controller
         $enrichedResults = collect($results)->map(function (array $res) use ($packages, $products): ?array {
             $type = $res['type'] ?? 'unknown';
             $id = (int) ($res['owner_id'] ?? 0);
-            
+
             $model = ($type === 'package') ? $packages->get($id) : (($type === 'product') ? $products->get($id) : null);
 
-            if (!$model) {
+            if (! $model) {
                 return null;
             }
 
@@ -107,11 +109,11 @@ class CBIRController extends Controller
             'product_id' => 'required|exists:products,id',
         ]);
 
-        $product = \App\Models\Product::with('weddingOrganizer')->findOrFail($request->product_id);
+        $product = Product::with('weddingOrganizer')->findOrFail($request->product_id);
         $media = $product->getFirstMedia('product_image');
 
-        if (!$media) {
-             return response()->json(['success' => false, 'message' => 'No image found for this product'], 400);
+        if (! $media) {
+            return response()->json(['success' => false, 'message' => 'No image found for this product'], 400);
         }
 
         $success = $cbirService->indexMedia($media);
@@ -128,9 +130,9 @@ class CBIRController extends Controller
 
     public function buildIndex(CBIRService $cbirService)
     {
-        $packages = \App\Models\Package::all();
-        $products = \App\Models\Product::all();
-        
+        $packages = Package::all();
+        $products = Product::all();
+
         $pCount = 0;
         $iCount = 0;
         $errors = [];
@@ -159,7 +161,7 @@ class CBIRController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => __("CBIR Index built with :pCount packages and :iCount products", ['pCount' => $pCount, 'iCount' => $iCount]),
+            'message' => __('CBIR Index built with :pCount packages and :iCount products', ['pCount' => $pCount, 'iCount' => $iCount]),
             'indexed_packages' => $pCount,
             'indexed_items' => $iCount,
             'total_products' => $packages->count() + $products->count(),
@@ -176,28 +178,30 @@ class CBIRController extends Controller
     {
         try {
             $baseUrl = config('services.ai_core_url', 'http://127.0.0.1:5000');
-            $response = \Illuminate\Support\Facades\Http::get("{$baseUrl}/status");
-            
+            $response = Http::get("{$baseUrl}/status");
+
             if ($response->successful()) {
                 $status = $response->json();
+
                 return response()->json([
                     'success' => true,
                     'data' => [
                         'mode' => 'local',
                         'server_status' => 'online',
                         'indexed_products' => $status['total_products'] ?? 0,
-                        'total_database_items' => \App\Models\Product::query()->count(),
+                        'total_database_items' => Product::query()->count(),
                     ],
                 ]);
             }
-        } catch (\Exception $e) {}
+        } catch (\Exception $e) {
+        }
 
         return response()->json([
             'success' => true,
             'data' => [
                 'mode' => 'local',
                 'server_status' => 'offline',
-                'total_database_items' => \App\Models\Product::query()->count(),
+                'total_database_items' => Product::query()->count(),
             ],
         ]);
     }

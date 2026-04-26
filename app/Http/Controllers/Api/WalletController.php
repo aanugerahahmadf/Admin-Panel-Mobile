@@ -45,40 +45,40 @@ class WalletController extends Controller
         try {
             DB::beginTransaction();
 
-            $user   = $request->user();
+            $user = $request->user();
             $amount = $request->amount;
 
-            $referenceNumber = 'TRX-' . time() . '-' . strtoupper(Str::random(5));
+            $referenceNumber = 'TRX-'.time().'-'.strtoupper(Str::random(5));
 
             $transaction = Transaction::create([
-                'user_id'          => $user->id,
-                'type'             => 'topup',
+                'user_id' => $user->id,
+                'type' => 'topup',
                 'reference_number' => $referenceNumber,
-                'amount'           => $amount,
-                'admin_fee'        => 0,
-                'total_amount'     => $amount,
-                'status'           => 'pending',
-                'payment_gateway'  => 'midtrans',
+                'amount' => $amount,
+                'admin_fee' => 0,
+                'total_amount' => $amount,
+                'status' => 'pending',
+                'payment_gateway' => 'midtrans',
             ]);
 
             try {
-                $midtrans = new MidtransService();
+                $midtrans = new MidtransService;
                 $transaction = $midtrans->createTransactionSnap($transaction);
             } catch (\Exception $e) {
                 Log::error('[Midtrans] Snap creation failed for api topup', [
                     'reference' => $transaction->reference_number,
-                    'error'     => $e->getMessage(),
+                    'error' => $e->getMessage(),
                 ]);
             }
 
             DB::commit();
 
             return response()->json([
-                'status'  => 'success',
+                'status' => 'success',
                 'message' => __('Permintaan topup berhasil dibuat'),
-                'data'    => [
+                'data' => [
                     'transaction' => $transaction->fresh(),
-                    'snap_token'  => $transaction->snap_token,
+                    'snap_token' => $transaction->snap_token,
                     'payment_url' => $transaction->payment_url,
                 ],
             ]);
@@ -87,7 +87,7 @@ class WalletController extends Controller
             DB::rollBack();
 
             return response()->json([
-                'status'  => 'error',
+                'status' => 'error',
                 'message' => $e->getMessage(),
             ], 500);
         }
@@ -118,7 +118,7 @@ class WalletController extends Controller
 
             $withdrawal = Withdrawal::create([
                 'user_id' => $user->id,
-                'reference_number' => 'WD-' . time() . '-' . strtoupper(Str::random(5)),
+                'reference_number' => 'WD-'.time().'-'.strtoupper(Str::random(5)),
                 'amount' => $amount,
                 'admin_fee' => 0, // Set fixed fee or calculate if necessary
                 'total_amount' => $amount,

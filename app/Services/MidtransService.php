@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Log;
 use Midtrans\Config as MidtransConfig;
 use Midtrans\Snap;
 use Midtrans\Transaction as MidtransTransaction;
+
 // use SnapBi\Config as SnapBiConfig;
 
 class MidtransService
@@ -14,18 +15,18 @@ class MidtransService
     public function __construct()
     {
         $serverKey = config('midtrans.server_key');
-        
+
         if (empty($serverKey)) {
             Log::error('[Midtrans] Server key is missing');
             throw new \Exception('Midtrans Server Key is missing! Check your .env file.');
         }
 
         // Standard Snap Configuration
-        MidtransConfig::$serverKey        = $serverKey;
-        MidtransConfig::$clientKey        = config('midtrans.client_key');
-        MidtransConfig::$isProduction     = (bool) config('midtrans.is_production');
-        MidtransConfig::$isSanitized      = (bool) config('midtrans.is_sanitized', true);
-        MidtransConfig::$is3ds            = (bool) config('midtrans.is_3ds', true);
+        MidtransConfig::$serverKey = $serverKey;
+        MidtransConfig::$clientKey = config('midtrans.client_key');
+        MidtransConfig::$isProduction = (bool) config('midtrans.is_production');
+        MidtransConfig::$isSanitized = (bool) config('midtrans.is_sanitized', true);
+        MidtransConfig::$is3ds = (bool) config('midtrans.is_3ds', true);
 
         /* 🚀 Snap-BI Configuration (Standard Nasional Open API)
         SnapBiConfig::$isProduction     = MidtransConfig::$isProduction;
@@ -54,40 +55,40 @@ class MidtransService
      */
     public function createTransactionSnap(Transaction $transaction): Transaction
     {
-        $user    = $transaction->user;
+        $user = $transaction->user;
         $orderId = $this->getMidtransOrderId($transaction);
 
         // Advanced: Better Product Naming for "Details" Dropdown
-        $itemName = $transaction->type === 'topup' 
-            ? 'Wallet Deposit - #' . $transaction->reference_number 
+        $itemName = $transaction->type === 'topup'
+            ? 'Wallet Deposit - #'.$transaction->reference_number
             : ($transaction->order?->package?->name ?? 'Wedding Package Order');
 
         $params = [
             'transaction_details' => [
-                'order_id'     => $orderId,
+                'order_id' => $orderId,
                 'gross_amount' => (int) $transaction->total_amount,
             ],
             'customer_details' => [
-                'first_name'      => $user->first_name ?? $user->name ?? 'Customer',
-                'last_name'       => $user->last_name ?? '',
-                'email'           => $user->email ?? '',
-                'phone'           => $user->phone ?? '',
+                'first_name' => $user->first_name ?? $user->name ?? 'Customer',
+                'last_name' => $user->last_name ?? '',
+                'email' => $user->email ?? '',
+                'phone' => $user->phone ?? '',
                 'billing_address' => [
-                    'first_name'   => $user->first_name ?? $user->name ?? 'Customer',
-                    'last_name'    => $user->last_name ?? '',
-                    'email'        => $user->email ?? '',
-                    'phone'        => $user->phone ?? '',
-                    'address'      => $user->address ?? 'Indonesia',
-                    'city'         => $user->city ?? '',
+                    'first_name' => $user->first_name ?? $user->name ?? 'Customer',
+                    'last_name' => $user->last_name ?? '',
+                    'email' => $user->email ?? '',
+                    'phone' => $user->phone ?? '',
+                    'address' => $user->address ?? 'Indonesia',
+                    'city' => $user->city ?? '',
                     'country_code' => 'IDN',
                 ],
             ],
             'item_details' => [
                 [
-                    'id'       => 'PRODUCT-' . $transaction->id,
-                    'price'    => (int) $transaction->amount,
+                    'id' => 'PRODUCT-'.$transaction->id,
+                    'price' => (int) $transaction->amount,
                     'quantity' => 1,
-                    'name'     => substr($itemName, 0, 50),
+                    'name' => substr($itemName, 0, 50),
                 ],
             ],
             // 🚀 Advanced Features from Link
@@ -96,9 +97,9 @@ class MidtransService
                 'save_card' => false,
             ],
             'expiry' => [
-                'start_time' => date("Y-m-d H:i:s O"),
-                'unit'       => 'hours',
-                'duration'   => 24,
+                'start_time' => date('Y-m-d H:i:s O'),
+                'unit' => 'hours',
+                'duration' => 24,
             ],
             'callbacks' => [
                 'finish' => url('/'),
@@ -108,10 +109,10 @@ class MidtransService
         // Add admin fee as separate line product for transparent "Details"
         if ((int) $transaction->admin_fee > 0) {
             $params['item_details'][] = [
-                'id'       => 'FEE-ADMIN',
-                'price'    => (int) $transaction->admin_fee,
+                'id' => 'FEE-ADMIN',
+                'price' => (int) $transaction->admin_fee,
                 'quantity' => 1,
-                'name'     => 'Service / Admin Fee',
+                'name' => 'Service / Admin Fee',
             ];
         }
 
@@ -127,7 +128,7 @@ class MidtransService
         } catch (\Exception $e) {
             Log::error('[Midtrans] Snap Creation Failed', [
                 'transaction_id' => $transaction->id,
-                'error'          => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
             throw $e;
         }
@@ -138,23 +139,23 @@ class MidtransService
      */
     public function verifySignature(array $data): void
     {
-        $serverKey   = config('midtrans.server_key');
-        $orderId     = $data['order_id']     ?? '';
-        $statusCode  = $data['status_code']  ?? '';
+        $serverKey = config('midtrans.server_key');
+        $orderId = $data['order_id'] ?? '';
+        $statusCode = $data['status_code'] ?? '';
         $grossAmount = $data['gross_amount'] ?? '';
 
         // Midtrans gross_amount in notification can be slightly different string format
         $grossAmount = number_format((float) $grossAmount, 2, '.', '');
-        
+
         // However, SHA512 signature in Midtrans V2 usually expects exact string from payload
         // If number_format fails, we fallback to raw string
         $rawGross = (string) ($data['gross_amount'] ?? '');
-        
-        $expected = hash('sha512', $orderId . $statusCode . $rawGross . $serverKey);
+
+        $expected = hash('sha512', $orderId.$statusCode.$rawGross.$serverKey);
 
         if (($data['signature_key'] ?? '') !== $expected) {
             // Try with formatted if raw fails (defensive)
-            $expected2 = hash('sha512', $orderId . $statusCode . $grossAmount . $serverKey);
+            $expected2 = hash('sha512', $orderId.$statusCode.$grossAmount.$serverKey);
             if (($data['signature_key'] ?? '') !== $expected2) {
                 throw new \Exception('Invalid Midtrans signature');
             }
@@ -166,8 +167,8 @@ class MidtransService
      */
     public function isSuccess(array $data): bool
     {
-        $status      = $data['transaction_status'] ?? '';
-        $fraudStatus = $data['fraud_status']       ?? 'accept';
+        $status = $data['transaction_status'] ?? '';
+        $fraudStatus = $data['fraud_status'] ?? 'accept';
 
         return ($status === 'settlement') ||
                ($status === 'capture' && $fraudStatus === 'accept');
@@ -189,7 +190,7 @@ class MidtransService
         try {
             return MidtransTransaction::status($orderId);
         } catch (\Exception $e) {
-            Log::error("[Midtrans] Status check failed for $orderId: " . $e->getMessage());
+            Log::error("[Midtrans] Status check failed for $orderId: ".$e->getMessage());
             throw $e;
         }
     }

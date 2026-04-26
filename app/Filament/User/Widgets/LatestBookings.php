@@ -3,22 +3,23 @@
 namespace App\Filament\User\Widgets;
 
 use App\Models\Order;
+use Filament\Support\Enums\FontWeight;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Support\Enums\FontWeight;
 use Filament\Widgets\TableWidget as BaseWidget;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Auth;
 
 class LatestBookings extends BaseWidget
 {
     protected static ?int $navigationSort = 5;
 
-    protected function getTableHeading(): string | \Illuminate\Contracts\Support\Htmlable | null
+    protected function getTableHeading(): string|Htmlable|null
     {
         return __('Pesanan Terakhir');
     }
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     public function table(Table $table): Table
     {
@@ -57,12 +58,12 @@ class LatestBookings extends BaseWidget
                             ->color('gray'),
                         Tables\Columns\Layout\Split::make([
                             Tables\Columns\TextColumn::make('total_text')
-                                ->state(fn() => __('Total:'))
+                                ->state(fn () => __('Total:'))
                                 ->size('sm')
                                 ->color('gray')
                                 ->alignEnd(),
                             Tables\Columns\TextColumn::make('total_price')
-                                ->formatStateUsing(fn ($state) => 'Rp ' . number_format($state, 0, ',', '.'))
+                                ->formatStateUsing(fn ($state) => 'Rp '.number_format($state, 0, ',', '.'))
                                 ->weight(FontWeight::Bold)
                                 ->color('success')
                                 ->grow(false)
@@ -71,7 +72,7 @@ class LatestBookings extends BaseWidget
                     ])->space(1)->extraAttributes(['class' => 'p-3 bg-gray-50 dark:bg-gray-900 rounded-xl mt-3']),
                 ])->extraAttributes(fn ($record) => [
                     'class' => 'p-4 bg-white dark:bg-gray-950 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 transition-all hover:shadow-md cursor-pointer',
-                    'onclick' => "window.location.href='" . route('filament.user.resources.orders.index', ['tableFilters[id][value]' => $record->id]) . "'",
+                    'onclick' => "window.location.href='".route('filament.user.resources.orders.index', ['tableFilters[id][value]' => $record->id])."'",
                 ]),
             ])
             ->paginated(false)

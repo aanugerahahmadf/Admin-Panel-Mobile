@@ -14,6 +14,7 @@ use Illuminate\Support\Carbon;
  * @property int $sort_order
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Banner newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Banner newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Banner query()
@@ -28,14 +29,17 @@ use Illuminate\Support\Carbon;
  * @method static \App\Models\Banner|null first(array|string $columns = ['*'])
  * @method static \App\Models\Banner firstOrFail(array|string $columns = ['*'])
  * @method static \Illuminate\Database\Eloquent\Collection<int, \App\Models\Banner> get(array|string $columns = ['*'])
+ *
  * @property string $imageUrl
  * @property string|null $linkUrl
  * @property bool $isActive
  * @property int $sortOrder
- * @property \Illuminate\Support\Carbon|null $createdAt
- * @property \Illuminate\Support\Carbon|null $updatedAt
+ * @property Carbon|null $createdAt
+ * @property Carbon|null $updatedAt
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|\App\Models\Banner whereTitle($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|\App\Models\Banner whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  */
 class Banner extends Model

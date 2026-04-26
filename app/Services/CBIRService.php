@@ -2,14 +2,17 @@
 
 namespace App\Services;
 
+use App\Models\Package;
+use App\Models\Product;
 use Illuminate\Http\Client\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 
 class CBIRService
 {
     protected string $baseUrl;
+
     protected int $timeoutSeconds;
 
     public function __construct()
@@ -27,8 +30,9 @@ class CBIRService
             $cacheKey = "cbir_search_v{$cacheVersion}_{$fileHash}_{$safeTopK}";
 
             Log::info("CBIR Search initiated for file hash: {$fileHash}");
+
             return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($imageFile, $safeTopK) {
-                Log::info("CBIR Cache miss - calling AI Core API");
+                Log::info('CBIR Cache miss - calling AI Core API');
                 /** @var Response $response */
                 $response = Http::timeout($this->timeoutSeconds)
                     ->retry(2, 300, throw: false)
@@ -44,6 +48,7 @@ class CBIRService
                     $data = $response->json();
                     if (! is_array($data)) {
                         Log::warning('AI Core returned non-array JSON payload.');
+
                         return $this->errorResponse(__('Format respons AI tidak valid.'));
                     }
 
@@ -64,7 +69,7 @@ class CBIRService
                         ->values()
                         ->all();
 
-                    Log::info('AI Core responded successfully with ' . count($normalizedResults) . ' normalized results.');
+                    Log::info('AI Core responded successfully with '.count($normalizedResults).' normalized results.');
 
                     return [
                         'success' => true,
@@ -74,10 +79,12 @@ class CBIRService
                 }
 
                 Log::error('AI Core search error: '.$response->body());
+
                 return $this->errorResponse(__('Pencarian visual sedang gangguan. Coba lagi nanti.'));
             });
         } catch (\Exception $e) {
             Log::error('AI Core connection error: '.$e->getMessage());
+
             return $this->errorResponse(__('Layanan AI Scanner sedang offline. Silakan coba beberapa saat lagi.'));
         }
     }
@@ -85,9 +92,9 @@ class CBIRService
     public function indexMedia($media): bool
     {
         try {
-            $type = match($media->model_type) {
-                \App\Models\Package::class => 'package',
-                \App\Models\Product::class => 'product',
+            $type = match ($media->model_type) {
+                Package::class => 'package',
+                Product::class => 'product',
                 default => 'wo_gallery',
             };
 
@@ -105,11 +112,14 @@ class CBIRService
 
             if ($response->successful()) {
                 Cache::increment('cbir_cache_version');
+
                 return true;
             }
+
             return false;
         } catch (\Exception $e) {
             Log::error('AI Core indexing error: '.$e->getMessage());
+
             return false;
         }
     }
@@ -126,6 +136,7 @@ class CBIRService
             return $response->successful();
         } catch (\Exception $e) {
             Log::error('AI Core de-indexing error: '.$e->getMessage());
+
             return false;
         }
     }

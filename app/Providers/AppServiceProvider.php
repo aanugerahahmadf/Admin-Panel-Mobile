@@ -22,30 +22,33 @@ use App\Livewire\Messages\Inbox;
 use App\Livewire\Messages\Messages;
 use App\Livewire\Messages\Search;
 use App\Livewire\UsernameComponent;
+use App\Models\Order;
+use App\Models\Transaction;
 use App\Models\User;
 use App\Observers\MediaObserver;
+use App\Observers\OrderObserver;
+use App\Observers\TransactionObserver;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Forms\Components\Field;
-use Filament\Tables\Filters\BaseFilter;
 use Filament\Infolists\Components\Entry;
 use Filament\Support\Assets\Css;
 use Filament\Support\Facades\FilamentAsset;
+use Filament\Support\Facades\FilamentView;
 use Filament\Tables\Columns\Column;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\BaseFilter;
 use Filament\Tables\Table;
+use Filament\View\PanelsRenderHook;
 use Illuminate\Auth\Events\Login as LoginEvent;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 use Spatie\Backup\BackupServiceProvider;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
-use Filament\View\PanelsRenderHook;
-use Filament\Support\Facades\FilamentView;
-use Illuminate\Support\Facades\Blade;
-use App\Models\Order;
-use App\Models\Transaction;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -141,7 +144,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // 🚀 Force HTTPS for Ngrok/Production Assets
         if (str_contains(config('app.url'), 'https://')) {
-            \Illuminate\Support\Facades\URL::forceScheme('https');
+            URL::forceScheme('https');
         }
 
         // 🚀 Vercel Read-Only Filesystem Fix
@@ -191,8 +194,8 @@ class AppServiceProvider extends ServiceProvider
         );
 
         Media::observe(MediaObserver::class);
-        Order::observe(\App\Observers\OrderObserver::class);
-        Transaction::observe(\App\Observers\TransactionObserver::class);
+        Order::observe(OrderObserver::class);
+        Transaction::observe(TransactionObserver::class);
         Livewire::component('edit_password_form', EditPasswordComponent::class);
         Livewire::component('delete_account_form', DeleteAccountComponent::class);
         Livewire::component('browser_sessions_form', BrowserSessionsComponent::class);
@@ -228,17 +231,18 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // 🎯 GLOBAL AUTO-TRANSLATE UNTUK SEMUA "ISI TABLE" (ROW DATA) PADA WEBDAN NATIVEPHP
-        \Filament\Tables\Columns\TextColumn::configureUsing(function (\Filament\Tables\Columns\TextColumn $column): void {
-            $column->formatStateUsing(function ($state, $record, \Filament\Tables\Columns\TextColumn $column) {
+        TextColumn::configureUsing(function (TextColumn $column): void {
+            $column->formatStateUsing(function ($state, $record, TextColumn $column) {
                 // Jangan paksa terjemahan untuk password, token, url, atau email
-                if (is_string($state) && !filter_var($state, FILTER_VALIDATE_EMAIL) && !str_contains($state, 'http')) {
+                if (is_string($state) && ! filter_var($state, FILTER_VALIDATE_EMAIL) && ! str_contains($state, 'http')) {
                     // Deteksi jika hanya angka dan titik/koma (seperti harga/telepon), dilewati.
-                    if (!preg_match('/^[0-9.,\-+() ]+$/', $state)) {
+                    if (! preg_match('/^[0-9.,\-+() ]+$/', $state)) {
                         return __($state);
                     }
                 }
+
                 return $state;
-             });
+            });
         });
 
         // 🌐 AUTO TRANSLATE ALL FORM FIELDS & FILTERS (safe: ensures string return)
@@ -246,6 +250,7 @@ class AppServiceProvider extends ServiceProvider
             $field->label(function () use ($field): string {
                 $original = $field->getName();
                 $translated = __($original);
+
                 return is_string($translated) ? $translated : $original;
             });
         });
@@ -258,21 +263,22 @@ class AppServiceProvider extends ServiceProvider
             $entry->label(function () use ($entry): string {
                 $original = $entry->getName();
                 $translated = __($original);
+
                 return is_string($translated) ? $translated : $original;
             });
         });
 
         ExportColumn::configureUsing(function (ExportColumn $column): void {
             $column->formatStateUsing(function ($state) {
-                if (is_string($state) && !filter_var($state, FILTER_VALIDATE_EMAIL) && !str_contains($state, 'http')) {
-                    if (!preg_match('/^[0-9.,\-+() ]+$/', $state)) {
+                if (is_string($state) && ! filter_var($state, FILTER_VALIDATE_EMAIL) && ! str_contains($state, 'http')) {
+                    if (! preg_match('/^[0-9.,\-+() ]+$/', $state)) {
                         $state = __($state);
                     }
                 }
                 if ($state instanceof \UnitEnum) {
                     $state = $state instanceof \BackedEnum ? $state->value : $state->name;
                 }
-                
+
                 // Ensure the return value is a string or null for Exporter compatibility
                 return $state !== null ? (string) $state : null;
             });
@@ -293,7 +299,6 @@ class AppServiceProvider extends ServiceProvider
                 @include("filament.snap-script")
             '),
         );
-
 
         // Singletons are now registered in NativeServiceProvider
     }

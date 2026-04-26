@@ -143,13 +143,14 @@ class OtpEmailVerificationPrompt extends EmailVerificationPrompt
             ->color('gray')
             ->action(function (): void {
                 $userId = Filament::auth()->id();
-                
+
                 $lastSent = Cache::get('otp_last_sent_'.$userId);
                 if ($lastSent && (now()->timestamp - $lastSent) < 300) {
                     Notification::make()
                         ->title(__('Harap tunggu sebelum meminta kode baru.'))
                         ->danger()
                         ->send();
+
                     return;
                 }
 
@@ -161,7 +162,7 @@ class OtpEmailVerificationPrompt extends EmailVerificationPrompt
                     ->title(__('Kode verifikasi baru telah dikirim.'))
                     ->success()
                     ->send();
-                    
+
                 $this->dispatch('otp-resent');
             });
     }

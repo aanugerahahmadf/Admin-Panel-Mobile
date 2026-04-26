@@ -9,31 +9,29 @@ use App\Filament\User\Auth\OtpResetPassword;
 use App\Filament\User\Auth\Register;
 use App\Filament\User\Auth\VerifyOtp;
 use App\Filament\User\Pages\Dashboard;
+use App\Filament\User\Pages\EditProfilePage;
 use App\Http\Middleware\SetLocale;
 use Filament\Enums\ThemeMode;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\MenuItem;
 use Filament\Navigation\NavigationGroup;
-use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\MaxWidth;
 use Filament\Widgets;
-use Filament\Widgets\AccountWidget;
-use Filament\Widgets\FilamentInfoWidget;
 use Illuminate\Contracts\View\View;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
-use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Filament\Navigation\MenuItem;
 use Illuminate\Support\Facades\Auth;
-use App\Filament\User\Pages\EditProfilePage;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class UserPanelProvider extends PanelProvider
 {
@@ -50,7 +48,7 @@ class UserPanelProvider extends PanelProvider
             )
             ->emailVerification(OtpEmailVerificationPrompt::class)
             // ->sidebarFullyCollapsibleOnDesktop()
-            ->brandName(fn() => __('Dekorasi Bunga Pernikahan'))
+            ->brandName(fn () => __('Dekorasi Bunga Pernikahan'))
             ->brandLogo(asset('images/logo.png'))
             ->brandLogoHeight('3rem')
             // ->simplePageMaxContentWidth(MaxWidth::Small)
@@ -83,7 +81,7 @@ class UserPanelProvider extends PanelProvider
             )
             ->renderHook(
                 'panels::styles.after',
-                fn (): string => \Illuminate\Support\Facades\Blade::render('@vite(\'resources/css/app.css\')')
+                fn (): string => Blade::render('@vite(\'resources/css/app.css\')')
             )
             ->renderHook(
                 'panels::footer',

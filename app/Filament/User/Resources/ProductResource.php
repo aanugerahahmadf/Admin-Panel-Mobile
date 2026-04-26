@@ -2,22 +2,39 @@
 
 namespace App\Filament\User\Resources;
 
+use App\Enums\OrderPaymentStatus;
+use App\Enums\OrderStatus;
+use App\Filament\User\Pages\MessagesPage;
 use App\Filament\User\Resources\ProductResource\Pages;
-use App\Models\Product;
+use App\Models\Cart;
 use App\Models\Order;
+use App\Models\Product;
 use App\Models\Transaction;
+use App\Models\Voucher;
+use App\Models\Wishlist;
+use App\Services\CBIRService;
+use App\Services\ChatService;
 use App\Services\MidtransService;
+use emmanpbarrameda\FilamentTakePictureField\Forms\Components\TakePicture;
+use Filament\Facades\Filament;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Infolists;
+use Filament\Infolists\Components\Actions;
+use Filament\Infolists\Components\Actions\Action;
+use Filament\Infolists\Components\Group;
+use Filament\Infolists\Infolist;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Support\Enums\ActionSize;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Notifications\Notification;
-use Filament\Infolists;
-use Filament\Infolists\Infolist;
-use Filament\Support\Enums\FontWeight;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\HtmlString;
+use Livewire\Component;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Symfony\Component\HttpFoundation\File\File;
 
 class ProductResource extends Resource
 {
@@ -63,7 +80,7 @@ class ProductResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->description(new \Illuminate\Support\HtmlString('<style>.fi-ta-ctn, .fi-ta-content, .fi-ta-header-toolbar, .fi-ta-pagination { background-color: transparent !important; box-shadow: none !important; border-color: transparent !important; }</style>'))
+            ->description(new HtmlString('<style>.fi-ta-ctn, .fi-ta-content, .fi-ta-header-toolbar, .fi-ta-pagination { background-color: transparent !important; box-shadow: none !important; border-color: transparent !important; }</style>'))
             ->poll('5s')
             ->headerActions([
                 Tables\Actions\Action::make('visual_search')
@@ -74,7 +91,7 @@ class ProductResource extends Resource
                     ->modalWidth('xl')
                     ->modalHeading(__('Pencarian Visual Cerdas'))
                     ->modalDescription(__('Temukan dekorasi impian Anda dengan mudah. Unggah foto atau ambil gambar langsung untuk melihat koleksi terbaik dari Weeding Flower Decoration.'))
-                    ->action(fn() => null)
+                    ->action(fn () => null)
                     ->modalSubmitActionLabel(__('Tampilkan di Katalog Utama'))
                     ->modalCancelActionLabel(__('Tutup'))
                     ->extraModalWindowAttributes(['class' => 'bg-gray-50/50 backdrop-blur-3xl'])
@@ -93,44 +110,49 @@ class ProductResource extends Resource
                                             ->icon('heroicon-o-camera')
                                             ->color('gray')
                                             ->tooltip(__('Ambil Foto'))
-                                            ->action(fn(Forms\Set $set, Forms\Get $get) => $set('show_camera', ! $get('show_camera'))),
+                                            ->action(fn (Forms\Set $set, Forms\Get $get) => $set('show_camera', ! $get('show_camera'))),
                                         Forms\Components\Actions\Action::make('toggle_gallery_search')
                                             ->icon('heroicon-o-photo')
                                             ->color('gray')
                                             ->tooltip(__('Pilih Galeri'))
-                                            ->action(fn(Forms\Set $set, Forms\Get $get) => $set('show_upload', ! $get('show_upload'))),
+                                            ->action(fn (Forms\Set $set, Forms\Get $get) => $set('show_upload', ! $get('show_upload'))),
                                     ]),
                             ]),
 
                         Forms\Components\Grid::make(1)
                             ->schema([
-                                \emmanpbarrameda\FilamentTakePictureField\Forms\Components\TakePicture::make('camera_image')
+                                TakePicture::make('camera_image')
                                     ->hiddenLabel()
-                                    ->visible(fn(Forms\Get $get) => $get('show_camera'))
+                                    ->visible(fn (Forms\Get $get) => $get('show_camera'))
                                     ->live()
                                     ->disk('public')
                                     ->directory('cbir-camera')
-                                    ->afterStateUpdated(function (\Livewire\Component $livewire, $state, Forms\Set $set, \App\Services\CBIRService $cbirService) {
-                                        if (!$state) return;
-                                        $filePath = storage_path('app/public/' . $state);
-                                        if (!file_exists($filePath)) return;
-                                        $file = new \Symfony\Component\HttpFoundation\File\File($filePath);
+                                    ->afterStateUpdated(function (Component $livewire, $state, Forms\Set $set, CBIRService $cbirService) {
+                                        if (! $state) {
+                                            return;
+                                        }
+                                        $filePath = storage_path('app/public/'.$state);
+                                        if (! file_exists($filePath)) {
+                                            return;
+                                        }
+                                        $file = new File($filePath);
                                         $response = $cbirService->searchByImage($file, 20);
-                                        
-                                        if (isset($response['error']) || !($response['success'] ?? false)) {
+
+                                        if (isset($response['error']) || ! ($response['success'] ?? false)) {
                                             $set('status_message', $response['message'] ?? __('Server AI Offline.'));
+
                                             return;
                                         }
 
                                         $results = $response['results'] ?? [];
-                                        if (!empty($results)) {
+                                        if (! empty($results)) {
                                             $searchTime = $response['query_time_seconds'] ?? 0;
-                                            $mixedResults = \App\Filament\User\Resources\PackageResource::buildCbirMixedResults($results);
+                                            $mixedResults = PackageResource::buildCbirMixedResults($results);
 
                                             session()->put('cbir_mixed_results', $mixedResults);
                                             session()->put('cbir_product_results_ids', collect($mixedResults)->where('type', 'product')->pluck('data.id')->all());
                                             session()->put('cbir_search_time', $searchTime);
-                                            
+
                                             $topScore = number_format(($mixedResults[0]['similarity'] ?? 0), 1);
                                             $set('status_message', __('Berhasil menemukan :count hasil! Akurasi: :score%', ['count' => count($mixedResults), 'score' => $topScore]));
                                             $livewire->dispatch('refresh_items');
@@ -147,35 +169,40 @@ class ProductResource extends Resource
                                     ->hiddenLabel()
                                     ->image()
                                     ->imageEditor()
-                                    ->visible(fn(Forms\Get $get) => $get('show_upload'))
+                                    ->visible(fn (Forms\Get $get) => $get('show_upload'))
                                     ->directory('cbir-queries')
                                     ->live()
-                                    ->afterStateUpdated(function (\Livewire\Component $livewire, $state, Forms\Set $set, \App\Services\CBIRService $cbirService) {
-                                        if (!$state) return;
+                                    ->afterStateUpdated(function (Component $livewire, $state, Forms\Set $set, CBIRService $cbirService) {
+                                        if (! $state) {
+                                            return;
+                                        }
                                         $fileObj = is_array($state) ? reset($state) : $state;
-                                        $filePath = $fileObj instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile 
-                                            ? $fileObj->getRealPath() 
-                                            : storage_path('app/public/' . $fileObj);
+                                        $filePath = $fileObj instanceof TemporaryUploadedFile
+                                            ? $fileObj->getRealPath()
+                                            : storage_path('app/public/'.$fileObj);
 
-                                        if (!file_exists($filePath)) return;
-                                        
-                                        $file = new \Symfony\Component\HttpFoundation\File\File($filePath);
+                                        if (! file_exists($filePath)) {
+                                            return;
+                                        }
+
+                                        $file = new File($filePath);
                                         $response = $cbirService->searchByImage($file, 20);
-                                        
-                                        if (isset($response['error']) || !($response['success'] ?? false)) {
+
+                                        if (isset($response['error']) || ! ($response['success'] ?? false)) {
                                             $set('status_message', $response['message'] ?? __('Server AI Offline.'));
+
                                             return;
                                         }
 
                                         $results = $response['results'] ?? [];
-                                        if (!empty($results)) {
+                                        if (! empty($results)) {
                                             $searchTime = $response['query_time_seconds'] ?? 0;
-                                            $mixedResults = \App\Filament\User\Resources\PackageResource::buildCbirMixedResults($results);
+                                            $mixedResults = PackageResource::buildCbirMixedResults($results);
 
                                             session()->put('cbir_mixed_results', $mixedResults);
                                             session()->put('cbir_product_results_ids', collect($mixedResults)->where('type', 'product')->pluck('data.id')->all());
                                             session()->put('cbir_search_time', $searchTime);
-                                            
+
                                             $topScore = number_format(($mixedResults[0]['similarity'] ?? 0), 1);
                                             $set('status_message', __('Berhasil menemukan :count hasil! Akurasi: :score%', ['count' => count($mixedResults), 'score' => $topScore]));
                                             $livewire->dispatch('refresh_items');
@@ -190,42 +217,43 @@ class ProductResource extends Resource
 
                                 Forms\Components\Placeholder::make('status_message')
                                     ->label('')
-                                    ->content(fn(Forms\Get $get) => new \Illuminate\Support\HtmlString(
-                                        '<div class="text-sm">' . e($get('status_message')) . '</div>'
+                                    ->content(fn (Forms\Get $get) => new HtmlString(
+                                        '<div class="text-sm">'.e($get('status_message')).'</div>'
                                     ))
-                                    ->visible(fn(Forms\Get $get) => (bool) $get('status_message'))
+                                    ->visible(fn (Forms\Get $get) => (bool) $get('status_message'))
                                     ->extraAttributes(['class' => 'text-center p-3 bg-primary-600 rounded-xl text-white font-medium shadow-md']),
 
                                 // ── CBIR Results Preview ──
                                 Forms\Components\View::make('filament.user.components.cbir-results-preview')
-                                    ->visible(fn() => !empty(session('cbir_mixed_results'))),
+                                    ->visible(fn () => ! empty(session('cbir_mixed_results'))),
                             ]),
                     ]),
                 Tables\Actions\Action::make('clear_visual_search')
                     ->label(__('Reset'))
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
-                    ->action(function (\Livewire\Component $livewire) {
+                    ->action(function (Component $livewire) {
                         session()->forget(['cbir_mixed_results', 'cbir_product_results_ids', 'cbir_search_time']);
                         $livewire->dispatch('refresh_items');
                     })
-                    ->visible(fn() => session()->has('cbir_mixed_results')),
+                    ->visible(fn () => session()->has('cbir_mixed_results')),
             ])
             ->emptyStateHeading(__('Belum ada product tersedia'))
-            ->emptyStateDescription(function() {
+            ->emptyStateDescription(function () {
                 if (session()->has('cbir_product_results_ids')) {
-                    return new \Illuminate\Support\HtmlString((string)__('Tidak ada product yang cocok dengan foto Anda. Silakan coba foto lain.'));
+                    return new HtmlString((string) __('Tidak ada product yang cocok dengan foto Anda. Silakan coba foto lain.'));
                 }
-                return new \Illuminate\Support\HtmlString((string)__('Temukan product impianmu di sini!'));
+
+                return new HtmlString((string) __('Temukan product impianmu di sini!'));
             })
             ->emptyStateActions([
                 Tables\Actions\Action::make('reset_search')
                     ->label(__('Tampilkan Semua'))
-                    ->action(function (\Livewire\Component $livewire) {
+                    ->action(function (Component $livewire) {
                         session()->forget(['cbir_mixed_results', 'cbir_product_results_ids', 'cbir_search_time']);
                         $livewire->dispatch('refresh_items');
                     })
-                    ->visible(fn() => session()->has('cbir_product_results_ids')),
+                    ->visible(fn () => session()->has('cbir_product_results_ids')),
             ])
             ->columns([
                 Tables\Columns\Layout\Stack::make([
@@ -236,16 +264,16 @@ class ProductResource extends Resource
                             ->width('100%')
                             ->extraImgAttributes([
                                 'class' => 'aspect-square object-cover rounded-t-2xl transition-all duration-500 group-hover:scale-110',
-                                'style' => 'height: 200px !important; width: 100%;'
+                                'style' => 'height: 200px !important; width: 100%;',
                             ]),
-                        
+
                         Tables\Columns\TextColumn::make('discount_pct')
-                            ->state(fn($record) => $record?->discount_price > 0 ? '-' . round((($record->price - $record->discount_price) / $record->price) * 100) . '%' : null)
+                            ->state(fn ($record) => $record?->discount_price > 0 ? '-'.round((($record->price - $record->discount_price) / $record->price) * 100).'%' : null)
                             ->extraAttributes([
                                 'class' => 'absolute top-2 right-2 font-black px-2 py-1 rounded shadow-lg z-10 transform scale-100 group-hover/img-overlay:scale-110 transition-transform duration-300',
-                                'style' => 'background-color: #dc2626 !important; color: #ffffff !important; width: fit-content; font-size: 0.8rem; line-height: 1; pointer-events: none; visibility: visible !important;'
+                                'style' => 'background-color: #dc2626 !important; color: #ffffff !important; width: fit-content; font-size: 0.8rem; line-height: 1; pointer-events: none; visibility: visible !important;',
                             ])
-                            ->visible(fn($record) => $record?->discount_price > 0),
+                            ->visible(fn ($record) => $record?->discount_price > 0),
                     ])->extraAttributes(['class' => 'relative overflow-hidden group/img-overlay']),
                     Tables\Columns\Layout\Stack::make([
                         Tables\Columns\TextColumn::make('category.name')
@@ -258,24 +286,24 @@ class ProductResource extends Resource
                             ->lineClamp(2),
                         Tables\Columns\Layout\Stack::make([
                             Tables\Columns\TextColumn::make('final_price')
-                                ->formatStateUsing(fn ($state) => 'Rp ' . number_format($state, 2, ',', '.'))
+                                ->formatStateUsing(fn ($state) => 'Rp '.number_format($state, 2, ',', '.'))
                                 ->weight('black')
                                 ->color('primary')
                                 ->size('md'),
                             Tables\Columns\TextColumn::make('price')
-                                ->formatStateUsing(fn ($state, $record) => $record?->discount_price > 0 ? 'Rp ' . number_format($state, 2, ',', '.') : '')
+                                ->formatStateUsing(fn ($state, $record) => $record?->discount_price > 0 ? 'Rp '.number_format($state, 2, ',', '.') : '')
                                 ->size('xs')
                                 ->color('danger')
                                 ->extraAttributes(['class' => 'line-through opacity-60'])
                                 ->visible(fn ($record) => $record?->discount_price > 0),
                         ])->space(0.5),
                         Tables\Columns\TextColumn::make('stock')
-                            ->formatStateUsing(fn ($state) => $state > 0 ? $state . ' ' . __('Tersedia') : __('Habis'))
+                            ->formatStateUsing(fn ($state) => $state > 0 ? $state.' '.__('Tersedia') : __('Habis'))
                             ->size('xs')
                             ->color(fn ($state) => $state <= 0 ? 'danger' : ($state <= 3 ? 'warning' : 'gray')),
                     ])->space(2)->extraAttributes(['class' => 'p-4 flex-1 flex flex-col']),
                 ])->extraAttributes([
-                    'class' => 'bg-white dark:bg-gray-900 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-transparent dark:border-white/10 overflow-hidden h-full'
+                    'class' => 'bg-white dark:bg-gray-900 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-transparent dark:border-white/10 overflow-hidden h-full',
                 ]),
             ])
             ->contentGrid([
@@ -297,8 +325,11 @@ class ProductResource extends Resource
                             ->searchable()
                             ->native(false),
                     ])
-                    ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data) {
-                        if (! ($data['sort_by'] ?? null)) return $query;
+                    ->query(function (Builder $query, array $data) {
+                        if (! ($data['sort_by'] ?? null)) {
+                            return $query;
+                        }
+
                         return match ($data['sort_by']) {
                             'price_asc' => $query->reorder('price', 'asc'),
                             'price_desc' => $query->reorder('price', 'desc'),
@@ -324,12 +355,12 @@ class ProductResource extends Resource
                     ->icon('heroicon-m-bolt')
                     ->size('sm')
                     ->extraAttributes(['class' => 'flex-1 justify-center rounded-lg shadow-sm font-bold'])
-                    ->disabled(fn (\App\Models\Product $record) => $record->stock <= 0)
+                    ->disabled(fn (Product $record) => $record->stock <= 0)
                     ->slideOver()
                     ->modalWidth('2xl')
                     ->modalHeading(__('Checkout Produk'))
-                    ->steps(fn (\App\Models\Product $record) => static::getCheckoutWizardSteps($record))
-                    ->action(function (\App\Models\Product $record, array $data, \Livewire\Component $livewire) {
+                    ->steps(fn (Product $record) => static::getCheckoutWizardSteps($record))
+                    ->action(function (Product $record, array $data, Component $livewire) {
                         return static::handleCheckout($record, $data, $livewire);
                     }),
 
@@ -341,14 +372,14 @@ class ProductResource extends Resource
                     ->color('warning')
                     ->extraAttributes(['class' => 'justify-center rounded-lg shadow-sm'])
                     ->action(function ($record) {
-                        \App\Models\Cart::updateOrCreate([
+                        Cart::updateOrCreate([
                             'user_id' => auth()->id(),
                             'product_id' => $record->id,
                         ], [
-                            'quantity' => \Illuminate\Support\Facades\DB::raw('quantity + 1')
+                            'quantity' => DB::raw('quantity + 1'),
                         ]);
-                        
-                        \Filament\Notifications\Notification::make()
+
+                        Notification::make()
                             ->title(__('Berhasil masuk keranjang'))
                             ->success()
                             ->icon('heroicon-o-shopping-cart')
@@ -363,16 +394,14 @@ class ProductResource extends Resource
                     ->icon(fn ($record) => $record->is_wishlisted ? 'heroicon-s-heart' : 'heroicon-o-heart')
                     ->color(fn ($record) => $record->is_wishlisted ? 'danger' : 'gray')
                     ->extraAttributes(['class' => 'justify-center rounded-lg shadow-sm'])
-                    ->action(fn ($record, \Livewire\Component $livewire) => $livewire->dispatch('toggle_wishlist', id: $record->id))
+                    ->action(fn ($record, Component $livewire) => $livewire->dispatch('toggle_wishlist', id: $record->id))
                     ->tooltip(__('Simpan Favorit')),
             ])
             ->actionsAlignment('center')
             ->extraAttributes([
-                'class' => 'filament-table-actions-container !flex !flex-row !gap-1 !p-3 !bg-gray-50/50 dark:!bg-white/5 !border-0'
+                'class' => 'filament-table-actions-container !flex !flex-row !gap-1 !p-3 !bg-gray-50/50 dark:!bg-white/5 !border-0',
             ]);
     }
-
-
 
     public static function infolist(Infolist $infolist): Infolist
     {
@@ -383,7 +412,7 @@ class ProductResource extends Resource
                         Infolists\Components\Grid::make(12)
                             ->schema([
                                 // LEFT: PRODUCT IMAGE
-                                \Filament\Infolists\Components\Group::make([
+                                Group::make([
                                     Infolists\Components\ImageEntry::make('image_url')
                                         ->label('')
                                         ->hiddenLabel()
@@ -399,7 +428,7 @@ class ProductResource extends Resource
                                 ]),
 
                                 // RIGHT: PRODUCT IDENTITY
-                                \Filament\Infolists\Components\Group::make([
+                                Group::make([
                                     // CATEGORY BADGE
                                     Infolists\Components\TextEntry::make('category.name')
                                         ->formatStateUsing(fn ($state) => __($state))
@@ -419,18 +448,18 @@ class ProductResource extends Resource
                                         ->extraAttributes(['class' => 'tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-primary-400 mb-4 uppercase leading-tight']),
 
                                     // PRICE DISPLAY
-                                    \Filament\Infolists\Components\Group::make([
+                                    Group::make([
                                         Infolists\Components\TextEntry::make('final_price')
                                             ->label('')
-                                            ->formatStateUsing(fn ($state) => 'Rp ' . number_format($state, 2, ',', '.'))
+                                            ->formatStateUsing(fn ($state) => 'Rp '.number_format($state, 2, ',', '.'))
                                             ->size('4xl')
                                             ->weight('black')
                                             ->color('success')
                                             ->extraAttributes(['class' => 'drop-shadow-sm']),
-                                        
+
                                         Infolists\Components\TextEntry::make('price')
                                             ->label('')
-                                            ->formatStateUsing(fn ($record) => $record?->discount_price > 0 ? 'Rp ' . number_format($record->price, 2, ',', '.') : '')
+                                            ->formatStateUsing(fn ($record) => $record?->discount_price > 0 ? 'Rp '.number_format($record->price, 2, ',', '.') : '')
                                             ->size('lg')
                                             ->color('gray')
                                             ->extraAttributes(['class' => 'line-through opacity-50 ml-4'])
@@ -450,40 +479,40 @@ class ProductResource extends Resource
                                         ])->icon('heroicon-o-document-text')->iconColor('primary'),
 
                                     // PRIMARY CTA: BUY & CART
-                                    \Filament\Infolists\Components\Actions::make([
-                                        \Filament\Infolists\Components\Actions\Action::make('buy_now_detail')
+                                    Actions::make([
+                                        Action::make('buy_now_detail')
                                             ->label(fn ($record) => $record->stock > 0 ? __('Pesan Sekarang') : __('Stok Habis'))
                                             ->icon(fn ($record) => $record->stock > 0 ? 'heroicon-m-bolt' : 'heroicon-m-x-circle')
                                             ->button()
                                             ->color(fn ($record) => $record->stock > 0 ? 'success' : 'danger')
                                             ->disabled(fn ($record) => $record->stock <= 0)
-                                            ->size(\Filament\Support\Enums\ActionSize::Large)
+                                            ->size(ActionSize::Large)
                                             ->extraAttributes(['class' => 'w-full py-3 text-lg rounded-xl shadow-sm transition-all'])
                                             ->slideOver()
                                             ->modalWidth('2xl')
                                             ->modalHeading(__('Checkout Product'))
                                             ->steps(fn ($record) => static::getCheckoutWizardSteps($record))
-                                            ->action(function ($record, array $data, \Livewire\Component $livewire) {
+                                            ->action(function ($record, array $data, Component $livewire) {
                                                 return static::handleCheckout($record, $data, $livewire);
                                             }),
-                                            
-                                        \Filament\Infolists\Components\Actions\Action::make('add_to_cart_detail')
+
+                                        Action::make('add_to_cart_detail')
                                             ->label(__('Masukkan ke Keranjang'))
                                             ->icon('heroicon-m-shopping-cart')
                                             ->button()
                                             ->color('warning')
                                             ->outlined()
-                                            ->size(\Filament\Support\Enums\ActionSize::Large)
+                                            ->size(ActionSize::Large)
                                             ->extraAttributes(['class' => 'w-full py-3 text-lg rounded-xl shadow-sm transition-all'])
                                             ->action(function ($record) {
-                                                \App\Models\Cart::updateOrCreate([
+                                                Cart::updateOrCreate([
                                                     'user_id' => auth()->id(),
                                                     'product_id' => $record->id,
                                                 ], [
-                                                    'quantity' => \Illuminate\Support\Facades\DB::raw('quantity + 1')
+                                                    'quantity' => DB::raw('quantity + 1'),
                                                 ]);
-                                                
-                                                \Filament\Notifications\Notification::make()
+
+                                                Notification::make()
                                                     ->title(__('Berhasil masuk keranjang'))
                                                     ->success()
                                                     ->icon('heroicon-o-shopping-cart')
@@ -491,57 +520,58 @@ class ProductResource extends Resource
                                             })
                                             ->visible(fn ($record) => $record->stock > 0),
                                     ])->fullWidth()->extraAttributes(['class' => '!mb-0']),
-                                    
+
                                     // SECONDARY: CHAT & WISHLIST
-                                    \Filament\Infolists\Components\Actions::make([
-                                        \Filament\Infolists\Components\Actions\Action::make('chat_admin')
+                                    Actions::make([
+                                        Action::make('chat_admin')
                                             ->label(__('Chat Admin'))
                                             ->icon('heroicon-m-chat-bubble-left-right')
                                             ->button()
                                             ->color('info')
                                             ->outlined()
-                                            ->size(\Filament\Support\Enums\ActionSize::Large)
+                                            ->size(ActionSize::Large)
                                             ->extraAttributes(['class' => 'w-full flex-1 rounded-xl py-3 text-lg shadow-sm transition-all'])
                                             ->action(function ($record) {
-                                                $inbox = \App\Services\ChatService::getOrCreateInboxWithAdmin(auth()->id());
-                                                \App\Services\ChatService::sendContextMessage($inbox, [
+                                                $inbox = ChatService::getOrCreateInboxWithAdmin(auth()->id());
+                                                ChatService::sendContextMessage($inbox, [
                                                     'type' => 'product',
                                                     'id' => $record->id,
                                                     'name' => $record->name,
                                                     'price' => $record->final_price,
                                                     'image' => $record->getFirstMediaUrl('product_image') ?: $record->image_url,
-                                                    'url' => \App\Filament\User\Resources\ProductResource::getUrl('view', ['record' => $record->id]),
+                                                    'url' => ProductResource::getUrl('view', ['record' => $record->id]),
                                                 ]);
-                                                return redirect(\App\Filament\User\Pages\MessagesPage::getUrl(['id' => $inbox->id]));
+
+                                                return redirect(MessagesPage::getUrl(['id' => $inbox->id]));
                                             }),
 
-                                        \Filament\Infolists\Components\Actions\Action::make('wishlist_detail')
+                                        Action::make('wishlist_detail')
                                             ->label(fn ($record) => $record->is_wishlisted ? __('Hapus dari Favorit') : __('Tambah ke Favorit'))
                                             ->icon(fn ($record) => $record->is_wishlisted ? 'heroicon-s-heart' : 'heroicon-o-heart')
                                             ->button()
                                             ->color(fn ($record) => $record->is_wishlisted ? 'danger' : 'gray')
-                                            ->outlined(fn ($record) => !$record->is_wishlisted)
-                                            ->size(\Filament\Support\Enums\ActionSize::Large)
+                                            ->outlined(fn ($record) => ! $record->is_wishlisted)
+                                            ->size(ActionSize::Large)
                                             ->extraAttributes(['class' => 'w-full flex-1 rounded-xl py-3 text-lg shadow-sm transition-all duration-300'])
                                             ->action(function ($record) {
-                                                $userId = \Filament\Facades\Filament::auth()->id();
-                                                $wishlist = \App\Models\Wishlist::where('user_id', $userId)
+                                                $userId = Filament::auth()->id();
+                                                $wishlist = Wishlist::where('user_id', $userId)
                                                     ->where('product_id', $record->id)
                                                     ->first();
 
                                                 if ($wishlist) {
                                                     $wishlist->delete();
-                                                    \Filament\Notifications\Notification::make()
+                                                    Notification::make()
                                                         ->title(__('Dihapus dari Favorit'))
                                                         ->warning()
                                                         ->icon('heroicon-o-heart')
                                                         ->send();
                                                 } else {
-                                                    \App\Models\Wishlist::create([
+                                                    Wishlist::create([
                                                         'user_id' => $userId,
                                                         'product_id' => $record->id,
                                                     ]);
-                                                    \Filament\Notifications\Notification::make()
+                                                    Notification::make()
                                                         ->title(__('Disimpan ke Favorit'))
                                                         ->success()
                                                         ->icon('heroicon-s-heart')
@@ -555,7 +585,7 @@ class ProductResource extends Resource
                                     'md' => 7,
                                 ]),
                             ])
-                        ->extraAttributes(['class' => 'gap-10 p-2']),
+                            ->extraAttributes(['class' => 'gap-10 p-2']),
                     ])
                     ->extraAttributes(['class' => 'border-none bg-transparent shadow-none']),
             ]);
@@ -569,10 +599,12 @@ class ProductResource extends Resource
         ];
     }
 
-    public static function handleCheckout(\App\Models\Product $product, array $data, ?\Livewire\Component $livewire = null): mixed
+    public static function handleCheckout(Product $product, array $data, ?Component $livewire = null): mixed
     {
-        $user = \Filament\Facades\Filament::auth()->user();
-        if (!$user) return null;
+        $user = Filament::auth()->user();
+        if (! $user) {
+            return null;
+        }
 
         // Update user phone if changed
         if ($data['phone'] !== $user->phone) {
@@ -581,11 +613,12 @@ class ProductResource extends Resource
 
         // Stock Check
         if ($product->stock <= 0) {
-            \Filament\Notifications\Notification::make()
+            Notification::make()
                 ->title(__('Stok Habis'))
                 ->body(__('Mohon maaf, product ini sudah tidak tersedia.'))
                 ->danger()
                 ->send();
+
             return null;
         }
 
@@ -595,73 +628,74 @@ class ProductResource extends Resource
         $finalPrice = (float) $product->final_price;
 
         // Default statuses
-        $orderStatus = \App\Enums\OrderStatus::PENDING;
-        $orderPaymentStatus = \App\Enums\OrderPaymentStatus::PENDING;
+        $orderStatus = OrderStatus::PENDING;
+        $orderPaymentStatus = OrderPaymentStatus::PENDING;
 
         // Create Order
-        $order = \App\Models\Order::create([
-            'user_id'        => $user->id,
-            'product_id'        => $product->id,
-            'order_number'   => 'ORD-ITM-' . strtoupper(str()->random(8)),
-            'total_price'    => $finalPrice,
-            'status'         => $orderStatus,
+        $order = Order::create([
+            'user_id' => $user->id,
+            'product_id' => $product->id,
+            'order_number' => 'ORD-ITM-'.strtoupper(str()->random(8)),
+            'total_price' => $finalPrice,
+            'status' => $orderStatus,
             'payment_status' => $orderPaymentStatus,
-            'booking_date'   => $data['booking_date'],
-            'notes'          => $data['notes'],
+            'booking_date' => $data['booking_date'],
+            'notes' => $data['notes'],
         ]);
 
         // Send message to Admin Panel Chat
         try {
-            $inbox = \App\Services\ChatService::getOrCreateInboxWithAdmin($user->id);
-            \App\Services\ChatService::sendOrderMessage($inbox, $order);
+            $inbox = ChatService::getOrCreateInboxWithAdmin($user->id);
+            ChatService::sendOrderMessage($inbox, $order);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Failed to send order message: ' . $e->getMessage());
+            Log::error('Failed to send order message: '.$e->getMessage());
         }
 
         // Process Transaction
-        $reference = 'TRX-ITM-' . time() . '-' . strtoupper(str()->random(4));
+        $reference = 'TRX-ITM-'.time().'-'.strtoupper(str()->random(4));
 
-        $transaction = \App\Models\Transaction::create([
-            'user_id'          => $user->id,
-            'order_id'         => $order->id,
-            'type'             => 'order',
+        $transaction = Transaction::create([
+            'user_id' => $user->id,
+            'order_id' => $order->id,
+            'type' => 'order',
             'reference_number' => $reference,
-            'amount'           => $finalPrice,
-            'admin_fee'        => 0,
-            'total_amount'     => $finalPrice,
-            'payment_gateway'  => 'midtrans',
-            'status'           => 'pending',
-            'notes'            => null,
+            'amount' => $finalPrice,
+            'admin_fee' => 0,
+            'total_amount' => $finalPrice,
+            'payment_gateway' => 'midtrans',
+            'status' => 'pending',
+            'notes' => null,
         ]);
 
         // Process via Midtrans
         try {
-            $midtrans = new \App\Services\MidtransService();
+            $midtrans = new MidtransService;
             $transactionCount = $midtrans->createTransactionSnap($transaction);
-            
+
             if ($livewire) {
                 $livewire->dispatch('open-midtrans-snap', token: $transactionCount->snap_token);
+
                 return null;
             }
-            
+
             return redirect($transactionCount->payment_url);
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('[Midtrans] Product Checkout Redirect failed', [
+            Log::error('[Midtrans] Product Checkout Redirect failed', [
                 'reference' => $transaction->reference_number,
-                'error'     => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
-            
-            \Filament\Notifications\Notification::make()
+
+            Notification::make()
                 ->title(__('Gagal Membuat Pembayaran'))
-                ->body(__('Midtrans error: ' . $e->getMessage() . '. Transaksi Anda tersimpan, silakan ulangi pembayaran di "Pesanan Saya".'))
+                ->body(__('Midtrans error: '.$e->getMessage().'. Transaksi Anda tersimpan, silakan ulangi pembayaran di "Pesanan Saya".'))
                 ->danger()
                 ->send();
-                
+
             return redirect()->route('filament.user.resources.orders.index');
         }
     }
 
-    public static function getCheckoutWizardSteps(\App\Models\Product $product): array
+    public static function getCheckoutWizardSteps(Product $product): array
     {
         return [
             Forms\Components\Wizard\Step::make(__('Detail Acara'))
@@ -710,15 +744,17 @@ class ProductResource extends Resource
                                 ->searchable()
                                 ->label(__('Voucher Tersedia'))
                                 ->prefixIcon('heroicon-o-ticket')
-                                ->options(function () use ($product) {
-                                    $user = \Filament\Facades\Filament::auth()->user();
-                                    if (!$user) return [];
+                                ->options(function () {
+                                    $user = Filament::auth()->user();
+                                    if (! $user) {
+                                        return [];
+                                    }
 
-                                    return \App\Models\Voucher::where('is_active', true)
+                                    return Voucher::where('is_active', true)
                                         ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
                                         ->where(function ($q) use ($user) {
                                             $q->where('is_global', true)
-                                              ->orWhereHas('users', fn($u) => $u->where('users.id', $user->id));
+                                                ->orWhereHas('users', fn ($u) => $u->where('users.id', $user->id));
                                         })
                                         ->get()
                                         ->pluck('name', 'id');
@@ -738,7 +774,10 @@ class ProductResource extends Resource
     public static function formatSimilarityPct(float $score): int
     {
         $pct = (int) (round($score * 100 / 5) * 5);
-        if ($pct === 30) $pct = 35;
+        if ($pct === 30) {
+            $pct = 35;
+        }
+
         return min(100, max(0, $pct));
     }
 }

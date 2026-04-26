@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\DiscountType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -16,6 +17,7 @@ use Illuminate\Support\Carbon;
  * @property bool $is_active
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Voucher newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Voucher newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Voucher query()
@@ -32,15 +34,18 @@ use Illuminate\Support\Carbon;
  * @method static \App\Models\Voucher|null first(array|string $columns = ['*'])
  * @method static \App\Models\Voucher firstOrFail(array|string $columns = ['*'])
  * @method static \Illuminate\Database\Eloquent\Collection<int, \App\Models\Voucher> get(array|string $columns = ['*'])
+ *
  * @property numeric $discountAmount
  * @property string $discountType
  * @property numeric $minPurchase
- * @property \Illuminate\Support\Carbon|null $expiresAt
+ * @property Carbon|null $expiresAt
  * @property bool $isActive
- * @property \Illuminate\Support\Carbon|null $createdAt
- * @property \Illuminate\Support\Carbon|null $updatedAt
+ * @property Carbon|null $createdAt
+ * @property Carbon|null $updatedAt
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|\App\Models\Voucher whereMinPurchase($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|\App\Models\Voucher whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  */
 class Voucher extends Model
@@ -64,7 +69,7 @@ class Voucher extends Model
         'is_global' => 'boolean',
         'discount_amount' => 'decimal:2',
         'min_purchase' => 'decimal:2',
-        'discount_type' => \App\Enums\DiscountType::class,
+        'discount_type' => DiscountType::class,
     ];
 
     // ─── Relations ────────────────────────────────────────────
@@ -83,7 +88,7 @@ class Voucher extends Model
      */
     public function calculateDiscount(float $totalPrice): float
     {
-        if ($this->discount_type === \App\Enums\DiscountType::PERCENTAGE) {
+        if ($this->discount_type === DiscountType::PERCENTAGE) {
             return round($totalPrice * ($this->discount_amount / 100), 2);
         }
 
@@ -95,10 +100,18 @@ class Voucher extends Model
      */
     public function isValidFor(float $totalPrice): bool
     {
-        if (! $this->is_active) return false;
-        if ($this->expires_at && $this->expires_at->isPast()) return false;
-        if ($totalPrice < (float) $this->min_purchase) return false;
-        if ($this->max_uses && $this->uses_count >= $this->max_uses) return false;
+        if (! $this->is_active) {
+            return false;
+        }
+        if ($this->expires_at && $this->expires_at->isPast()) {
+            return false;
+        }
+        if ($totalPrice < (float) $this->min_purchase) {
+            return false;
+        }
+        if ($this->max_uses && $this->uses_count >= $this->max_uses) {
+            return false;
+        }
 
         return true;
     }
@@ -108,7 +121,9 @@ class Voucher extends Model
      */
     public function isAccessibleBy(int $userId): bool
     {
-        if ($this->is_global) return true;
+        if ($this->is_global) {
+            return true;
+        }
 
         return $this->users()->where('users.id', $userId)->exists();
     }

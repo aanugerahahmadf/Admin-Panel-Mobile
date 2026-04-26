@@ -4,7 +4,6 @@
  * Here is the serverless function entry
  * for deployment with Vercel.
  */
-
 $uri = urldecode(
     parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? ''
 );
@@ -16,13 +15,11 @@ if ($uri !== '/' && file_exists($file = __DIR__.'/public'.$uri)) {
     require_once __DIR__.'/public/index.php';
 }
 
-
-
-
-function get_mime_type($filename) {
+function get_mime_type($filename)
+{
     $extension = strtolower(pathinfo($filename)['extension']);
 
-    $mimes = array(
+    $mimes = [
         'txt' => 'text/plain',
         'html' => 'text/html',
         'php' => 'text/html',
@@ -55,10 +52,11 @@ function get_mime_type($filename) {
         'woff' => 'application/x-woff',
         'woff2' => 'font/woff2',
         'otf' => 'font/otf',
-    );
+    ];
 
     if (isset($mimes[$extension])) {
         return $mimes[$extension];
     }
+
     return 'application/octet-stream';
 }

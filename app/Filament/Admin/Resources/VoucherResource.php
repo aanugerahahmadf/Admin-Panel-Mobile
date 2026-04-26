@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Enums\DiscountType;
 use App\Filament\Admin\Resources\VoucherResource\Pages;
 use App\Models\Voucher;
 use Filament\Forms;
@@ -14,7 +15,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 /**
  * @mixin \Eloquent
- * @property-read \App\Models\Voucher $record
+ *
+ * @property-read Voucher $record
  */
 class VoucherResource extends Resource
 {
@@ -97,8 +99,8 @@ class VoucherResource extends Resource
                             ->prefix('Rp'),
                         Forms\Components\ToggleButtons::make('discount_type')
                             ->label(__('Tipe Diskon'))
-                            ->options(\App\Enums\DiscountType::class)
-                            ->default(\App\Enums\DiscountType::FIXED)
+                            ->options(DiscountType::class)
+                            ->default(DiscountType::FIXED)
                             ->required()
                             ->inline()
                             ->reactive(),
@@ -158,11 +160,12 @@ class VoucherResource extends Resource
                     ->label(__('Kode')),
                 Tables\Columns\TextColumn::make('discount_amount')
                     ->label(__('Diskon'))
-                    ->formatStateUsing(function ($state, \App\Models\Voucher $record) {
-                        if ($record->discount_type === \App\Enums\DiscountType::PERCENTAGE) {
-                            return number_format((float) $state, 0) . '%';
+                    ->formatStateUsing(function ($state, Voucher $record) {
+                        if ($record->discount_type === DiscountType::PERCENTAGE) {
+                            return number_format((float) $state, 0).'%';
                         }
-                        return 'Rp ' . number_format((float) $state, 2, ',', '.');
+
+                        return 'Rp '.number_format((float) $state, 2, ',', '.');
                     })
                     ->alignment('center'),
                 Tables\Columns\TextColumn::make('discount_type')

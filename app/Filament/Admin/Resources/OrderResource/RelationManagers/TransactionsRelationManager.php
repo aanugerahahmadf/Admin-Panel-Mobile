@@ -3,12 +3,14 @@
 namespace App\Filament\Admin\Resources\OrderResource\RelationManagers;
 
 use App\Models\Transaction;
+use App\Services\MidtransService;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class TransactionsRelationManager extends RelationManager
 {
@@ -16,7 +18,7 @@ class TransactionsRelationManager extends RelationManager
 
     protected static ?string $recordTitleAttribute = 'reference_number';
 
-    public static function getTitle(\Illuminate\Database\Eloquent\Model $ownerRecord, string $pageClass): string
+    public static function getTitle(Model $ownerRecord, string $pageClass): string
     {
         return __('Riwayat Transaksi');
     }
@@ -87,7 +89,7 @@ class TransactionsRelationManager extends RelationManager
                         'cancelled' => 'gray',
                         default => 'gray',
                     })
-                    ->formatStateUsing(fn ($state) => match($state) {
+                    ->formatStateUsing(fn ($state) => match ($state) {
                         'pending' => __('Tertunda'),
                         'success' => __('Berhasil'),
                         'failed' => __('Gagal'),
@@ -121,25 +123,25 @@ class TransactionsRelationManager extends RelationManager
                     ->color('info')
                     ->action(function (Transaction $record) {
                         try {
-                            $midtrans = new \App\Services\MidtransService();
+                            $midtrans = new MidtransService;
                             $status = $midtrans->getTransactionStatus($record->reference_number);
-                            
+
                             if ($status) {
                                 // Status will be automatically updated in markAsSuccess/markAsFailed if changed
-                                \Filament\Notifications\Notification::make()
+                                Notification::make()
                                     ->success()
                                     ->title(__('Status Diperbarui'))
-                                    ->body(__('Status transaksi saat ini: ') . $record->status)
+                                    ->body(__('Status transaksi saat ini: ').$record->status)
                                     ->send();
                             } else {
-                                \Filament\Notifications\Notification::make()
+                                Notification::make()
                                     ->warning()
                                     ->title(__('Status Tidak Berubah'))
                                     ->body(__('Tidak ada pembaruan status dari Midtrans.'))
                                     ->send();
                             }
                         } catch (\Exception $e) {
-                            \Filament\Notifications\Notification::make()
+                            Notification::make()
                                 ->danger()
                                 ->title(__('Gagal Mengecek Status'))
                                 ->body($e->getMessage())

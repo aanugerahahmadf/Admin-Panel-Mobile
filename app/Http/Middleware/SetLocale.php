@@ -3,8 +3,11 @@
 namespace App\Http\Middleware;
 
 use App\Models\User;
+use App\Models\UserLanguage;
 use Closure;
+use Filament\Facades\Filament;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -32,12 +35,12 @@ class SetLocale
 
         if ($user) {
             // Get current DB locale via accessor. Assuming user model has a 'lang' property or relation.
-            $dbLocale = $user->lang; 
+            $dbLocale = $user->lang;
 
             if ($sessionLocale && $sessionLocale !== $dbLocale) {
                 // SYNC: Session changed (e.g. from Welcome page switcher). Persist to Database.
                 try {
-                    \App\Models\UserLanguage::updateOrCreate(
+                    UserLanguage::updateOrCreate(
                         ['model_id' => (string) $user->id, 'model_type' => get_class($user)],
                         ['lang' => $sessionLocale]
                     );
@@ -55,7 +58,7 @@ class SetLocale
         }
 
         // Detect from browser if everything else fails (new visitor)
-        if (!$locale) {
+        if (! $locale) {
             $localsConfig = config('filament-language-switcher.locals', ['id' => [], 'en' => []]);
             $supported = array_keys($localsConfig);
             $locale = $request->getPreferredLanguage($supported ?: ['id', 'en']);
@@ -64,12 +67,12 @@ class SetLocale
         if ($locale) {
             app()->setLocale($locale);
             session()->put('locale', (string) $locale);
-            
+
             // Force update for all related parts of the system
             config(['app.locale' => $locale]);
             // Ensure Filament context also respects this
-            if (class_exists(\Filament\Facades\Filament::class)) {
-                 \Illuminate\Support\Facades\App::setLocale($locale);
+            if (class_exists(Filament::class)) {
+                App::setLocale($locale);
             }
         }
 

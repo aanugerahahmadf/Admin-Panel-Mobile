@@ -3,12 +3,13 @@
 namespace App\Console\Commands;
 
 use App\Models\Voucher;
-use Illuminate\Console\Command;
 use Carbon\Carbon;
+use Illuminate\Console\Command;
 
 class ExpireVouchers extends Command
 {
     protected $signature = 'app:expire-vouchers';
+
     protected $description = 'Disables vouchers that have passed their expiration date.';
 
     public function handle()
@@ -22,6 +23,7 @@ class ExpireVouchers extends Command
 
         if ($expiredVouchers->isEmpty()) {
             $this->info('No expired vouchers found.');
+
             return;
         }
 

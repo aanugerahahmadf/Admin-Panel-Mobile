@@ -14,7 +14,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 /**
  * @mixin \Eloquent
- * @property-read \App\Models\Category $record
+ *
+ * @property-read Category $record
  */
 class CategoryResource extends Resource
 {
@@ -121,8 +122,7 @@ class CategoryResource extends Resource
                 Tables\Columns\TextColumn::make('name')->searchable()
                     ->label(__('Nama Kategori')),
                 Tables\Columns\TextColumn::make('slug')
-                    ->label(__('Slug URL'))
-,
+                    ->label(__('Slug URL')),
                 Tables\Columns\TextColumn::make('icon')
                     ->label(__('Ikon'))
 

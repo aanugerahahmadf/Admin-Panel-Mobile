@@ -33,6 +33,7 @@ use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
@@ -51,7 +52,7 @@ class AdminPanelProvider extends PanelProvider
             )
             ->emailVerification(OtpEmailVerificationPrompt::class)
             // ->sidebarFullyCollapsibleOnDesktop()
-            ->brandName(fn() => __('Dekorasi Bunga Pernikahan'))
+            ->brandName(fn () => __('Dekorasi Bunga Pernikahan'))
             ->brandLogo(asset('images/logo.png'))
             ->brandLogoHeight('3rem')
             // ->simplePageMaxContentWidth(MaxWidth::Small)
@@ -78,11 +79,11 @@ class AdminPanelProvider extends PanelProvider
             )
             ->renderHook(
                 'panels::styles.after',
-                fn (): \Illuminate\Contracts\View\View => view('filament.snap-script')
+                fn (): View => view('filament.snap-script')
             )
             ->renderHook(
                 'panels::styles.after',
-                fn (): string => \Illuminate\Support\Facades\Blade::render('@vite(\'resources/css/app.css\')')
+                fn (): string => Blade::render('@vite(\'resources/css/app.css\')')
             )
             ->renderHook(
                 'panels::footer',

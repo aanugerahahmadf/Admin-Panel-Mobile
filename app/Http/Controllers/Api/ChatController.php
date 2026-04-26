@@ -30,12 +30,12 @@ class ChatController extends Controller
             }])
             ->get(['*']);
 
-        $adminUser = User::whereHas('roles', function($q) {
+        $adminUser = User::whereHas('roles', function ($q) {
             $q->where('name', 'super_admin');
         })->first(['*']);
         $adminId = $adminUser?->id ?? 1;
         $isAdmin = $user->hasRole('super_admin');
-        $data = $inboxes->map(function (\App\Models\Inbox $inbox) use ($user, $adminId, $isAdmin) {
+        $data = $inboxes->map(function (Inbox $inbox) use ($user, $adminId, $isAdmin) {
             $lastMessage = $inbox->messages->first();
             $userIds = $inbox->user_ids ?? [];
             $otherId = collect($userIds)->first(fn ($id) => (int) $id !== (int) $user->id);
@@ -87,7 +87,7 @@ class ChatController extends Controller
             ->oldest()
             ->get(['*']);
 
-        $data = $messages->map(function (\App\Models\Message $message) use ($user) {
+        $data = $messages->map(function (Message $message) use ($user) {
             $sender = $message->sender;
 
             return [
@@ -141,7 +141,7 @@ class ChatController extends Controller
     {
         /** @var User $user */
         $user = Auth::user();
-        $adminUser = User::whereHas('roles', function($q) {
+        $adminUser = User::whereHas('roles', function ($q) {
             $q->where('name', 'super_admin');
         })->first(['*']);
         $adminId = $adminUser ? (int) $adminUser->id : 1;
@@ -203,7 +203,7 @@ class ChatController extends Controller
         if (! $user->hasRole('super_admin')) {
             return response()->json(['success' => false, 'message' => __('Tidak terautentikasi')], 403);
         }
-        $customers = User::whereHas('roles', function($q) {
+        $customers = User::whereHas('roles', function ($q) {
             $q->where('name', 'customer');
         })
             ->where('id', '!=', $user->id)

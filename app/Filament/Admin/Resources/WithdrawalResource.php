@@ -2,7 +2,9 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Enums\WithdrawalStatus;
 use App\Filament\Admin\Resources\WithdrawalResource\Pages;
+use App\Models\Bank;
 use App\Models\Withdrawal;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -17,7 +19,8 @@ use Illuminate\Support\Str;
 
 /**
  * @mixin \Eloquent
- * @property-read \App\Models\Withdrawal $record
+ *
+ * @property-read Withdrawal $record
  */
 class WithdrawalResource extends Resource
 {
@@ -93,9 +96,9 @@ class WithdrawalResource extends Resource
                         Forms\Components\Select::make('status')
                             ->searchable()
                             ->label(__('Status'))
-                            ->options(\App\Enums\WithdrawalStatus::class)
+                            ->options(WithdrawalStatus::class)
                             ->required()
-                            ->default(\App\Enums\WithdrawalStatus::PENDING),
+                            ->default(WithdrawalStatus::PENDING),
                     ])->columns(['sm' => 2]),
 
                 Forms\Components\Section::make(__('Tujuan Transfer'))
@@ -109,8 +112,8 @@ class WithdrawalResource extends Resource
                             ->native(false)
                             ->prefixIcon('heroicon-o-building-library')
                             ->live()
-                            ->afterStateUpdated(fn ($state, Forms\Set $set) => $set('bank_name', \App\Models\Bank::find($state)?->name)),
-                        
+                            ->afterStateUpdated(fn ($state, Forms\Set $set) => $set('bank_name', Bank::find($state)?->name)),
+
                         Forms\Components\Hidden::make('bank_name'),
                         Forms\Components\TextInput::make('account_number')
                             ->label(__('Nomor Rekening'))

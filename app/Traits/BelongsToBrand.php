@@ -26,7 +26,7 @@ trait BelongsToBrand
         static::addGlobalScope('brand', function (Builder $builder) {
             $brandId = WeddingOrganizer::getBrand()?->id;
             if ($brandId) {
-                $builder->where($builder->getModel()->getTable() . '.wedding_organizer_id', $brandId);
+                $builder->where($builder->getModel()->getTable().'.wedding_organizer_id', $brandId);
             }
         });
     }

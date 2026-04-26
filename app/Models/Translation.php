@@ -13,6 +13,7 @@ use Illuminate\Support\Carbon;
  * @property string $translated_text
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Translation newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Translation newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Translation query()
@@ -23,12 +24,14 @@ use Illuminate\Support\Carbon;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Translation whereTargetLocale($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Translation whereTranslatedText($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Translation whereUpdatedAt($value)
+ *
  * @property string $sourceText
  * @property string $sourceHash
  * @property string $targetLocale
  * @property string $translatedText
- * @property \Illuminate\Support\Carbon|null $createdAt
- * @property \Illuminate\Support\Carbon|null $updatedAt
+ * @property Carbon|null $createdAt
+ * @property Carbon|null $updatedAt
+ *
  * @mixin \Eloquent
  */
 class Translation extends Model

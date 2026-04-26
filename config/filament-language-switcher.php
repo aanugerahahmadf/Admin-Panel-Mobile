@@ -53,7 +53,7 @@ return [
      |
      */
     'language_switcher_middlewares' => [
-        'web', 'mobile', 
+        'web', 'mobile',
     ],
 
     /*

@@ -5,13 +5,13 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
-
 
 /**
  * @property int $id
@@ -39,6 +39,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @property-read int|null $packages_count
  * @property-read Collection<int, Review> $reviews
  * @property-read int|null $reviews_count
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WeddingOrganizer newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WeddingOrganizer newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|WeddingOrganizer query()
@@ -54,9 +55,10 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @method static \App\Models\WeddingOrganizer|null find(mixed $id, array $columns = ['*'])
  * @method static \App\Models\WeddingOrganizer findOrFail(mixed $id, array $columns = ['*'])
  * @method static \Illuminate\Database\Eloquent\Collection<int, \App\Models\WeddingOrganizer> get(array $columns = ['*'])
+ *
  * @property int $isVerified
- * @property \Illuminate\Support\Carbon|null $createdAt
- * @property \Illuminate\Support\Carbon|null $updatedAt
+ * @property Carbon|null $createdAt
+ * @property Carbon|null $updatedAt
  * @property-read mixed $businessName
  * @property-read mixed $coverImageUrl
  * @property-read mixed $logoUrl
@@ -68,8 +70,10 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @property-read bool|null $packagesExists
  * @property-read int|null $reviewsCount
  * @property-read bool|null $reviewsExists
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|\App\Models\WeddingOrganizer whereSlug($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|\App\Models\WeddingOrganizer whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  */
 class WeddingOrganizer extends Model implements HasMedia
@@ -99,15 +103,15 @@ class WeddingOrganizer extends Model implements HasMedia
         // Auto-geocode on saving ONLY if coordinates are missing or zero
         static::saving(function ($model) {
             $isMissingCoords = empty($model->latitude) || empty($model->longitude) || ($model->latitude == 0 && $model->longitude == 0);
-            
+
             if ($model->isDirty('address') && $model->address && $isMissingCoords) {
                 try {
-                    $response = \Illuminate\Support\Facades\Http::withHeaders([
+                    $response = Http::withHeaders([
                         'User-Agent' => 'WeddingOrganizerApp/1.0',
                     ])->get('https://nominatim.openstreetmap.org/search', [
-                        'q'      => $model->address,
+                        'q' => $model->address,
                         'format' => 'json',
-                        'limit'  => 1,
+                        'limit' => 1,
                     ]);
 
                     if ($response->successful() && $json = $response->json()) {
@@ -224,26 +228,29 @@ class WeddingOrganizer extends Model implements HasMedia
     public function getPhoneAttribute()
     {
         // Use DB column first, fallback to owner user
-        if (!empty($this->attributes['phone'])) {
+        if (! empty($this->attributes['phone'])) {
             return $this->attributes['phone'];
         }
+
         return self::getOwner()?->phone ?? '';
     }
 
     public function getWhatsappAttribute()
     {
-        if (!empty($this->attributes['whatsapp'])) {
+        if (! empty($this->attributes['whatsapp'])) {
             return $this->attributes['whatsapp'];
         }
+
         // fallback to phone
         return $this->getPhoneAttribute();
     }
 
     public function getEmailAttribute()
     {
-        if (!empty($this->attributes['email'])) {
+        if (! empty($this->attributes['email'])) {
             return $this->attributes['email'];
         }
+
         return self::getOwner()?->email ?? '';
     }
 
@@ -297,7 +304,7 @@ class WeddingOrganizer extends Model implements HasMedia
             return $url;
         }
 
-        return \Illuminate\Support\Facades\Storage::disk('public')->url(ltrim($url, '/'));
+        return Storage::disk('public')->url(ltrim($url, '/'));
     }
 
     private function getValidMediaUrl(?Media $media): ?string

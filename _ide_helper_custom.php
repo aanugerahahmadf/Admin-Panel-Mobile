@@ -9,9 +9,7 @@ namespace Filament\Tables {
      * @method self mobileCards()
      * @method self mobileCardFeatured(string $column, string $color = 'primary')
      */
-    class Table
-    {
-    }
+    class Table {}
 }
 
 namespace Filament\Tables\Columns {
@@ -62,7 +60,8 @@ namespace Filament\Tables\Columns {
 }
 
 namespace Filament\Forms {
-    class Form {
+    class Form
+    {
         // Add form-specific helper methods if needed
     }
 }
@@ -125,42 +124,55 @@ namespace Filament\Forms\Components {
 }
 
 namespace Filament\Resources {
+    use Illuminate\Database\Eloquent\Model;
+
     /**
-     * @property-read \Illuminate\Database\Eloquent\Model $record
+     * @property-read Model $record
      * @property-read \Filament\Resources\Resource $resource
+     *
      * @mixin \Eloquent
      */
     class Resource {}
 }
 
 namespace Filament\Resources\Pages {
+    use Illuminate\Database\Eloquent\Model;
+
     /**
-     * @property-read \Illuminate\Database\Eloquent\Model $record
+     * @property-read Model $record
      * @property-read \Filament\Resources\Resource $resource
+     *
      * @mixin \Eloquent
      */
     class EditRecord {}
-    
+
     /**
-     * @property-read \Illuminate\Database\Eloquent\Model $record
+     * @property-read Model $record
      * @property-read \Filament\Resources\Resource $resource
+     *
      * @mixin \Eloquent
      */
     class ViewRecord {}
 
     /**
      * @property-read \Filament\Resources\Resource $resource
+     *
      * @mixin \Eloquent
      */
     class ListRecords {}
 }
 
 namespace Livewire {
+    use Illuminate\Http\Request;
+    use Illuminate\Session\SessionManager;
+
     /**
-     * @property \Illuminate\Session\SessionManager $session
-     * @property \Illuminate\Http\Request $request
+     * @property SessionManager $session
+     * @property Request $request
+     *
      * @method void dispatch(string $event, ...$params)
      * @method void js(string $expression)
+     *
      * @mixin \Eloquent
      */
     class Component {}

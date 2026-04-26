@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToBrand;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -17,6 +18,7 @@ use Illuminate\Support\Carbon;
  * @property-read Package|null $package
  * @property-read User $user
  * @property-read WeddingOrganizer $weddingOrganizer
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Review newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Review newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Review query()
@@ -32,17 +34,20 @@ use Illuminate\Support\Carbon;
  * @method static \App\Models\Review|null first(array|string $columns = ['*'])
  * @method static \App\Models\Review firstOrFail(array|string $columns = ['*'])
  * @method static \Illuminate\Database\Eloquent\Collection<int, \App\Models\Review> get(array|string $columns = ['*'])
+ *
  * @property int $userId
  * @property int $weddingOrganizerId
  * @property int|null $packageId
- * @property \Illuminate\Support\Carbon|null $createdAt
- * @property \Illuminate\Support\Carbon|null $updatedAt
+ * @property Carbon|null $createdAt
+ * @property Carbon|null $updatedAt
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|\App\Models\Review whereWeddingOrganizerId($value)
+ *
  * @mixin \Eloquent
  */
 class Review extends Model
 {
-    use \App\Traits\BelongsToBrand;
+    use BelongsToBrand;
 
     protected $fillable = [
         'user_id',

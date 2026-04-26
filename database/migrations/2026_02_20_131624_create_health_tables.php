@@ -13,7 +13,7 @@ return new class extends Migration
         $connection = (new HealthCheckResultHistoryItem)->getConnectionName();
         $tableName = EloquentHealthResultStore::getHistoryItemInstance()->getTable();
 
-        if (!Schema::connection($connection)->hasTable($tableName)) {
+        if (! Schema::connection($connection)->hasTable($tableName)) {
             Schema::connection($connection)->create($tableName, function (Blueprint $table) {
                 $table->id();
 

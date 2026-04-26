@@ -2,8 +2,10 @@
 
 namespace App\Filament\Admin\Resources\PackageResource\Pages;
 
+use App\Filament\Admin\Exports\PackageExporter;
 use App\Filament\Admin\Resources\PackageResource;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 
 class ListPackages extends ListRecords
@@ -14,7 +16,7 @@ class ListPackages extends ListRecords
     {
         return [
             Actions\ExportAction::make()
-                ->exporter(\App\Filament\Admin\Exports\PackageExporter::class)
+                ->exporter(PackageExporter::class)
                 ->label(__('Ekspor Data'))
                 ->icon('heroicon-o-arrow-down-tray')
                 ->color('success'),
@@ -22,7 +24,7 @@ class ListPackages extends ListRecords
                 ->label(__('Tambah Paket'))
                 ->icon('heroicon-o-plus')
                 ->successNotification(
-                    \Filament\Notifications\Notification::make()
+                    Notification::make()
                         ->success()
                         ->title(__('Paket Ditambahkan'))
                         ->body(__('Paket baru telah berhasil ditambahkan.'))

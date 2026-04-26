@@ -4,5 +4,5 @@
 return [
     'locale' => 'en',
     'i18n' => '/js/emoji-en.js',
-    'datasource' => '/js/emoji-data.json'
+    'datasource' => '/js/emoji-data.json',
 ];

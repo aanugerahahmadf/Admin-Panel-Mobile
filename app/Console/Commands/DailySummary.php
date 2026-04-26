@@ -2,13 +2,13 @@
 
 namespace App\Console\Commands;
 
+use App\Enums\OrderStatus;
+use App\Enums\WithdrawalStatus;
 use App\Models\Order;
 use App\Models\Transaction;
 use App\Models\Withdrawal;
-use App\Enums\OrderStatus;
-use App\Enums\WithdrawalStatus;
-use Illuminate\Console\Command;
 use Carbon\Carbon;
+use Illuminate\Console\Command;
 
 class DailySummary extends Command
 {
@@ -46,7 +46,7 @@ class DailySummary extends Command
         $this->sectionTitle('TRANSACTIONS (Selesai Hari Ini)');
         $successCount = Transaction::whereDate('paid_at', $today)->where('status', 'success')->count();
         $successTotal = Transaction::whereDate('paid_at', $today)->where('status', 'success')->sum('total_amount');
-        $this->info("Total Transaksi Berhasil: {$successCount} (Rp " . number_format($successTotal, 2) . ")");
+        $this->info("Total Transaksi Berhasil: {$successCount} (Rp ".number_format($successTotal, 2).')');
         $this->newLine();
 
         $this->sectionTitle('TOPUPS & WITHDRAWALS');
@@ -58,6 +58,6 @@ class DailySummary extends Command
 
     private function sectionTitle($title)
     {
-        $this->line('<fg=cyan>' . str_pad(" $title ", 60, "=", STR_PAD_BOTH) . '</>');
+        $this->line('<fg=cyan>'.str_pad(" $title ", 60, '=', STR_PAD_BOTH).'</>');
     }
 }

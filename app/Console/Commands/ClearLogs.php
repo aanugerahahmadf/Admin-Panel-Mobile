@@ -29,10 +29,11 @@ class ClearLogs extends Command
         $this->info('Clearing application logs...');
 
         $logPath = storage_path('logs');
-        $files = File::glob($logPath . '/*.log');
+        $files = File::glob($logPath.'/*.log');
 
         if (empty($files)) {
             $this->info('No log files to clear.');
+
             return;
         }
 

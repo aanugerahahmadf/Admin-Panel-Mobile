@@ -21,7 +21,7 @@ use Jenssegers\Agent\Agent;
 use Livewire\Component;
 
 /**
- * @mixin \Livewire\Component
+ * @mixin Component
  */
 class BrowserSessionsComponent extends Component implements HasActions, HasForms
 {

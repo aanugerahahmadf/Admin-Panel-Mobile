@@ -11,12 +11,12 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Support\Enums\FontWeight;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
  * @mixin \Eloquent
- * @property-read \App\Models\Article $record
+ *
+ * @property-read Article $record
  */
 class ArticleResource extends Resource
 {

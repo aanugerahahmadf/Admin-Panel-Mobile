@@ -13,7 +13,7 @@ use Livewire\Attributes\On;
 use Livewire\Component;
 
 /**
- * @mixin \Livewire\Component
+ * @mixin Component
  */
 class Search extends Component
 {

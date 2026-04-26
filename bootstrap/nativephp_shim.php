@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\Log;
 
 if (! function_exists('nativephp_call')) {
     /**
-     * @param  string  $method
      * @param  string  $params  JSON-encoded parameter string
      * @return string JSON-encoded response
      */

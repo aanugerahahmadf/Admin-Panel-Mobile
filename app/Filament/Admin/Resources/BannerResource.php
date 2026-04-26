@@ -14,7 +14,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 /**
  * @mixin \Eloquent
- * @property-read \App\Models\Banner $record
+ *
+ * @property-read Banner $record
  */
 class BannerResource extends Resource
 {
@@ -122,7 +123,7 @@ class BannerResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            
+
             ->columns([
                 Tables\Columns\TextColumn::make('title')->searchable()
                     ->label(__('Judul Banner'))

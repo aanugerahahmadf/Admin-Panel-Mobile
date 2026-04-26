@@ -30,7 +30,7 @@ class AutoTranslator extends Translator
         // 2. FALLBACK: Jika tidak ada di file, gunakan Layanan Auto-Translation
         if ($this->autoService !== null) {
             $autoTranslated = $this->autoService->translate($key, $targetLocale);
-            
+
             if ($autoTranslated !== $key) {
                 return $this->makeReplacements($autoTranslated, $replace);
             }

@@ -43,9 +43,12 @@ class Cart extends Model
     public function getSubtotalAttribute()
     {
         $item = $this->item;
-        if (!$item) return 0;
-        
+        if (! $item) {
+            return 0;
+        }
+
         $price = $item->discount_price > 0 ? $item->discount_price : $item->price;
+
         return $price * $this->quantity;
     }
 }

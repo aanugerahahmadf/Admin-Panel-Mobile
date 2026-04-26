@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Enums\OrderPaymentStatus;
+use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -34,7 +37,7 @@ class Transaction extends Model
         'total_amount' => 'decimal:2',
         'paid_at' => 'datetime',
         'metadata' => 'json',
-        'status' => \App\Enums\PaymentStatus::class,
+        'status' => PaymentStatus::class,
     ];
 
     public function user(): BelongsTo
@@ -58,8 +61,8 @@ class Transaction extends Model
             $this->user->increment('balance', $this->amount);
         } elseif ($this->type === 'order' && $this->order) {
             $this->order->update([
-                'status' => \App\Enums\OrderStatus::CONFIRMED,
-                'payment_status' => \App\Enums\OrderPaymentStatus::PAID,
+                'status' => OrderStatus::CONFIRMED,
+                'payment_status' => OrderPaymentStatus::PAID,
             ]);
 
             // Mark voucher as used if exists
@@ -67,9 +70,9 @@ class Transaction extends Model
                 ->where('order_id', $this->order_id)
                 ->where('user_id', $this->user_id)
                 ->first();
-            
+
             if ($voucherLink && $voucherLink->voucher_id) {
-                $voucher = \App\Models\Voucher::find($voucherLink->voucher_id);
+                $voucher = Voucher::find($voucherLink->voucher_id);
                 if ($voucher) {
                     $voucher->markAsUsedBy($this->user_id, $this->order_id);
                 }
@@ -83,10 +86,10 @@ class Transaction extends Model
             'status' => 'failed',
             'notes' => $reason ?? $this->notes,
         ]);
-        
+
         if ($this->type === 'order' && $this->order) {
             $this->order->update([
-                'payment_status' => \App\Enums\OrderPaymentStatus::FAILED,
+                'payment_status' => OrderPaymentStatus::FAILED,
             ]);
         }
     }

@@ -2,15 +2,13 @@
 
 namespace App\Filament\User\Auth;
 
-use App\Models\User;
+use Filament\Actions\Action;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\TextInput;
 use Filament\Http\Responses\Auth\Contracts\LoginResponse;
 use Filament\Notifications\Notification;
 use Filament\Pages\Auth\Login as BaseLogin;
 use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 
 class Login extends BaseLogin
@@ -47,19 +45,19 @@ class Login extends BaseLogin
             ->extraInputAttributes(['tabindex' => 1]);
     }
 
-    public function registerAction(): \Filament\Actions\Action
+    public function registerAction(): Action
     {
         return parent::registerAction()
             ->label(__('Daftar Akun Baru'));
     }
 
-    public function passwordResetAction(): \Filament\Actions\Action
+    public function passwordResetAction(): Action
     {
         return parent::passwordResetAction()
             ->label(__('Lupa Kata Sandi?'));
     }
 
-    protected function getAuthenticateFormAction(): \Filament\Actions\Action
+    protected function getAuthenticateFormAction(): Action
     {
         return parent::getAuthenticateFormAction()
             ->label(__('Log In'));

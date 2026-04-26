@@ -6,7 +6,7 @@ use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
 
-enum DiscountType: string implements HasLabel, HasColor, HasIcon
+enum DiscountType: string implements HasColor, HasIcon, HasLabel
 {
     case FIXED = 'fixed';
     case PERCENTAGE = 'percentage';

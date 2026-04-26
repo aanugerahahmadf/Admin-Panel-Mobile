@@ -2,8 +2,11 @@
 
 namespace App\Services;
 
+use App\Filament\User\Resources\OrderResource;
+use App\Jobs\SendBotReply;
 use App\Models\Inbox;
 use App\Models\Message;
+use App\Models\Order;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 
@@ -14,11 +17,11 @@ class ChatService
      */
     public static function getOrCreateInboxWithAdmin(int $userId): Inbox
     {
-        $admin = User::whereHas('roles', function($q) {
+        $admin = User::whereHas('roles', function ($q) {
             $q->where('name', 'super_admin');
         })->first();
 
-        if (!$admin) {
+        if (! $admin) {
             throw new \Exception('Super Admin not found.');
         }
 
@@ -26,7 +29,7 @@ class ChatService
             ->whereJsonContains('user_ids', $admin->id)
             ->first();
 
-        if (!$inbox) {
+        if (! $inbox) {
             $inbox = Inbox::create([
                 'user_ids' => [$userId, $admin->id],
             ]);
@@ -49,13 +52,13 @@ class ChatService
         $message = Message::create([
             'inbox_id' => $inbox->id,
             'user_id' => Auth::id(),
-            'message' => __('Saya menanyakan tentang ' . ($meta['type'] == 'product' ? 'produk' : 'paket') . ' ini: ') . $meta['name'],
+            'message' => __('Saya menanyakan tentang '.($meta['type'] == 'product' ? 'produk' : 'paket').' ini: ').$meta['name'],
             'meta' => $meta,
         ]);
 
         // Dispatch bot reply if user is not admin
-        if (Auth::user() && !Auth::user()->hasRole('super_admin')) {
-            \App\Jobs\SendBotReply::dispatch($message->id)->delay(now()->addSeconds(5));
+        if (Auth::user() && ! Auth::user()->hasRole('super_admin')) {
+            SendBotReply::dispatch($message->id)->delay(now()->addSeconds(5));
         }
 
         return $message;
@@ -64,22 +67,22 @@ class ChatService
     /**
      * Send an order confirmation message (order card) to an inbox.
      */
-    public static function sendOrderMessage(Inbox $inbox, \App\Models\Order $order): Message
+    public static function sendOrderMessage(Inbox $inbox, Order $order): Message
     {
         $type = $order->package_id ? 'package' : 'product';
         $item = $order->package ?? $order->product;
-        
+
         $message = Message::create([
             'inbox_id' => $inbox->id,
             'user_id' => $order->user_id,
-            'message' => __('Halo Admin, saya baru saja membuat pesanan baru dengan nomor: ') . $order->order_number,
+            'message' => __('Halo Admin, saya baru saja membuat pesanan baru dengan nomor: ').$order->order_number,
             'meta' => [
                 'type' => $type,
                 'id' => $item->id,
                 'name' => $item->name,
                 'price' => $order->total_price,
                 'image' => $item->image_url,
-                'url' => \App\Filament\User\Resources\OrderResource::getUrl('index') . '?tableFilters[id][value]=' . $order->id,
+                'url' => OrderResource::getUrl('index').'?tableFilters[id][value]='.$order->id,
                 'is_order' => true,
                 'order_number' => $order->order_number,
                 'order_status' => $order->status,
@@ -87,8 +90,8 @@ class ChatService
         ]);
 
         // Dispatch bot reply for new order
-        if ($order->user && !$order->user->hasRole('super_admin')) {
-            \App\Jobs\SendBotReply::dispatch($message->id)->delay(now()->addSeconds(5));
+        if ($order->user && ! $order->user->hasRole('super_admin')) {
+            SendBotReply::dispatch($message->id)->delay(now()->addSeconds(5));
         }
 
         return $message;

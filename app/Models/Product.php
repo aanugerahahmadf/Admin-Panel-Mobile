@@ -2,16 +2,17 @@
 
 namespace App\Models;
 
+use App\Traits\BelongsToBrand;
+use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class Product extends Model implements HasMedia
 {
+    use BelongsToBrand;
     use InteractsWithMedia;
-    use \App\Traits\BelongsToBrand;
 
     protected $fillable = [
         'wedding_organizer_id',
@@ -42,7 +43,7 @@ class Product extends Model implements HasMedia
         parent::boot();
         static::creating(function ($product) {
             if (empty($product->slug)) {
-                $product->slug = Str::slug($product->name) . '-' . Str::random(5);
+                $product->slug = Str::slug($product->name).'-'.Str::random(5);
             }
         });
     }
@@ -61,7 +62,7 @@ class Product extends Model implements HasMedia
     {
         $fallback = asset('images/placeholders/image-placeholder.png');
         $url = $this->getFirstMediaUrl('product_image') ?: null;
-        
+
         return $this->normalizeImageUrl($url, $fallback);
     }
 
@@ -79,7 +80,7 @@ class Product extends Model implements HasMedia
             return $url;
         }
 
-        return asset('storage/' . ltrim($url, '/'));
+        return asset('storage/'.ltrim($url, '/'));
     }
 
     public function getFinalPriceAttribute()
@@ -96,8 +97,8 @@ class Product extends Model implements HasMedia
     public function getIsWishlistedAttribute(): bool
     {
         // Try Filament (Web/Native)
-        if (class_exists(\Filament\Facades\Filament::class) && \Filament\Facades\Filament::auth()->check()) {
-            return $this->wishlists()->where('user_id', \Filament\Facades\Filament::auth()->id())->exists();
+        if (class_exists(Filament::class) && Filament::auth()->check()) {
+            return $this->wishlists()->where('user_id', Filament::auth()->id())->exists();
         }
 
         // Try Sanctum (Mobile API)

@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Resources;
 
+use App\Enums\OrderPaymentStatus;
+use App\Enums\OrderStatus;
 use App\Filament\Admin\Pages\MessagesPage;
 use App\Filament\Admin\Resources\OrderResource\Pages;
 use App\Filament\Admin\Resources\OrderResource\RelationManagers;
@@ -9,6 +11,7 @@ use App\Models\Inbox;
 use App\Models\Message;
 use App\Models\Order;
 use App\Models\User;
+use App\Services\MidtransService;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
@@ -20,10 +23,10 @@ use Illuminate\Support\Facades\Auth;
 
 /**
  * @mixin \Eloquent
- * @property-read \App\Models\Order $record
+ *
+ * @property-read Order $record
  */
 class OrderResource extends Resource
-
 {
     protected static ?string $model = Order::class;
 
@@ -138,13 +141,13 @@ class OrderResource extends Resource
                                 Forms\Components\Select::make('status')
                                     ->searchable()
                                     ->label(__('Status Pengerjaan'))
-                                    ->options(\App\Enums\OrderStatus::class)
+                                    ->options(OrderStatus::class)
                                     ->native(false)
                                     ->required(),
                                 Forms\Components\Select::make('payment_status')
                                     ->searchable()
                                     ->label(__('Status Pembayaran'))
-                                    ->options(\App\Enums\OrderPaymentStatus::class)
+                                    ->options(OrderPaymentStatus::class)
                                     ->native(false)
                                     ->required(),
                             ]),
@@ -165,7 +168,7 @@ class OrderResource extends Resource
                     ->alignment('center'),
                 Tables\Columns\TextColumn::make('total_price')
                     ->label(__('Harga'))
-                    ->formatStateUsing(fn ($state) => 'Rp ' . number_format($state, 2, ',', '.'))
+                    ->formatStateUsing(fn ($state) => 'Rp '.number_format($state, 2, ',', '.'))
                     ->alignment('right'),
                 Tables\Columns\TextColumn::make('status')
                     ->label(__('Status'))
@@ -202,43 +205,45 @@ class OrderResource extends Resource
                         ->label(__('Selesaikan'))
                         ->icon('heroicon-m-check-badge')
                         ->color('success')
-                        ->visible(fn ($record) => $record->status === \App\Enums\OrderStatus::CONFIRMED)
+                        ->visible(fn ($record) => $record->status === OrderStatus::CONFIRMED)
                         ->requiresConfirmation()
                         ->successNotificationTitle(__('Pesanan Selesai'))
-                        ->action(fn ($record) => $record->update(['status' => \App\Enums\OrderStatus::COMPLETED])),
+                        ->action(fn ($record) => $record->update(['status' => OrderStatus::COMPLETED])),
 
                     Tables\Actions\Action::make('refresh_midtrans_status')
                         ->label(__('Sinkronkan Pembayaran'))
                         ->icon('heroicon-o-arrow-path')
                         ->color('warning')
-                        ->visible(fn ($record) => $record?->payment_status === \App\Enums\OrderPaymentStatus::PENDING)
+                        ->visible(fn ($record) => $record?->payment_status === OrderPaymentStatus::PENDING)
                         ->action(function (Order $record) {
                             try {
                                 $transaction = $record->latestTransaction;
-                                if (!$transaction) return;
-                                $midtrans = new \App\Services\MidtransService();
+                                if (! $transaction) {
+                                    return;
+                                }
+                                $midtrans = new MidtransService;
                                 $status = $midtrans->getStatus($midtrans->getMidtransOrderId($transaction));
                                 $data = (array) $status;
                                 if ($midtrans->isSuccess($data)) {
                                     $transaction->markAsSuccess();
-                                    \Filament\Notifications\Notification::make()->title(__('Pembayaran Berhasil!'))->success()->send();
+                                    Notification::make()->title(__('Pembayaran Berhasil!'))->success()->send();
                                 } elseif ($midtrans->isFailed($data)) {
-                                    $transaction->markAsFailed('Midtrans: ' . ($data['transaction_status'] ?? 'failed'));
-                                    \Filament\Notifications\Notification::make()->title(__('Pembayaran Gagal/Kadaluarsa'))->danger()->send();
+                                    $transaction->markAsFailed('Midtrans: '.($data['transaction_status'] ?? 'failed'));
+                                    Notification::make()->title(__('Pembayaran Gagal/Kadaluarsa'))->danger()->send();
                                 } else {
-                                    \Filament\Notifications\Notification::make()->title(__('Pembayaran Masih Pending'))->info()->send();
+                                    Notification::make()->title(__('Pembayaran Masih Pending'))->info()->send();
                                 }
                             } catch (\Exception $e) {
-                                \Filament\Notifications\Notification::make()->title(__('Gagal Sinkronisasi'))->body($e->getMessage())->danger()->send();
+                                Notification::make()->title(__('Gagal Sinkronisasi'))->body($e->getMessage())->danger()->send();
                             }
                         }),
 
                 ])->label(__('Aksi'))
-                  ->icon('heroicon-m-ellipsis-vertical')
-                  ->size('lg')
-                  ->color('primary')
-                  ->button()
-                  ->extraAttributes(['style' => 'min-width: 120px']),
+                    ->icon('heroicon-m-ellipsis-vertical')
+                    ->size('lg')
+                    ->color('primary')
+                    ->button()
+                    ->extraAttributes(['style' => 'min-width: 120px']),
 
                 Tables\Actions\Action::make('chat')
                     ->label(__('Hubungi'))
@@ -281,7 +286,7 @@ class OrderResource extends Resource
                             ]);
                         }
 
-                        return MessagesPage::getUrl() . '/' . $inbox->id;
+                        return MessagesPage::getUrl().'/'.$inbox->id;
                     }),
                 Tables\Actions\ViewAction::make()
                     ->slideOver()

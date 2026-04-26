@@ -7,18 +7,17 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Illuminate\Contracts\View\View;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Joaopaulolndev\FilamentEditProfile\Concerns\HasSort;
 use Livewire\Component;
 use Native\Mobile\Facades\System;
 
 /**
- * @mixin \Livewire\Component
+ * @mixin Component
+ *
  * @property string $selectedLocale
  */
 class MobileSettingsComponent extends Component implements HasForms
-
 {
     use HasSort;
     use InteractsWithForms;
@@ -40,7 +39,7 @@ class MobileSettingsComponent extends Component implements HasForms
     public function changeLanguage($locale): void
     {
         $locals = config('filament-language-switcher.locals', []);
-        
+
         if (array_key_exists($locale, $locals)) {
             // 1. Force update Session
             session()->put('locale', $locale);
@@ -63,7 +62,7 @@ class MobileSettingsComponent extends Component implements HasForms
                     ['model_id' => (string) $user->id, 'model_type' => 'App\Models\User'],
                     ['lang' => $locale]
                 );
-                
+
                 // Nuclear purge of user-specific caches
                 cache()->forget("user_lang_{$user->id}");
                 cache()->forget("active_trans_map_{$locale}");

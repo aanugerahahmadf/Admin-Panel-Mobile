@@ -2,14 +2,14 @@
 
 namespace App\Console\Commands;
 
-use Illuminate\Console\Command;
-use App\Models\Product;
 use App\Models\Package;
-use Illuminate\Support\Facades\File;
+use App\Models\Product;
+use Illuminate\Console\Command;
 
 class SyncCbirCsv extends Command
 {
     protected $signature = 'cbir:sync';
+
     protected $description = 'Sync database products and packages to CBIR dataset CSV';
 
     public function handle()
@@ -34,11 +34,11 @@ class SyncCbirCsv extends Command
                     'product',
                     $media->getPath(),
                     $product->image_url,
-                    $product->price
+                    $product->price,
                 ]);
             }
         }
-        $this->info("Exported " . count($products) . " products.");
+        $this->info('Exported '.count($products).' products.');
 
         // 2. Export Packages
         $packages = Package::all();
@@ -52,15 +52,15 @@ class SyncCbirCsv extends Command
                     'package',
                     $media->getPath(),
                     $package->image_url,
-                    $package->price
+                    $package->price,
                 ]);
             }
         }
-        $this->info("Exported " . count($packages) . " packages.");
+        $this->info('Exported '.count($packages).' packages.');
 
         fclose($handle);
         $this->info("Sync complete! CSV saved to: {$csvPath}");
-        
+
         return 0;
     }
 }

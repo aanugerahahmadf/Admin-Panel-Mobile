@@ -2,17 +2,20 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\OrderPaymentStatus;
+use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Package;
+use App\Models\Transaction;
 use App\Models\Voucher;
+use App\Services\MidtransService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use App\Enums\OrderStatus;
-use App\Enums\OrderPaymentStatus;
 
 class OrderController extends Controller
 {
@@ -43,7 +46,7 @@ class OrderController extends Controller
             $products = $orders->products();
 
             // Manual serialize agar response konsisten (termasuk wedding_organizer di level order)
-            $data = collect($products)->map(function (\App\Models\Order $order) {
+            $data = collect($products)->map(function (Order $order) {
                 $pkg = $order->package;
                 $wo = $pkg?->weddingOrganizer;
 
@@ -214,37 +217,37 @@ class OrderController extends Controller
             }
 
             // --- Create Transaction for Midtrans ---
-            $reference = 'TRX-' . time() . '-' . \Illuminate\Support\Str::random(4);
-            
-            $transaction = \App\Models\Transaction::create([
-                'user_id'          => Auth::id(),
-                'order_id'         => $order->id,
-                'type'             => 'order',
+            $reference = 'TRX-'.time().'-'.Str::random(4);
+
+            $transaction = Transaction::create([
+                'user_id' => Auth::id(),
+                'order_id' => $order->id,
+                'type' => 'order',
                 'reference_number' => $reference,
-                'amount'           => $order->total_price,
-                'admin_fee'        => 0,
-                'total_amount'     => $order->total_price,
-                'status'           => 'pending',
-                'payment_gateway'  => 'midtrans',
-                'notes'            => __('Pembayaran Pesanan #') . $order->order_number,
+                'amount' => $order->total_price,
+                'admin_fee' => 0,
+                'total_amount' => $order->total_price,
+                'status' => 'pending',
+                'payment_gateway' => 'midtrans',
+                'notes' => __('Pembayaran Pesanan #').$order->order_number,
             ]);
 
             try {
-                $midtrans = new \App\Services\MidtransService();
+                $midtrans = new MidtransService;
                 $transaction = $midtrans->createTransactionSnap($transaction);
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('[Midtrans] Snap creation failed for api order payment', [
+                Log::error('[Midtrans] Snap creation failed for api order payment', [
                     'reference' => $transaction->reference_number,
-                    'error'     => $e->getMessage(),
+                    'error' => $e->getMessage(),
                 ]);
             }
 
             return response()->json([
-                'status'  => 'success',
+                'status' => 'success',
                 'message' => __('Pembayaran berhasil diinisiasi'),
-                'data'    => [
+                'data' => [
                     'transaction' => $transaction->fresh(),
-                    'snap_token'  => $transaction->snap_token,
+                    'snap_token' => $transaction->snap_token,
                     'payment_url' => $transaction->payment_url,
                 ],
             ]);
@@ -334,7 +337,7 @@ class OrderController extends Controller
             if (in_array($order->status, [OrderStatus::COMPLETED, OrderStatus::CANCELLED])) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => __('Pesanan sudah dalam status: ') . ($order->status instanceof \App\Enums\OrderStatus ? $order->status->getLabel() : (string) $order->status),
+                    'message' => __('Pesanan sudah dalam status: ').($order->status instanceof OrderStatus ? $order->status->getLabel() : (string) $order->status),
                 ], 400);
             }
 

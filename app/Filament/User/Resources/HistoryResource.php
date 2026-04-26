@@ -2,15 +2,19 @@
 
 namespace App\Filament\User\Resources;
 
+use App\Filament\User\Resources\HistoryResource\Pages\ListHistories;
+use App\Models\History;
+use Filament\Facades\Filament;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Infolists\Components\Grid;
+use Filament\Infolists\Components\Section;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\TextEntry\TextEntrySize;
+use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Filament\Support\Enums\FontWeight;
-use Illuminate\Support\Facades\DB;
-use App\Models\History;
 
 class HistoryResource extends Resource
 {
@@ -19,7 +23,7 @@ class HistoryResource extends Resource
     protected static ?int $navigationSort = 6;
 
     protected static ?string $navigationIcon = 'heroicon-o-clock';
-    
+
     public static function getGloballySearchableAttributes(): array
     {
         return ['reference_number', 'type'];
@@ -58,7 +62,7 @@ class HistoryResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->where('user_id', \Filament\Facades\Filament::auth()->id())
+            ->where('user_id', Filament::auth()->id())
             ->latest();
     }
 
@@ -91,29 +95,29 @@ class HistoryResource extends Resource
                     // Header Area with Icon & Type
                     Tables\Columns\Layout\Split::make([
                         Tables\Columns\TextColumn::make('type')
-                            ->formatStateUsing(fn($state) => match($state) {
+                            ->formatStateUsing(fn ($state) => match ($state) {
                                 'order' => __('Pembelian'),
                                 default => ucfirst($state)
                             })
                             ->badge()
-                            ->color(fn($record) => match($record->type) {
+                            ->color(fn ($record) => match ($record->type) {
                                 'order' => 'primary',
                                 default => 'gray'
                             })
-                            ->icon(fn($record) => match($record->type) {
+                            ->icon(fn ($record) => match ($record->type) {
                                 'order' => 'heroicon-m-shopping-bag',
                                 default => 'heroicon-m-clock'
                             }),
-                        
+
                         Tables\Columns\TextColumn::make('status')
                             ->badge()
-                            ->formatStateUsing(fn ($state) => match($state) {
+                            ->formatStateUsing(fn ($state) => match ($state) {
                                 'pending' => __('Menunggu'),
                                 'success', 'completed', 'approved', 'paid', 'confirmed' => __('Berhasil'),
                                 'failed', 'rejected', 'cancelled', 'expired' => __('Gagal'),
                                 default => ucfirst($state),
                             })
-                            ->color(fn ($state) => match($state) {
+                            ->color(fn ($state) => match ($state) {
                                 'pending' => 'warning',
                                 'success', 'completed', 'approved' => 'success',
                                 'failed', 'rejected', 'cancelled' => 'danger',
@@ -125,12 +129,12 @@ class HistoryResource extends Resource
                     // Main Amount Area
                     Tables\Columns\Layout\Stack::make([
                         Tables\Columns\TextColumn::make('amount')
-                            ->formatStateUsing(fn ($state, $record) => '- Rp ' . number_format((float)$state, 0, ',', '.'))
+                            ->formatStateUsing(fn ($state, $record) => '- Rp '.number_format((float) $state, 0, ',', '.'))
                             ->weight('black')
                             ->size('xl')
                             ->color('danger')
                             ->extraAttributes(['class' => 'mt-4 mb-1']),
-                        
+
                         Tables\Columns\TextColumn::make('info')
                             ->formatStateUsing(fn ($state) => __($state))
                             ->size('xs')
@@ -146,7 +150,7 @@ class HistoryResource extends Resource
                             ->size('xs')
                             ->color('gray')
                             ->weight('medium'),
-                        
+
                         Tables\Columns\TextColumn::make('created_at')
                             ->dateTime('d M Y, H:i')
                             ->size('xs')
@@ -154,7 +158,7 @@ class HistoryResource extends Resource
                             ->alignEnd(),
                     ])->extraAttributes(['class' => 'mt-4 pt-3']),
                 ])->extraAttributes([
-                    'class' => 'bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-800'
+                    'class' => 'bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-800',
                 ]),
             ])
             ->filters([
@@ -199,59 +203,59 @@ class HistoryResource extends Resource
             ])
             ->actionsAlignment('center')
             ->extraAttributes([
-                'class' => 'filament-table-actions-container !flex !flex-row !gap-1 !p-3 !bg-gray-50/50 dark:!bg-white/5 !border-t dark:!border-gray-800'
+                'class' => 'filament-table-actions-container !flex !flex-row !gap-1 !p-3 !bg-gray-50/50 dark:!bg-white/5 !border-t dark:!border-gray-800',
             ]);
 
     }
 
-    public static function infolist(\Filament\Infolists\Infolist $infolist): \Filament\Infolists\Infolist
+    public static function infolist(Infolist $infolist): Infolist
     {
         return $infolist
             ->schema([
-                \Filament\Infolists\Components\Section::make(__('Data Transaksi'))
+                Section::make(__('Data Transaksi'))
                     ->schema([
-                        \Filament\Infolists\Components\Grid::make(2)->schema([
-                            \Filament\Infolists\Components\TextEntry::make('reference_number')
+                        Grid::make(2)->schema([
+                            TextEntry::make('reference_number')
                                 ->label(__('ID Transaksi'))
                                 ->weight('bold')
                                 ->copyable(),
-                            \Filament\Infolists\Components\TextEntry::make('type')
+                            TextEntry::make('type')
                                 ->label(__('Jenis'))
                                 ->badge()
-                                ->formatStateUsing(fn($state) => match($state) {
+                                ->formatStateUsing(fn ($state) => match ($state) {
                                     'order' => __('Pembelian Paket'),
                                     default => ucfirst($state),
                                 }),
-                            \Filament\Infolists\Components\TextEntry::make('status')
+                            TextEntry::make('status')
                                 ->label(__('Status'))
                                 ->badge()
-                                ->formatStateUsing(fn ($state) => match($state) {
+                                ->formatStateUsing(fn ($state) => match ($state) {
                                     'pending' => __('Menunggu Konfirmasi'),
                                     'success', 'completed', 'approved', 'paid' => __('Selesai/Berhasil'),
                                     'failed', 'rejected', 'cancelled' => __('Gagal/Ditolak'),
                                     default => ucfirst($state),
                                 })
-                                ->color(fn ($state) => match($state) {
+                                ->color(fn ($state) => match ($state) {
                                     'pending' => 'warning',
                                     'success', 'completed', 'approved' => 'success',
                                     'failed', 'rejected', 'cancelled' => 'danger',
                                     default => 'gray',
                                 }),
-                            \Filament\Infolists\Components\TextEntry::make('created_at')
+                            TextEntry::make('created_at')
                                 ->label(__('Waktu Transaksi'))
                                 ->dateTime('d F Y, H:i'),
                         ]),
-                        \Filament\Infolists\Components\TextEntry::make('amount')
+                        TextEntry::make('amount')
                             ->label(__('Nominal'))
-                            ->formatStateUsing(fn ($state, $record) => '- Rp ' . number_format($state, 0, ',', '.'))
+                            ->formatStateUsing(fn ($state, $record) => '- Rp '.number_format($state, 0, ',', '.'))
                             ->weight('black')
-                            ->size(\Filament\Infolists\Components\TextEntry\TextEntrySize::Large)
+                            ->size(TextEntrySize::Large)
                             ->color('danger'),
-                        \Filament\Infolists\Components\TextEntry::make('info')
+                        TextEntry::make('info')
                             ->label(__('Keterangan'))
                             ->formatStateUsing(fn ($state) => __($state))
                             ->color('gray'),
-                        \Filament\Infolists\Components\TextEntry::make('notes')
+                        TextEntry::make('notes')
                             ->label(__('Catatan'))
                             ->formatStateUsing(fn ($state) => __($state))
 
@@ -263,7 +267,7 @@ class HistoryResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => \App\Filament\User\Resources\HistoryResource\Pages\ListHistories::route('/'),
+            'index' => ListHistories::route('/'),
         ];
     }
 }

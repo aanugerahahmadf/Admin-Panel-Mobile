@@ -2,24 +2,24 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
-use App\Models\Product;
-use App\Models\Package;
 use App\Models\Category;
+use App\Models\Package;
+use App\Models\Product;
 use App\Models\WeddingOrganizer;
-use Illuminate\Support\Str;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
 
 class DecorationDatasetSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->command->info("--- Initializing Wedding Decoration Dataset Seeder ---");
+        $this->command->info('--- Initializing Wedding Decoration Dataset Seeder ---');
 
         // 1. Ensure Wedding Organizer exists (Using the first existing profile)
         $wo = WeddingOrganizer::first();
-        
-        if (!$wo) {
+
+        if (! $wo) {
             $wo = WeddingOrganizer::create([
                 'name' => 'Ayra Wedding Organizer',
                 'address' => 'AI Core Street No. 1',
@@ -80,7 +80,7 @@ class DecorationDatasetSeeder extends Seeder
 
         foreach ($products as $data) {
             $slug = Str::slug($data['name']);
-            
+
             // Seed Product
             $product = Product::updateOrCreate(
                 ['slug' => $slug],
@@ -96,20 +96,20 @@ class DecorationDatasetSeeder extends Seeder
 
             // Seed Package
             $package = Package::updateOrCreate(
-                ['slug' => $slug . '-package'],
+                ['slug' => $slug.'-package'],
                 [
                     'wedding_organizer_id' => $wo->id,
                     'category_id' => $categoryModels[$data['category']]->id,
-                    'name' => $data['name'] . ' Package',
-                    'description' => 'Full service package for ' . $data['name'],
+                    'name' => $data['name'].' Package',
+                    'description' => 'Full service package for '.$data['name'],
                     'price' => $data['price'] + 5000000,
                     'stock' => 5,
                 ]
             );
 
             // Register distinct images
-            $productImage = $sourceDir . 'products/' . $data['filename'];
-            $packageImage = $sourceDir . 'packages/' . $data['filename'];
+            $productImage = $sourceDir.'products/'.$data['filename'];
+            $packageImage = $sourceDir.'packages/'.$data['filename'];
 
             // Add to Product (Close-up/Component)
             if (File::exists($productImage)) {
@@ -130,6 +130,6 @@ class DecorationDatasetSeeder extends Seeder
             }
         }
 
-        $this->command->info("--- Wedding Decoration Dataset Seeding Complete ---");
+        $this->command->info('--- Wedding Decoration Dataset Seeding Complete ---');
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Filament\User\Auth;
 
 use App\Models\User;
+use Filament\Actions\Action;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Textarea;
@@ -10,6 +11,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Components\Wizard\Step;
 use Filament\Forms\Form;
+use Filament\Forms\Set;
 use Filament\Pages\Auth\Register as BaseRegister;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Hash;
@@ -86,8 +88,10 @@ class Register extends BaseRegister
                                 ->required()
                                 ->maxLength(255)
                                 ->live(onBlur: true)
-                                ->afterStateUpdated(function ($state, \Filament\Forms\Set $set) {
-                                    if (blank($state)) return;
+                                ->afterStateUpdated(function ($state, Set $set) {
+                                    if (blank($state)) {
+                                        return;
+                                    }
                                     $parts = explode(' ', trim($state));
                                     $firstName = array_shift($parts);
                                     $lastName = count($parts) > 0 ? array_pop($parts) : '';
@@ -117,7 +121,7 @@ class Register extends BaseRegister
                         ]),
                 ])
                     ->submitAction(new HtmlString('<button type="submit" style="background-color: #e11d48; color: white; padding: 0.5rem 1.5rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; border: none; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor=\'#be123c\'" onmouseout="this.style.backgroundColor=\'#e11d48\'">'.__('Daftar').'</button>')),
-                ])
+            ])
             ->statePath('data');
     }
 
@@ -150,7 +154,7 @@ class Register extends BaseRegister
         return $user;
     }
 
-    public function loginAction(): \Filament\Actions\Action
+    public function loginAction(): Action
     {
         return parent::loginAction()
             ->label(__('Sudah punya akun? Masuk'));

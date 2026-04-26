@@ -3,10 +3,12 @@
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\VerifyCsrfToken;
 use App\Providers\AutoTranslationServiceProvider;
+use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
+use Illuminate\Session\Middleware\StartSession;
 
 /*
 |--------------------------------------------------------------------------
@@ -36,16 +38,16 @@ $app = Application::configure(basePath: dirname(__DIR__))
 
         // Define mobile group for NativePHP
         $middleware->group('mobile', [
-            \Illuminate\Cookie\Middleware\EncryptCookies::class,
-            \Illuminate\Session\Middleware\StartSession::class,
-            SetLocale::class
+            EncryptCookies::class,
+            StartSession::class,
+            SetLocale::class,
         ]);
 
-        $middleware->replace(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class, VerifyCsrfToken::class);
+        $middleware->replace(ValidateCsrfToken::class, VerifyCsrfToken::class);
 
         // Trust proxies for Vercel, Production, or ngrok development
-        if (env('VERCEL') || 
-            env('APP_ENV') === 'production' || 
+        if (env('VERCEL') ||
+            env('APP_ENV') === 'production' ||
             str_contains((string) env('APP_URL'), 'ngrok-free.dev') ||
             (isset($_SERVER['HTTP_X_FORWARDED_HOST']) && str_contains($_SERVER['HTTP_X_FORWARDED_HOST'], 'ngrok')) ||
             (isset($_SERVER['HTTP_HOST']) && str_contains($_SERVER['HTTP_HOST'], 'ngrok'))

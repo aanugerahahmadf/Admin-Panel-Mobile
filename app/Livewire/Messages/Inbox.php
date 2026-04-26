@@ -12,8 +12,8 @@ use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
-use Filament\Forms;
 use Filament\Facades\Filament;
+use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
@@ -27,7 +27,7 @@ use Livewire\Attributes\On;
 use Livewire\Component;
 
 /**
- * @mixin \Livewire\Component
+ * @mixin Component
  */
 class Inbox extends Component implements HasActions, HasForms
 {
@@ -54,11 +54,11 @@ class Inbox extends Component implements HasActions, HasForms
         /** @var Builder $query */
         $query = InboxModel::whereJsonContains('user_ids', $userId, 'and', false);
 
-        if (!$isAdmin) {
-            $adminIds = User::whereHas('roles', function($q) {
+        if (! $isAdmin) {
+            $adminIds = User::whereHas('roles', function ($q) {
                 $q->where('name', 'super_admin');
             })->pluck('id')->toArray();
-            $query->where(function($q) use ($adminIds) {
+            $query->where(function ($q) use ($adminIds) {
                 foreach ($adminIds as $adminId) {
                     $q->orWhereJsonContains('user_ids', $adminId);
                 }
@@ -76,11 +76,11 @@ class Inbox extends Component implements HasActions, HasForms
         $isAdmin = Filament::getCurrentPanel()?->getId() === 'admin';
         $query = Auth::user()->allConversations();
 
-        if (!$isAdmin) {
-            $adminIds = User::whereHas('roles', function($q) {
+        if (! $isAdmin) {
+            $adminIds = User::whereHas('roles', function ($q) {
                 $q->where('name', 'super_admin');
             })->pluck('id')->toArray();
-            $query->where(function($q) use ($adminIds) {
+            $query->where(function ($q) use ($adminIds) {
                 foreach ($adminIds as $adminId) {
                     $q->orWhereJsonContains('user_ids', $adminId);
                 }
@@ -99,16 +99,16 @@ class Inbox extends Component implements HasActions, HasForms
             ->form([
                 Forms\Components\Select::make('user_ids')
                     ->label(__('Select User'))
-                    ->options(function() {
+                    ->options(function () {
                         $isAdmin = Filament::getCurrentPanel()?->getId() === 'admin';
                         $query = User::query();
-                        
+
                         if ($isAdmin) {
                             // Admin can talk to anyone except themselves
                             return $query->where('id', '!=', Auth::id())->pluck('full_name', 'id')->toArray();
                         } else {
                             // User can ONLY talk to admins (super_admin role)
-                            return $query->whereHas('roles', function($q) {
+                            return $query->whereHas('roles', function ($q) {
                                 $q->where('name', 'super_admin');
                             })->pluck('full_name', 'id')->toArray();
                         }
@@ -169,9 +169,9 @@ class Inbox extends Component implements HasActions, HasForms
                 ]);
 
                 $isAdmin = Filament::getCurrentPanel()?->getId() === 'admin';
-                $redirectUrl = $isAdmin 
-                    ? AdminMessagesPage::getUrl() . '/' . $inboxId 
-                    : UserMessagesPage::getUrl() . '/' . $inboxId;
+                $redirectUrl = $isAdmin
+                    ? AdminMessagesPage::getUrl().'/'.$inboxId
+                    : UserMessagesPage::getUrl().'/'.$inboxId;
 
                 return redirect()->to($redirectUrl);
             })->button();
@@ -191,8 +191,8 @@ class Inbox extends Component implements HasActions, HasForms
                 ->send();
 
             $isAdmin = Filament::getCurrentPanel()?->getId() === 'admin';
-            $redirectUrl = $isAdmin 
-                ? AdminMessagesPage::getUrl() 
+            $redirectUrl = $isAdmin
+                ? AdminMessagesPage::getUrl()
                 : UserMessagesPage::getUrl();
 
             return $this->redirect($redirectUrl);

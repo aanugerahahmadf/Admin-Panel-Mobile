@@ -18,6 +18,7 @@ use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Notifications\DatabaseNotificationCollection;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\HasApiTokens;
 use Laravel\Sanctum\PersonalAccessToken;
 use Spatie\Permission\Models\Permission;
@@ -72,6 +73,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read int|null $tokens_count
  * @property-read Collection<int, Wishlist> $wishlists
  * @property-read int|null $wishlists_count
+ *
  * @method \Illuminate\Database\Eloquent\Builder allConversations()
  * @method static \Database\Factories\UserFactory factory($count = null, $state = [])
  * @method static \Illuminate\Database\Eloquent\Builder<static>|User newModelQuery()
@@ -115,16 +117,17 @@ use Spatie\Permission\Traits\HasRoles;
  * @method static \App\Models\User|null first(array|string $columns = ['*'])
  * @method static \App\Models\User firstOrFail(array|string $columns = ['*'])
  * @method static \Illuminate\Database\Eloquent\Collection<int, \App\Models\User> get(array|string $columns = ['*'])
+ *
  * @property string $fullName
- * @property \Illuminate\Support\Carbon|null $emailVerifiedAt
+ * @property Carbon|null $emailVerifiedAt
  * @property string|null $rememberToken
- * @property \Illuminate\Support\Carbon|null $createdAt
- * @property \Illuminate\Support\Carbon|null $updatedAt
+ * @property Carbon|null $createdAt
+ * @property Carbon|null $updatedAt
  * @property string|null $firstName
  * @property string|null $midName
  * @property string|null $lastName
  * @property string|null $avatarUrl
- * @property \Illuminate\Support\Carbon|null $weddingDate
+ * @property Carbon|null $weddingDate
  * @property string|null $themePreference
  * @property string|null $colorPreference
  * @property string|null $eventConcept
@@ -149,6 +152,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property-read bool|null $tokensExists
  * @property-read int|null $wishlistsCount
  * @property-read bool|null $wishlistsExists
+ *
  * @mixin \Eloquent
  */
 class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, MustVerifyEmail
@@ -281,7 +285,6 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
                     return null;
                 }
 
-
                 // External URLs return immediately
                 if (filter_var($path, FILTER_VALIDATE_URL)) {
                     return $path;
@@ -289,7 +292,7 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
 
                 // Use asset() helper to get a dynamic URL based on the current request host.
                 // This ensures the URL is correct for both web (127.0.0.1) and mobile emulator (10.0.2.2).
-                return \Illuminate\Support\Facades\Storage::disk('public')->url(ltrim($path, '/'));
+                return Storage::disk('public')->url(ltrim($path, '/'));
             }
         );
     }

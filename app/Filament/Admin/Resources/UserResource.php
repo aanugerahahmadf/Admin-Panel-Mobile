@@ -6,6 +6,7 @@ use App\Filament\Admin\Resources\UserResource\Pages;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -15,7 +16,8 @@ use Illuminate\Support\Facades\Hash;
 
 /**
  * @mixin \Eloquent
- * @property-read \App\Models\User $record
+ *
+ * @property-read User $record
  */
 class UserResource extends Resource
 {
@@ -87,8 +89,10 @@ class UserResource extends Resource
                                     ->maxLength(255)
                                     ->prefixIcon('heroicon-o-user-circle')
                                     ->live(onBlur: true)
-                                    ->afterStateUpdated(function ($state, \Filament\Forms\Set $set) {
-                                        if (blank($state)) return;
+                                    ->afterStateUpdated(function ($state, Set $set) {
+                                        if (blank($state)) {
+                                            return;
+                                        }
                                         $parts = explode(' ', trim($state));
                                         $firstName = array_shift($parts);
                                         $lastName = count($parts) > 0 ? array_pop($parts) : '';
@@ -179,7 +183,7 @@ class UserResource extends Resource
                             ->icon('heroicon-o-identification')
                             ->schema([
                                 Forms\Components\Select::make('roles')
-                            ->searchable()
+                                    ->searchable()
                                     ->label(__('Peran Sistem (Role)'))
                                     ->relationship('roles', 'name')
                                     ->getOptionLabelFromRecordUsing(fn ($record) => str($record->name)->headline())

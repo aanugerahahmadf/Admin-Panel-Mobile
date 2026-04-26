@@ -10,7 +10,7 @@ trait CanMarkAsRead
     public function markAsRead(): void
     {
         $authId = Auth::id();
-        
+
         $this->selectedConversation?->messages()
             ->whereJsonDoesntContain('read_by', $authId)
             ->get()

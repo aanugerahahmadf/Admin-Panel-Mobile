@@ -30,6 +30,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @property-read MediaCollection<int, Media> $media
  * @property-read int|null $media_count
  * @property-read User|null $sender
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Message newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Message newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Message onlyTrashed()
@@ -49,19 +50,22 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @method static \App\Models\Message|null first(array|string $columns = ['*'])
  * @method static \App\Models\Message firstOrFail(array|string $columns = ['*'])
  * @method static \Illuminate\Database\Eloquent\Collection<int, \App\Models\Message> get(array|string $columns = ['*'])
+ *
  * @property int $inboxId
  * @property int $userId
  * @property array<array-key, mixed>|null $readBy
  * @property array<array-key, mixed>|null $readAt
- * @property \Illuminate\Support\Carbon|null $createdAt
- * @property \Illuminate\Support\Carbon|null $updatedAt
- * @property \Illuminate\Support\Carbon|null $deletedAt
+ * @property Carbon|null $createdAt
+ * @property Carbon|null $updatedAt
+ * @property Carbon|null $deletedAt
  * @property-read int|null $attachmentsCount
  * @property-read bool|null $attachmentsExists
  * @property-read int|null $mediaCount
  * @property-read bool|null $mediaExists
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|\App\Models\Message withTrashed(bool $withTrashed = true)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|\App\Models\Message withoutTrashed()
+ *
  * @mixin \Eloquent
  */
 class Message extends Model implements HasMedia

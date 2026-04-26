@@ -4,18 +4,22 @@ namespace App\Filament\Admin\Resources;
 
 use App\Filament\Admin\Resources\WeddingOrganizerResource\Pages;
 use App\Models\WeddingOrganizer;
+use Dotswan\MapPicker\Fields\Map;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
 use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
-use Illuminate\Database\Eloquent\Builder;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\HtmlString;
 
 /**
  * @mixin \Eloquent
- * @property-read \App\Models\WeddingOrganizer $record
+ *
+ * @property-read WeddingOrganizer $record
  */
 class WeddingOrganizerResource extends Resource
 {
@@ -95,7 +99,7 @@ class WeddingOrganizerResource extends Resource
                             ->description(__('Nama, deskripsi, dan identitas visual utama.'))
                             ->icon('govicon-building')
                             ->schema([
-                                 Forms\Components\TextInput::make('name')
+                                Forms\Components\TextInput::make('name')
                                     ->label(__('Nama Studio'))
                                     ->required()
                                     ->maxLength(255)
@@ -118,25 +122,27 @@ class WeddingOrganizerResource extends Resource
                                     ->rows(3)
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?string $state) {
-                                        if (!$state) return;
+                                        if (! $state) {
+                                            return;
+                                        }
 
                                         try {
-                                            $response = \Illuminate\Support\Facades\Http::withHeaders([
+                                            $response = Http::withHeaders([
                                                 'User-Agent' => 'WeddingOrganizerApp/1.0',
                                             ])->get('https://nominatim.openstreetmap.org/search', [
-                                                'q'       => $state,
-                                                'format'  => 'json',
-                                                'limit'   => 1,
+                                                'q' => $state,
+                                                'format' => 'json',
+                                                'limit' => 1,
                                             ]);
 
                                             if ($response->successful() && $json = $response->json()) {
                                                 if (isset($json[0])) {
                                                     $data = $json[0];
-                                                    $lat  = (float) $data['lat'];
-                                                    $lng  = (float) $data['lon'];
+                                                    $lat = (float) $data['lat'];
+                                                    $lng = (float) $data['lon'];
 
-                                                    $set('location',  ['lat' => $lat, 'lng' => $lng]);
-                                                    $set('latitude',  $lat);
+                                                    $set('location', ['lat' => $lat, 'lng' => $lng]);
+                                                    $set('latitude', $lat);
                                                     $set('longitude', $lng);
                                                 }
                                             }
@@ -145,7 +151,7 @@ class WeddingOrganizerResource extends Resource
                                         }
                                     }),
 
-                                \Dotswan\MapPicker\Fields\Map::make('location')
+                                Map::make('location')
                                     ->label(__('Titik Koordinat Peta'))
                                     ->helperText(__('Tips: Anda bisa geser titik biru ini untuk mengisi Alamat Lengkap secara otomatis.'))
                                     ->columnSpanFull()
@@ -164,17 +170,19 @@ class WeddingOrganizerResource extends Resource
                                         }
                                     })
                                     ->afterStateUpdated(function (Forms\Get $get, Forms\Set $set, ?array $state) {
-                                        if (!$state) return;
-                                        
-                                        $set('latitude',  $state['lat']);
+                                        if (! $state) {
+                                            return;
+                                        }
+
+                                        $set('latitude', $state['lat']);
                                         $set('longitude', $state['lng']);
 
                                         try {
-                                            $response = \Illuminate\Support\Facades\Http::withHeaders([
+                                            $response = Http::withHeaders([
                                                 'User-Agent' => 'WeddingOrganizerApp/1.0',
                                             ])->get('https://nominatim.openstreetmap.org/reverse', [
-                                                'lat'    => $state['lat'],
-                                                'lon'    => $state['lng'],
+                                                'lat' => $state['lat'],
+                                                'lon' => $state['lng'],
                                                 'format' => 'json',
                                             ]);
 
@@ -261,10 +269,10 @@ class WeddingOrganizerResource extends Resource
                 Tables\Columns\TextColumn::make('video_url')
                     ->label(__('Video'))
                     ->formatStateUsing(fn ($state) => $state
-                        ? new \Illuminate\Support\HtmlString(
-                            '<video src="' . e($state) . '" class="rounded-lg" height="60" width="80" controls preload="none"></video>'
+                        ? new HtmlString(
+                            '<video src="'.e($state).'" class="rounded-lg" height="60" width="80" controls preload="none"></video>'
                         )
-                        : new \Illuminate\Support\HtmlString('<span class="text-gray-400 text-xs">—</span>')
+                        : new HtmlString('<span class="text-gray-400 text-xs">—</span>')
                     )
                     ->html()
                     ->alignment('center'),
@@ -352,7 +360,7 @@ class WeddingOrganizerResource extends Resource
         return true;
     }
 
-    public static function canDelete(\Illuminate\Database\Eloquent\Model $record): bool
+    public static function canDelete(Model $record): bool
     {
         return false;
     }

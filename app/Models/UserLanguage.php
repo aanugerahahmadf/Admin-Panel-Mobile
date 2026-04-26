@@ -14,6 +14,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Model|\Eloquent $model
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLanguage newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLanguage newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLanguage query()
@@ -23,10 +24,12 @@ use Illuminate\Support\Carbon;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLanguage whereModelId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLanguage whereModelType($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|UserLanguage whereUpdatedAt($value)
+ *
  * @property string $modelId
  * @property string $modelType
- * @property \Illuminate\Support\Carbon|null $createdAt
- * @property \Illuminate\Support\Carbon|null $updatedAt
+ * @property Carbon|null $createdAt
+ * @property Carbon|null $updatedAt
+ *
  * @mixin \Eloquent
  */
 class UserLanguage extends Model

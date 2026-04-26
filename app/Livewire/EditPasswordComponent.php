@@ -17,7 +17,7 @@ use Illuminate\Validation\Rules\Password;
 use Livewire\Component;
 
 /**
- * @mixin \Livewire\Component
+ * @mixin Component
  */
 class EditPasswordComponent extends Component implements HasActions, HasForms
 {

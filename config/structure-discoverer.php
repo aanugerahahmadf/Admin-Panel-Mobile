@@ -1,7 +1,8 @@
 <?php
 
-/** @return array<string, mixed> */
+use Spatie\StructureDiscoverer\Cache\LaravelDiscoverCacheDriver;
 
+/** @return array<string, mixed> */
 
 return [
     /*
@@ -22,7 +23,7 @@ return [
      *  Configure the cache driver for discoverers
      */
     'cache' => [
-        'driver' => \Spatie\StructureDiscoverer\Cache\LaravelDiscoverCacheDriver::class,
+        'driver' => LaravelDiscoverCacheDriver::class,
         'store' => null,
     ],
 ];

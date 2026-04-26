@@ -42,7 +42,6 @@ class WeddingOrganizerController extends Controller
                 ->withCount(['reviews', 'packages'])
                 ->where('id', 1); // Enforce single-vendor: ID 1 only
 
-
             // Filter by location
             if (! empty($validatedData['location'])) {
                 $query->where('address', 'like', '%'.$validatedData['location'].'%');

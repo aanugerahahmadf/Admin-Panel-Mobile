@@ -9,8 +9,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
-use App\Models\User;
-use App\Models\Message;
 
 /**
  * @property int $id
@@ -23,6 +21,7 @@ use App\Models\Message;
  * @property-read Collection<int, Message> $messages
  * @property-read int|null $messages_count
  * @property-read mixed $other_users
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Inbox newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Inbox newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Inbox onlyTrashed()
@@ -37,14 +36,16 @@ use App\Models\Message;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Inbox withoutTrashed()
  * @method static \App\Models\Inbox|null find(mixed $id, array|string $columns = ['*'])
  * @method static \Illuminate\Database\Eloquent\Collection<int, \App\Models\Inbox> get(array|string $columns = ['*'])
+ *
  * @property array<array-key, mixed> $userIds
- * @property \Illuminate\Support\Carbon|null $createdAt
- * @property \Illuminate\Support\Carbon|null $updatedAt
- * @property \Illuminate\Support\Carbon|null $deletedAt
+ * @property Carbon|null $createdAt
+ * @property Carbon|null $updatedAt
+ * @property Carbon|null $deletedAt
  * @property-read mixed $inboxTitle
  * @property-read int|null $messagesCount
  * @property-read bool|null $messagesExists
  * @property-read mixed $otherUsers
+ *
  * @mixin \Eloquent
  */
 class Inbox extends Model
@@ -114,15 +115,12 @@ class Inbox extends Model
             get: function () {
                 $otherUser = $this->other_users->first();
                 if ($otherUser) {
-                    return $otherUser->avatar_url ?? "https://ui-avatars.com/api/?name=" . urlencode($this->inbox_title);
+                    return $otherUser->avatar_url ?? 'https://ui-avatars.com/api/?name='.urlencode($this->inbox_title);
                 }
 
                 // If no other user (chat with self), use current user's avatar
-                return Auth::user()?->avatar_url ?? "https://ui-avatars.com/api/?name=" . urlencode($this->inbox_title);
+                return Auth::user()?->avatar_url ?? 'https://ui-avatars.com/api/?name='.urlencode($this->inbox_title);
             }
         );
     }
 }
-
-
-

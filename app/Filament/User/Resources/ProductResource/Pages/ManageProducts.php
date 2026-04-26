@@ -3,7 +3,15 @@
 namespace App\Filament\User\Resources\ProductResource\Pages;
 
 use App\Filament\User\Resources\ProductResource;
+use App\Models\Cart;
+use App\Models\Product;
+use App\Models\Wishlist;
+use Filament\Facades\Filament;
+use Filament\Notifications\Notification;
+use Filament\Resources\Components\Tab;
 use Filament\Resources\Pages\ManageRecords;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 class ManageProducts extends ManageRecords
 {
@@ -14,75 +22,76 @@ class ManageProducts extends ManageRecords
         $cbirCount = session()->has('cbir_product_results_ids') ? count(session('cbir_product_results_ids')) : null;
 
         return [
-            'all' => \Filament\Resources\Components\Tab::make(__('Semua Product'))
+            'all' => Tab::make(__('Semua Product'))
                 ->icon('heroicon-m-squares-2x2')
-                ->badge(fn() => $cbirCount ?? \App\Models\Product::count())
+                ->badge(fn () => $cbirCount ?? Product::count())
                 ->badgeColor($cbirCount ? 'primary' : 'gray'),
-            'wishlist' => \Filament\Resources\Components\Tab::make(__('Favorit Saya'))
+            'wishlist' => Tab::make(__('Favorit Saya'))
                 ->icon('heroicon-m-heart')
-                ->badge(fn() => \App\Models\Product::whereHas('wishlists', fn ($q) => $q->where('user_id', \Filament\Facades\Filament::auth()->id()))->count())
+                ->badge(fn () => Product::whereHas('wishlists', fn ($q) => $q->where('user_id', Filament::auth()->id()))->count())
                 ->badgeColor('danger')
-                ->modifyQueryUsing(fn (\Illuminate\Database\Eloquent\Builder $query) => $query->whereHas('wishlists', fn ($q) => $q->where('user_id', \Filament\Facades\Filament::auth()->id()))),
-            'orders' => \Filament\Resources\Components\Tab::make(__('Pesanan Saya'))
+                ->modifyQueryUsing(fn (Builder $query) => $query->whereHas('wishlists', fn ($q) => $q->where('user_id', Filament::auth()->id()))),
+            'orders' => Tab::make(__('Pesanan Saya'))
                 ->icon('heroicon-m-shopping-bag')
-                ->badge(fn() => \App\Models\Product::whereHas('orders', fn ($q) => $q->where('user_id', \Filament\Facades\Filament::auth()->id()))->count())
+                ->badge(fn () => Product::whereHas('orders', fn ($q) => $q->where('user_id', Filament::auth()->id()))->count())
                 ->badgeColor('info')
-                ->modifyQueryUsing(fn (\Illuminate\Database\Eloquent\Builder $query) => $query->whereHas('orders', fn ($q) => $q->where('user_id', \Filament\Facades\Filament::auth()->id()))),
+                ->modifyQueryUsing(fn (Builder $query) => $query->whereHas('orders', fn ($q) => $q->where('user_id', Filament::auth()->id()))),
         ];
     }
 
-    protected function modifyQueryUsing(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    protected function modifyQueryUsing(Builder $query): Builder
     {
         // Handle direct ID from preview link
         if ($id = request()->query('cbir_id')) {
-            session()->put('cbir_product_results_ids', [(int)$id]);
+            session()->put('cbir_product_results_ids', [(int) $id]);
         }
 
         if ($ids = session()->get('cbir_product_results_ids')) {
             return $query->whereIn('id', $ids)
-                ->orderByRaw('FIELD(id, ' . implode(',', $ids) . ')');
+                ->orderByRaw('FIELD(id, '.implode(',', $ids).')');
         }
+
         return $query;
     }
 
     public function bookNow($id)
     {
         // Set the session filter to only this product
-        session()->put('cbir_product_results_ids', [(int)$id]);
-        
-        \Filament\Notifications\Notification::make()
+        session()->put('cbir_product_results_ids', [(int) $id]);
+
+        Notification::make()
             ->title(__('Menuju halaman pemesanan...'))
             ->success()
             ->send();
 
-        return redirect()->to(ProductResource::getUrl('index') . "?tableAction=buy_now&tableActionRecord={$id}");
+        return redirect()->to(ProductResource::getUrl('index')."?tableAction=buy_now&tableActionRecord={$id}");
     }
 
     public function toggleWishlist($id)
     {
-        $user = \Filament\Facades\Filament::auth()->user();
-        $wishlist = \App\Models\Wishlist::where('user_id', $user->id)
+        $user = Filament::auth()->user();
+        $wishlist = Wishlist::where('user_id', $user->id)
             ->where('product_id', $id)
             ->first();
 
         if ($wishlist) {
             $wishlist->delete();
             $msg = __('Dihapus dari Favorit');
-            \Filament\Notifications\Notification::make()->title($msg)->warning()->send();
+            Notification::make()->title($msg)->warning()->send();
         } else {
-            \App\Models\Wishlist::create([
+            Wishlist::create([
                 'user_id' => $user->id,
                 'product_id' => $id,
             ]);
             $msg = __('Berhasil disimpan ke Favorit!');
-            \Filament\Notifications\Notification::make()->title($msg)->success()->icon('heroicon-s-heart')->iconColor('danger')->send();
+            Notification::make()->title($msg)->success()->icon('heroicon-s-heart')->iconColor('danger')->send();
         }
 
         // Refresh session results to update heart icon
         $results = session('cbir_mixed_results', []);
-        foreach($results as &$res) {
+        foreach ($results as &$res) {
             if (($res['type'] ?? '') === 'product' && ($res['data']['id'] ?? 0) == $id) {
-                $res['data']['is_wishlisted'] = !$wishlist;
+                $res['data']['is_wishlisted'] = ! $wishlist;
             }
         }
         session()->put('cbir_mixed_results', $results);
@@ -90,22 +99,21 @@ class ManageProducts extends ManageRecords
 
     public function addToCart($id)
     {
-        $user = \Filament\Facades\Filament::auth()->user();
-        
-        \App\Models\Cart::updateOrCreate([
+        $user = Filament::auth()->user();
+
+        Cart::updateOrCreate([
             'user_id' => $user->id,
             'product_id' => $id,
         ], [
-            'quantity' => \Illuminate\Support\Facades\DB::raw('quantity + 1')
+            'quantity' => DB::raw('quantity + 1'),
         ]);
-        
-        \Filament\Notifications\Notification::make()
+
+        Notification::make()
             ->title(__('Berhasil masuk keranjang'))
             ->success()
             ->icon('heroicon-o-shopping-cart')
             ->send();
     }
-
 
     public function clearVisualSearch()
     {

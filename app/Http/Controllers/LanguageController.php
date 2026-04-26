@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\UserLanguage;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -11,15 +12,11 @@ class LanguageController extends Controller
 {
     /**
      * Switch the application language.
-     *
-     * @param Request $request
-     * @param string $locale
-     * @return RedirectResponse
      */
     public function switch(Request $request, string $locale): RedirectResponse
     {
         $locals = config('filament-language-switcher.locals', []);
-        
+
         if (array_key_exists($locale, $locals)) {
             // 1. Core State Update
             session()->put('locale', $locale);
@@ -44,7 +41,7 @@ class LanguageController extends Controller
             // 3. Database Persistence & Cache Nuclear Purge
             if ($user) {
                 try {
-                    \App\Models\UserLanguage::updateOrCreate(
+                    UserLanguage::updateOrCreate(
                         ['model_id' => (string) $user->id, 'model_type' => get_class($user)],
                         ['lang' => $locale]
                     );

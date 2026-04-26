@@ -6,7 +6,7 @@ use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
 
-enum PaymentMethodType: string implements HasLabel, HasColor, HasIcon
+enum PaymentMethodType: string implements HasColor, HasIcon, HasLabel
 {
     case BANK_TRANSFER = 'bank_transfer';
     case EWALLET = 'ewallet';

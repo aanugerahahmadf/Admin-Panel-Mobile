@@ -10,13 +10,14 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
+use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
 /**
- * @mixin \Livewire\Component
+ * @mixin Component
  */
 class PersonalInfoComponent extends Component implements HasForms
 {
@@ -72,8 +73,10 @@ class PersonalInfoComponent extends Component implements HasForms
                             ->required()
                             ->maxLength(255)
                             ->live(onBlur: true)
-                            ->afterStateUpdated(function ($state, \Filament\Forms\Set $set) {
-                                if (blank($state)) return;
+                            ->afterStateUpdated(function ($state, Set $set) {
+                                if (blank($state)) {
+                                    return;
+                                }
                                 $parts = explode(' ', trim($state));
                                 $firstName = array_shift($parts);
                                 $lastName = count($parts) > 0 ? array_pop($parts) : '';

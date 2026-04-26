@@ -2,13 +2,17 @@
 
 namespace App\Filament\User\Resources;
 
+use App\Filament\User\Resources\ReviewResource\Pages\ManageReviews;
 use App\Models\Review;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Support\Enums\FontWeight;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Support\Enums\FontWeight;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\HtmlString;
 
 class ReviewResource extends Resource
 {
@@ -21,8 +25,6 @@ class ReviewResource extends Resource
         return ['package.name', 'comment'];
     }
 
-
-
     public static function getNavigationGroup(): ?string
     {
         return __('Transaksi & Aktivitas');
@@ -30,7 +32,7 @@ class ReviewResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) static::getModel()::where('user_id', \Filament\Facades\Filament::auth()->id())->count();
+        return (string) static::getModel()::where('user_id', Filament::auth()->id())->count();
     }
 
     public static function getNavigationBadgeTooltip(): ?string
@@ -53,9 +55,9 @@ class ReviewResource extends Resource
         return __('Ulasan Saya');
     }
 
-    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->where('user_id', \Filament\Facades\Filament::auth()->id());
+        return parent::getEloquentQuery()->where('user_id', Filament::auth()->id());
     }
 
     public static function form(Form $form): Form
@@ -67,7 +69,7 @@ class ReviewResource extends Resource
                     ->schema([
                         Forms\Components\Select::make('package_id')
                             ->searchable()
-                            ->relationship('package', 'name', fn($query) => $query->whereHas('orders', fn($q) => $q->where('user_id', \Filament\Facades\Filament::auth()->id())))
+                            ->relationship('package', 'name', fn ($query) => $query->whereHas('orders', fn ($q) => $q->where('user_id', Filament::auth()->id())))
                             ->required()
 
                             ->preload()
@@ -84,11 +86,11 @@ class ReviewResource extends Resource
                             ->searchable()
                             ->label(__('Berikan Rating Bintang'))
                             ->options([
-                                5 => __('5 Bintang') . ' (' . __('Sangat Puas') . ')',
-                                4 => __('4 Bintang') . ' (' . __('Puas') . ')',
-                                3 => __('3 Bintang') . ' (' . __('Cukup') . ')',
-                                2 => __('2 Bintang') . ' (' . __('Kurang') . ')',
-                                1 => __('1 Bintang') . ' (' . __('Sangat Kurang') . ')',
+                                5 => __('5 Bintang').' ('.__('Sangat Puas').')',
+                                4 => __('4 Bintang').' ('.__('Puas').')',
+                                3 => __('3 Bintang').' ('.__('Cukup').')',
+                                2 => __('2 Bintang').' ('.__('Kurang').')',
+                                1 => __('1 Bintang').' ('.__('Sangat Kurang').')',
                             ])
                             ->required()
 
@@ -100,14 +102,14 @@ class ReviewResource extends Resource
                             ->required()
                             ->rows(5)
                             ->columnSpanFull(),
-                    ])
+                    ]),
             ]);
     }
 
     public static function table(Table $table): Table
     {
         return $table
-            ->description(new \Illuminate\Support\HtmlString('<style>.fi-ta-ctn, .fi-ta-content, .fi-ta-header-toolbar, .fi-ta-pagination { background-color: transparent !important; box-shadow: none !important; border-color: transparent !important; }</style>'))
+            ->description(new HtmlString('<style>.fi-ta-ctn, .fi-ta-content, .fi-ta-header-toolbar, .fi-ta-pagination { background-color: transparent !important; box-shadow: none !important; border-color: transparent !important; }</style>'))
             ->emptyStateHeading(__('Belum ada ulasan'))
             ->emptyStateDescription(__('Bagikan pengalamanmu dengan kami!'))
             ->contentGrid([
@@ -140,7 +142,6 @@ class ReviewResource extends Resource
                             ->formatStateUsing(fn ($state) => __($state))
                             ->size('sm'),
 
-
                     ])->extraAttributes(['class' => 'bg-gray-50 dark:bg-gray-900 rounded-xl p-3']),
 
                     // Footer (Date & Meta)
@@ -171,7 +172,7 @@ class ReviewResource extends Resource
             ])
             ->actionsAlignment('center')
             ->extraAttributes([
-                'class' => 'filament-table-actions-container !flex !flex-row !gap-1 !p-3 !bg-gray-50/50 dark:!bg-white/5 !border-t dark:!border-gray-800'
+                'class' => 'filament-table-actions-container !flex !flex-row !gap-1 !p-3 !bg-gray-50/50 dark:!bg-white/5 !border-t dark:!border-gray-800',
             ])
             ->headerActions([
                 Tables\Actions\CreateAction::make()
@@ -182,7 +183,8 @@ class ReviewResource extends Resource
                     ->icon('heroicon-m-pencil-square')
                     ->slideOver()
                     ->mutateFormDataUsing(function (array $data): array {
-                        $data['user_id'] = \Filament\Facades\Filament::auth()->id();
+                        $data['user_id'] = Filament::auth()->id();
+
                         return $data;
                     }),
             ]);
@@ -191,7 +193,7 @@ class ReviewResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => \App\Filament\User\Resources\ReviewResource\Pages\ManageReviews::route('/'),
+            'index' => ManageReviews::route('/'),
         ];
     }
 }

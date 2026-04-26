@@ -33,6 +33,7 @@ class InitAdmin extends Command
 
         if (User::where('email', $email)->exists()) {
             $this->error("User with email {$email} already exists.");
+
             return;
         }
 

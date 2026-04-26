@@ -3,6 +3,7 @@
 namespace App\Filament\Admin\Auth;
 
 use App\Models\User;
+use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\TextInput;
@@ -117,7 +118,7 @@ class OtpResetPassword extends BaseResetPassword
             ->label(__('Konfirmasi Kata Sandi Baru'));
     }
 
-    public function resetPasswordAction(): \Filament\Actions\Action
+    public function resetPasswordAction(): Action
     {
         return parent::resetPasswordAction()
             ->label(__('Atur Ulang Kata Sandi'));

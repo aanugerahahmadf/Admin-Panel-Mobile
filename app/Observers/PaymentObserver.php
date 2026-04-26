@@ -2,10 +2,10 @@
 
 namespace App\Observers;
 
-use App\Models\Payment;
-use App\Models\History;
-use App\Enums\PaymentStatus;
 use App\Enums\OrderStatus;
+use App\Enums\PaymentStatus;
+use App\Models\History;
+use App\Models\Payment;
 
 class PaymentObserver
 {
@@ -72,8 +72,8 @@ class PaymentObserver
     {
         // Bersihkan riwayat jika data dihapus (opsional, tapi bagus untuk integritas data)
         History::where('type', 'payment')
-               ->where('transaction_id', $payment->id)
-               ->delete();
+            ->where('transaction_id', $payment->id)
+            ->delete();
     }
 
     /**
@@ -82,9 +82,9 @@ class PaymentObserver
     public function restored(Payment $payment): void
     {
         History::withTrashed()
-               ->where('type', 'payment')
-               ->where('transaction_id', $payment->id)
-               ->restore();
+            ->where('type', 'payment')
+            ->where('transaction_id', $payment->id)
+            ->restore();
     }
 
     /**
@@ -93,8 +93,8 @@ class PaymentObserver
     public function forceDeleted(Payment $payment): void
     {
         History::withTrashed()
-               ->where('type', 'payment')
-               ->where('transaction_id', $payment->id)
-               ->forceDelete();
+            ->where('type', 'payment')
+            ->where('transaction_id', $payment->id)
+            ->forceDelete();
     }
 }

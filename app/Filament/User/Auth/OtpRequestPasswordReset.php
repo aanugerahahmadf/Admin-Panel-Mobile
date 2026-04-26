@@ -3,6 +3,7 @@
 namespace App\Filament\User\Auth;
 
 use App\Models\User;
+use Filament\Actions\Action;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -71,7 +72,7 @@ class OtpRequestPasswordReset extends BaseRequestPasswordReset
             ->autofocus();
     }
 
-    public function loginAction(): \Filament\Actions\Action
+    public function loginAction(): Action
     {
         return parent::loginAction()
             ->label(__('Kembali ke Halaman Masuk'));

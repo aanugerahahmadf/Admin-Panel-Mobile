@@ -2,13 +2,18 @@
 
 namespace App\Filament\User\Pages;
 
-use Filament\Pages\Dashboard as BaseDashboard;
 use App\Filament\User\Resources\WeddingOrganizerResource;
+use App\Filament\User\Widgets\LatestBookings;
+use App\Filament\User\Widgets\StatsOverview;
+use App\Filament\User\Widgets\UserOrdersChart;
+use App\Filament\User\Widgets\UserSpendingChart;
+use App\Models\WeddingOrganizer;
+use Filament\Pages\Dashboard as BaseDashboard;
 
 class Dashboard extends BaseDashboard
 {
     protected static ?string $navigationIcon = 'heroicon-o-home';
-    
+
     public static function shouldRegisterNavigation(): bool
     {
         return false;
@@ -16,20 +21,20 @@ class Dashboard extends BaseDashboard
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) \App\Models\WeddingOrganizer::count();
+        return (string) WeddingOrganizer::count();
     }
 
     public static function getNavigationBadgeTooltip(): ?string
     {
         return static::getNavigationLabel();
     }
-    
+
     public function mount(): void
     {
         // Redirect dashboard to studio profile since it's a one-studio application
         redirect()->to(WeddingOrganizerResource::getUrl('index', ['record' => 1]));
     }
-    
+
     public static function getNavigationGroup(): ?string
     {
         return __('Beranda');
@@ -50,10 +55,10 @@ class Dashboard extends BaseDashboard
     public function getWidgets(): array
     {
         return [
-            \App\Filament\User\Widgets\StatsOverview::class,
-            \App\Filament\User\Widgets\UserOrdersChart::class,
-            \App\Filament\User\Widgets\UserSpendingChart::class,
-            \App\Filament\User\Widgets\LatestBookings::class,
+            StatsOverview::class,
+            UserOrdersChart::class,
+            UserSpendingChart::class,
+            LatestBookings::class,
         ];
     }
 

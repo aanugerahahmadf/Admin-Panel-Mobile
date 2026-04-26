@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\OrderPaymentStatus;
+use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Transaction;
@@ -12,8 +14,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use App\Enums\OrderStatus;
-use App\Enums\OrderPaymentStatus;
 
 class PaymentController extends Controller
 {
@@ -42,7 +42,7 @@ class PaymentController extends Controller
                     'type' => 'wallet',
                     'fee' => 0,
                     'instructions' => __('Pembayaran otomatis dipotong dari saldo dompet Anda.'),
-                ]
+                ],
             ],
         ]);
     }
@@ -54,10 +54,10 @@ class PaymentController extends Controller
     {
         try {
             $validatedData = $request->validate([
-                'order_id'       => 'required|exists:orders,id',
+                'order_id' => 'required|exists:orders,id',
                 'payment_method' => 'required|string',
-                'amount'         => 'required|numeric|min:1',
-                'notes'          => 'nullable|string|max:500',
+                'amount' => 'required|numeric|min:1',
+                'notes' => 'nullable|string|max:500',
             ]);
 
             $order = Order::where('id', $validatedData['order_id'])
@@ -84,79 +84,79 @@ class PaymentController extends Controller
 
             if ($existingTransaction) {
                 return response()->json([
-                    'status'  => 'error',
+                    'status' => 'error',
                     'message' => __('Pembayaran sudah ada untuk pesanan ini'),
                     'transaction' => $existingTransaction,
                 ], 409);
             }
 
             $amount = $validatedData['amount'];
-            $reference = 'TRX-' . time() . '-' . Str::random(4);
+            $reference = 'TRX-'.time().'-'.Str::random(4);
 
             // --- Cek wallet payment ---
             if ($validatedData['payment_method'] === 'wallet') {
                 $user = Auth::user();
                 if ($user->balance < $amount) {
                     return response()->json([
-                        'status'  => 'error',
+                        'status' => 'error',
                         'message' => __('Saldo tidak mencukupi. Silakan top up terlebih dahulu.'),
                     ], 400);
                 }
 
                 $transaction = Transaction::create([
-                    'user_id'          => Auth::id(),
-                    'order_id'         => $order->id,
-                    'type'             => 'order',
+                    'user_id' => Auth::id(),
+                    'order_id' => $order->id,
+                    'type' => 'order',
                     'reference_number' => $reference,
-                    'amount'           => $amount,
-                    'admin_fee'        => 0,
-                    'total_amount'     => $amount,
-                    'status'           => 'success',
-                    'payment_gateway'  => 'wallet',
-                    'paid_at'          => now(),
-                    'notes'            => $validatedData['notes'] ?? null,
+                    'amount' => $amount,
+                    'admin_fee' => 0,
+                    'total_amount' => $amount,
+                    'status' => 'success',
+                    'payment_gateway' => 'wallet',
+                    'paid_at' => now(),
+                    'notes' => $validatedData['notes'] ?? null,
                 ]);
 
                 $user->decrement('balance', $amount);
                 $order->update(['payment_status' => OrderPaymentStatus::PAID, 'status' => OrderStatus::CONFIRMED]);
 
                 return response()->json([
-                    'status'  => 'success',
+                    'status' => 'success',
                     'message' => __('Pembayaran saldo berhasil'),
-                    'data'    => ['transaction' => $transaction],
+                    'data' => ['transaction' => $transaction],
                 ], 201);
             }
 
             // --- Midtrans Payment ---
             $transaction = Transaction::create([
-                'user_id'          => Auth::id(),
-                'order_id'         => $order->id,
-                'type'             => 'order',
+                'user_id' => Auth::id(),
+                'order_id' => $order->id,
+                'type' => 'order',
                 'reference_number' => $reference,
-                'amount'           => $amount,
-                'admin_fee'        => 0,
-                'total_amount'     => $amount,
-                'status'           => 'pending',
-                'payment_gateway'  => 'midtrans',
-                'notes'            => $validatedData['notes'] ?? null,
+                'amount' => $amount,
+                'admin_fee' => 0,
+                'total_amount' => $amount,
+                'status' => 'pending',
+                'payment_gateway' => 'midtrans',
+                'notes' => $validatedData['notes'] ?? null,
             ]);
 
             try {
-                $midtrans = new MidtransService();
+                $midtrans = new MidtransService;
                 $transaction = $midtrans->createTransactionSnap($transaction);
             } catch (\Exception $e) {
                 Log::error('[Midtrans] Snap creation failed for api payment', [
                     'reference' => $transaction->reference_number,
-                    'error'     => $e->getMessage(),
+                    'error' => $e->getMessage(),
                 ]);
             }
 
             return response()->json([
-                'status'  => 'success',
+                'status' => 'success',
                 'message' => __('Pembayaran berhasil dibuat'),
-                'data'    => [
+                'data' => [
                     'transaction' => $transaction->fresh(),
-                    'snap_token'  => $transaction->snap_token,
+                    'snap_token' => $transaction->snap_token,
                     'payment_url' => $transaction->payment_url,
                 ],
             ], 201);
@@ -190,7 +190,7 @@ class PaymentController extends Controller
             $sortDirection = $request->get('sort_direction', 'desc');
 
             $allowedSortFields = ['created_at', 'amount', 'status'];
-            if (!in_array($sortBy, $allowedSortFields)) {
+            if (! in_array($sortBy, $allowedSortFields)) {
                 $sortBy = 'created_at';
             }
 
@@ -231,7 +231,7 @@ class PaymentController extends Controller
             if ($transaction->status !== 'pending') {
                 return response()->json([
                     'status' => 'error',
-                    'message' => __('Transaksi tidak dapat dibatalkan karena status: ') . $transaction->status,
+                    'message' => __('Transaksi tidak dapat dibatalkan karena status: ').$transaction->status,
                 ], 400);
             }
 

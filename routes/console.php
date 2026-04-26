@@ -1,11 +1,12 @@
 <?php
 
+use Illuminate\Console\Command;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function (): void {
-    /** @var \Illuminate\Console\Command $this */
+    /** @var Command $this */
     echo Inspiring::quote().PHP_EOL;
 })->purpose('Display an inspiring quote');
 

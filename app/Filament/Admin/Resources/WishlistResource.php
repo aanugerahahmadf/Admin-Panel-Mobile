@@ -14,7 +14,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 /**
  * @mixin \Eloquent
- * @property-read \App\Models\Wishlist $record
+ *
+ * @property-read Wishlist $record
  */
 class WishlistResource extends Resource
 {

@@ -2,7 +2,6 @@
 
 /** @return array<string, mixed> */
 
-
 // config for Coolsam/Modules
 return [
     'auto-register-plugins' => true, // whether to auto-register plugins from various modules in the Panel

@@ -11,18 +11,18 @@ return [
     |
     */
 
-    'merchant_id'   => env('MIDTRANS_MERCHANT_ID', ''),
-    'server_key'    => env('MIDTRANS_SERVER_KEY', ''),
-    'client_key'    => env('MIDTRANS_CLIENT_KEY', ''),
-    
+    'merchant_id' => env('MIDTRANS_MERCHANT_ID', ''),
+    'server_key' => env('MIDTRANS_SERVER_KEY', ''),
+    'client_key' => env('MIDTRANS_CLIENT_KEY', ''),
+
     // Set ke false untuk Sandbox (Development), true untuk Production (Live)
     'is_production' => filter_var(env('MIDTRANS_IS_PRODUCTION', false), FILTER_VALIDATE_BOOLEAN),
-    
+
     // Rekomendasi Midtrans: Set true untuk pembersihan input
-    'is_sanitized'  => filter_var(env('MIDTRANS_IS_SANITIZED', true), FILTER_VALIDATE_BOOLEAN),
-    
+    'is_sanitized' => filter_var(env('MIDTRANS_IS_SANITIZED', true), FILTER_VALIDATE_BOOLEAN),
+
     // Wajib true untuk kartu kredit (3D Secure)
-    'is_3ds'        => filter_var(env('MIDTRANS_IS_3DS', true), FILTER_VALIDATE_BOOLEAN),
+    'is_3ds' => filter_var(env('MIDTRANS_IS_3DS', true), FILTER_VALIDATE_BOOLEAN),
 
     /*
     |--------------------------------------------------------------------------
@@ -42,11 +42,11 @@ return [
     |--------------------------------------------------------------------------
     */
     'snap_bi' => [
-        'client_id'     => env('MIDTRANS_SNAP_BI_CLIENT_ID', ''),
-        'private_key'   => env('MIDTRANS_SNAP_BI_PRIVATE_KEY', ''),
+        'client_id' => env('MIDTRANS_SNAP_BI_CLIENT_ID', ''),
+        'private_key' => env('MIDTRANS_SNAP_BI_PRIVATE_KEY', ''),
         'client_secret' => env('MIDTRANS_SNAP_BI_CLIENT_SECRET', ''),
-        'partner_id'    => env('MIDTRANS_SNAP_BI_PARTNER_ID', ''),
-        'channel_id'    => env('MIDTRANS_SNAP_BI_CHANNEL_ID', ''),
-        'public_key'    => env('MIDTRANS_SNAP_BI_PUBLIC_KEY', ''),
+        'partner_id' => env('MIDTRANS_SNAP_BI_PARTNER_ID', ''),
+        'channel_id' => env('MIDTRANS_SNAP_BI_CHANNEL_ID', ''),
+        'public_key' => env('MIDTRANS_SNAP_BI_PUBLIC_KEY', ''),
     ],
 ];

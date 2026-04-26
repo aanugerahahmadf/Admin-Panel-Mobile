@@ -16,7 +16,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 /**
  * @mixin \Eloquent
- * @property-read \App\Models\Review $record
+ *
+ * @property-read Review $record
  */
 class ReviewResource extends Resource
 {

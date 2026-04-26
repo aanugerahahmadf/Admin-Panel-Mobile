@@ -129,13 +129,13 @@ class NativeServiceProvider extends ServiceProvider
         // Dynamic Host Detection: If accessed via LAN IP, emulator IP, or ngrok
         if (! app()->runningInConsole() && isset($_SERVER['HTTP_HOST'])) {
             $currentHost = $_SERVER['HTTP_HOST'];
-            
+
             // Handle X-Forwarded headers from ngrok/proxies
             $proto = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http');
             $host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'];
-            
+
             // If the request isn't coming from standard localhost
-            if (!in_array(parse_url('http://'.$host, PHP_URL_HOST), ['127.0.0.1', 'localhost'])) {
+            if (! in_array(parse_url('http://'.$host, PHP_URL_HOST), ['127.0.0.1', 'localhost'])) {
                 $appUrl = "{$proto}://{$host}";
                 $hostIp = parse_url($appUrl, PHP_URL_HOST);
                 $currentHost = $host;

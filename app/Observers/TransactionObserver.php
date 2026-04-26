@@ -2,8 +2,8 @@
 
 namespace App\Observers;
 
-use App\Models\Transaction;
 use App\Models\History;
+use App\Models\Transaction;
 use Filament\Notifications\Notification;
 
 class TransactionObserver
@@ -29,10 +29,10 @@ class TransactionObserver
                 $user = $transaction->user;
                 if ($user) {
                     $user->increment('balance', $transaction->amount);
-                    
+
                     Notification::make()
                         ->title(__('Topup Berhasil'))
-                        ->body(__('Saldo sebesar Rp ') . number_format($transaction->amount, 0, ',', '.') . __(' telah masuk ke akun Anda.'))
+                        ->body(__('Saldo sebesar Rp ').number_format($transaction->amount, 0, ',', '.').__(' telah masuk ke akun Anda.'))
                         ->success()
                         ->icon('heroicon-o-banknotes')
                         ->sendToDatabase($user);

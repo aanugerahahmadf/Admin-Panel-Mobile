@@ -2,7 +2,6 @@
 
 namespace App\Observers;
 
-use App\Models\WeddingOrganizer;
 use App\Services\CBIRService;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
@@ -18,7 +17,7 @@ class MediaObserver
     public function created(Media $media)
     {
         $targetCollections = ['gallery', 'product_image', 'package_image', 'category_image'];
-        
+
         if (in_array($media->collection_name, $targetCollections)) {
             // Index the image for CBIR
             $this->cbirService->indexMedia($media);

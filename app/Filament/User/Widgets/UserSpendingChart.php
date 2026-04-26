@@ -2,12 +2,12 @@
 
 namespace App\Filament\User\Widgets;
 
-use App\Models\Order;
 use App\Enums\OrderPaymentStatus;
+use App\Models\Order;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class UserSpendingChart extends ChartWidget
 {
@@ -25,7 +25,7 @@ class UserSpendingChart extends ChartWidget
     protected function getData(): array
     {
         $userId = Auth::id();
-        
+
         $driver = DB::connection()->getDriverName();
         $monthExpr = $driver === 'sqlite' ? 'strftime("%m", created_at)' : 'MONTH(created_at)';
 

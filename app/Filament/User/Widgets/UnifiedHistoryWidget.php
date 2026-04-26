@@ -3,31 +3,33 @@
 namespace App\Filament\User\Widgets;
 
 use App\Models\Transaction;
+use Filament\Facades\Filament;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
+use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\DB;
-use Filament\Support\Enums\FontWeight;
+use Illuminate\Support\Facades\Schema;
 
 class UnifiedHistoryWidget extends BaseWidget
 {
     protected static ?int $sort = 10;
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
-    protected function getTableHeading(): string | \Illuminate\Contracts\Support\Htmlable | null
+    protected function getTableHeading(): string|Htmlable|null
     {
         return __('Riwayat Aktivitas Terakhir');
     }
 
     public function table(Table $table): Table
     {
-        $userId = \Filament\Facades\Filament::auth()->id();
+        $userId = Filament::auth()->id();
 
         $unified = Transaction::where('user_id', $userId)
             ->select(['id', 'total_amount as amount', 'reference_number as ref', 'status', 'created_at', 'type']);
 
-        if (\Illuminate\Support\Facades\Schema::hasTable('withdrawals')) {
+        if (Schema::hasTable('withdrawals')) {
             $withdrawals = DB::table('withdrawals')
                 ->select([DB::raw('id + 1000000 as id'), 'amount', 'reference_number as ref', 'status', 'created_at', DB::raw("'withdrawal' as type")])
                 ->where('user_id', $userId);
@@ -45,13 +47,13 @@ class UnifiedHistoryWidget extends BaseWidget
                     ->label(__('ID Transaksi'))
                     ->weight('bold')
                     ->color('gray')
-                    ->icon(fn($record) => match($record->type) {
+                    ->icon(fn ($record) => match ($record->type) {
                         'topup' => 'heroicon-m-arrow-down-left',
                         'withdrawal' => 'heroicon-m-arrow-up-right',
                         'order' => 'heroicon-m-shopping-bag',
                         default => 'heroicon-m-ticket',
                     })
-                    ->iconColor(fn($record) => match($record->type) {
+                    ->iconColor(fn ($record) => match ($record->type) {
                         'topup' => 'success',
                         'withdrawal' => 'danger',
                         'order' => 'info',
@@ -60,13 +62,13 @@ class UnifiedHistoryWidget extends BaseWidget
                 Tables\Columns\TextColumn::make('type')
                     ->label(__('Tipe'))
                     ->badge()
-                    ->formatStateUsing(fn($state) => match($state) {
+                    ->formatStateUsing(fn ($state) => match ($state) {
                         'topup' => __('Deposit'),
                         'withdrawal' => __('Tarik'),
                         'order' => __('Beli'),
                         default => $state,
                     })
-                    ->color(fn($state) => match($state) {
+                    ->color(fn ($state) => match ($state) {
                         'topup' => 'success',
                         'withdrawal' => 'danger',
                         'order' => 'info',
@@ -74,14 +76,15 @@ class UnifiedHistoryWidget extends BaseWidget
                     }),
                 Tables\Columns\TextColumn::make('amount')
                     ->label(__('Nominal'))
-                    ->formatStateUsing(fn ($state, $record) => ($record->type === 'topup' ? '+' : '-') . ' Rp ' . number_format($state, 0, ',', '.'))
+                    ->formatStateUsing(fn ($state, $record) => ($record->type === 'topup' ? '+' : '-').' Rp '.number_format($state, 0, ',', '.'))
                     ->color(fn ($record) => $record->type === 'topup' ? 'success' : 'danger')
                     ->weight('black'),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->formatStateUsing(function ($state) {
-                        $val = $state instanceof \BackedEnum ? $state->value : (string)$state;
-                        return match($val) {
+                        $val = $state instanceof \BackedEnum ? $state->value : (string) $state;
+
+                        return match ($val) {
                             'pending' => __('Proses'),
                             'success', 'completed', 'approved', 'paid' => __('Selesai'),
                             'failed', 'rejected', 'cancelled' => __('Gagal'),
@@ -89,8 +92,9 @@ class UnifiedHistoryWidget extends BaseWidget
                         };
                     })
                     ->color(function ($state) {
-                        $val = $state instanceof \BackedEnum ? $state->value : (string)$state;
-                        return match($val) {
+                        $val = $state instanceof \BackedEnum ? $state->value : (string) $state;
+
+                        return match ($val) {
                             'pending' => 'warning',
                             'success', 'completed' => 'success',
                             'failed', 'rejected' => 'danger',
@@ -110,16 +114,18 @@ class UnifiedHistoryWidget extends BaseWidget
                     ->button()
                     ->size('xs')
                     ->color('gray')
-                    ->url(function($record) {
+                    ->url(function ($record) {
                         $actualId = $record->id;
-                        if ($record->type === 'withdrawal') $actualId -= 1000000;
+                        if ($record->type === 'withdrawal') {
+                            $actualId -= 1000000;
+                        }
 
-                        return match($record->type) {
+                        return match ($record->type) {
                             'topup', 'order' => route('filament.user.resources.transactions.index', ['tableFilters[id][value]' => $actualId]),
                             'withdrawal' => route('filament.user.resources.transactions.index'), // Fallback if no specific withdrawal resource
                             default => '#',
                         };
-                    })
+                    }),
             ]);
     }
 }

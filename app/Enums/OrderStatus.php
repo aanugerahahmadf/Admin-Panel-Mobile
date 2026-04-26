@@ -6,7 +6,7 @@ use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
 
-enum OrderStatus: string implements HasLabel, HasColor, HasIcon
+enum OrderStatus: string implements HasColor, HasIcon, HasLabel
 {
     case PENDING = 'pending';
     case CONFIRMED = 'confirmed';
@@ -16,7 +16,7 @@ enum OrderStatus: string implements HasLabel, HasColor, HasIcon
     public function getLabel(): ?string
     {
         return match ($this) {
-            self::PENDING   => __('Menunggu'),
+            self::PENDING => __('Menunggu'),
             self::CONFIRMED => __('Dikonfirmasi'),
             self::COMPLETED => __('Selesai'),
             self::CANCELLED => __('Dibatalkan'),
@@ -26,7 +26,7 @@ enum OrderStatus: string implements HasLabel, HasColor, HasIcon
     public function getColor(): string|array|null
     {
         return match ($this) {
-            self::PENDING   => 'warning',
+            self::PENDING => 'warning',
             self::CONFIRMED => 'primary',
             self::COMPLETED => 'success',
             self::CANCELLED => 'danger',
@@ -36,7 +36,7 @@ enum OrderStatus: string implements HasLabel, HasColor, HasIcon
     public function getIcon(): ?string
     {
         return match ($this) {
-            self::PENDING   => 'heroicon-m-clock',
+            self::PENDING => 'heroicon-m-clock',
             self::CONFIRMED => 'heroicon-m-check-circle',
             self::COMPLETED => 'heroicon-m-check-badge',
             self::CANCELLED => 'heroicon-m-x-circle',

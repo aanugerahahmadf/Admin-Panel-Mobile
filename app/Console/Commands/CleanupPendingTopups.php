@@ -3,8 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Models\Transaction;
-use Illuminate\Console\Command;
 use Carbon\Carbon;
+use Illuminate\Console\Command;
 
 class CleanupPendingTopups extends Command
 {
@@ -37,6 +37,7 @@ class CleanupPendingTopups extends Command
 
         if ($pendingTopups->isEmpty()) {
             $this->info("No pending topups older than {$hours} hours found.");
+
             return;
         }
 

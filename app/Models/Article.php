@@ -2,11 +2,10 @@
 
 namespace App\Models;
 
-use App\Models\User;
-use App\Models\WeddingOrganizer;
+use App\Traits\BelongsToBrand;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
-use App\Models\Category;
+use Illuminate\Support\Facades\Storage;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Collections\MediaCollection;
@@ -28,6 +27,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @property-read string|null $media_video_url
  * @property-read MediaCollection<int, Media> $media
  * @property-read int|null $media_count
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Article newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Article newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Article query()
@@ -45,24 +45,27 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  * @method static \App\Models\Article|null first(array|string $columns = ['*'])
  * @method static \App\Models\Article firstOrFail(array|string $columns = ['*'])
  * @method static \Illuminate\Database\Eloquent\Collection<int, \App\Models\Article> get(array|string $columns = ['*'])
+ *
  * @property int $authorId
  * @property string|null $imageUrl
  * @property string|null $videoUrl
  * @property bool $isPublished
- * @property \Illuminate\Support\Carbon|null $publishedAt
- * @property \Illuminate\Support\Carbon|null $createdAt
- * @property \Illuminate\Support\Carbon|null $updatedAt
+ * @property Carbon|null $publishedAt
+ * @property Carbon|null $createdAt
+ * @property Carbon|null $updatedAt
  * @property-read string|null $mediaVideoUrl
  * @property-read int|null $mediaCount
  * @property-read bool|null $mediaExists
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|\App\Models\Article whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|\App\Models\Article whereVideoUrl($value)
+ *
  * @mixin \Eloquent
  */
 class Article extends Model implements HasMedia
 {
+    use BelongsToBrand;
     use InteractsWithMedia;
-    use \App\Traits\BelongsToBrand;
 
     public function registerMediaCollections(): void
     {
@@ -115,11 +118,15 @@ class Article extends Model implements HasMedia
     {
         $url = $this->getFirstMediaUrl('images') ?: ($this->attributes['image_url'] ?? null);
 
-        if (!$url) return 'https://ui-avatars.com/api/?name=' . urlencode($this->title);
-        
-        if (str_starts_with($url, 'http')) return $url;
+        if (! $url) {
+            return 'https://ui-avatars.com/api/?name='.urlencode($this->title);
+        }
 
-        return \Illuminate\Support\Facades\Storage::disk('public')->url(ltrim($url, '/'));
+        if (str_starts_with($url, 'http')) {
+            return $url;
+        }
+
+        return Storage::disk('public')->url(ltrim($url, '/'));
 
         return $url;
     }

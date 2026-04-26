@@ -16,6 +16,7 @@ class PrivacyPolicyResource extends Resource
     protected static ?string $model = PrivacyPolicy::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-shield-check';
+
     public static function getNavigationGroup(): ?string
     {
         return __('Manajemen Legal');
@@ -94,7 +95,7 @@ class PrivacyPolicyResource extends Resource
             ])
             ->filters([])
             ->actions([
-                  Tables\Actions\ViewAction::make()
+                Tables\Actions\ViewAction::make()
                     ->slideOver()
                     ->button()
                     ->color('info')

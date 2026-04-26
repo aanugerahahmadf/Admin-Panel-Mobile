@@ -10,16 +10,16 @@ use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
-use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
-use Filament\Tables\Columns\ViewColumn;
+use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Spatie\MediaLibrary\MediaCollections\Models\MediaCollection;
+use Illuminate\Support\HtmlString;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
+
 /**
  * @mixin \Eloquent
- * @property-read \App\Models\Package $record
+ *
+ * @property-read Package $record
  */
 class PackageResource extends Resource
 {
@@ -264,16 +264,16 @@ class PackageResource extends Resource
                 Tables\Columns\TextColumn::make('video_url')
                     ->label(__('Video'))
                     ->formatStateUsing(fn ($state) => $state
-                        ? new \Illuminate\Support\HtmlString(
-                            '<video src="' . e($state) . '" class="rounded-lg" height="60" width="80" controls preload="none"></video>'
+                        ? new HtmlString(
+                            '<video src="'.e($state).'" class="rounded-lg" height="60" width="80" controls preload="none"></video>'
                         )
-                        : new \Illuminate\Support\HtmlString('<span class="text-gray-400 text-xs">—</span>')
+                        : new HtmlString('<span class="text-gray-400 text-xs">—</span>')
                     )
                     ->html()
                     ->alignment('center'),
                 Tables\Columns\TextColumn::make('price')
                     ->label(__('Harga Dasar'))
-                    ->formatStateUsing(fn ($state) => 'Rp ' . number_format($state, 2, ',', '.'))
+                    ->formatStateUsing(fn ($state) => 'Rp '.number_format($state, 2, ',', '.'))
                     ->alignment('center'),
                 Tables\Columns\TextColumn::make('stock')
                     ->label(__('Stok'))

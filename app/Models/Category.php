@@ -16,6 +16,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Collection<int, Package> $packages
  * @property-read int|null $packages_count
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Category newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Category newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Category query()
@@ -29,12 +30,15 @@ use Illuminate\Support\Carbon;
  * @method static \App\Models\Category|null first(array|string $columns = ['*'])
  * @method static \App\Models\Category firstOrFail(array|string $columns = ['*'])
  * @method static \Illuminate\Database\Eloquent\Collection<int, \App\Models\Category> get(array|string $columns = ['*'])
- * @property \Illuminate\Support\Carbon|null $createdAt
- * @property \Illuminate\Support\Carbon|null $updatedAt
+ *
+ * @property Carbon|null $createdAt
+ * @property Carbon|null $updatedAt
  * @property-read int|null $packagesCount
  * @property-read bool|null $packagesExists
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|\App\Models\Category whereSlug($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|\App\Models\Category whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  */
 class Category extends Model

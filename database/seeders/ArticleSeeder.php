@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Article;
+use App\Models\Category;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -12,7 +13,7 @@ class ArticleSeeder extends Seeder
     public function run(): void
     {
         // MASTER CLEAR: Sapu jagat semua media artikel sebelum seeding mulai!
-        \App\Models\Article::all()->each(function ($article) {
+        Article::all()->each(function ($article) {
             $article->clearMediaCollection('images');
             $article->clearMediaCollection('videos');
         });
@@ -56,7 +57,7 @@ class ArticleSeeder extends Seeder
 
         foreach ($articles as $article) {
             // Retrieve or create the category based on the array's category string
-            $category = \App\Models\Category::firstOrCreate(
+            $category = Category::firstOrCreate(
                 ['slug' => Str::slug($article['category'])],
                 ['name' => $article['category']]
             );
@@ -86,7 +87,8 @@ class ArticleSeeder extends Seeder
                 try {
                     $articleModel->addMediaFromUrl($article['image_url'])
                         ->toMediaCollection('images');
-                } catch (\Exception $e) {}
+                } catch (\Exception $e) {
+                }
             }
 
             // Seed Videos (HANYA INI YANG BIKIN PREVIEW MUNCUL!)
