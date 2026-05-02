@@ -2,9 +2,8 @@
 
 namespace App\Filament\User\Resources\PackageResource\Pages;
 
-use Filament\Actions;
-
 use App\Filament\User\Resources\PackageResource;
+use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
 
 class ViewPackage extends ViewRecord
@@ -16,7 +15,7 @@ class ViewPackage extends ViewRecord
         return [
             Actions\Action::make('back')
                 ->label(__('Kembali'))
-                ->url(fn() => static::getResource()::getUrl('index'))
+                ->url(fn () => static::getResource()::getUrl('index'))
                 ->color('gray')->button()
                 ->icon('heroicon-o-arrow-left'),
 
@@ -24,4 +23,3 @@ class ViewPackage extends ViewRecord
         ];
     }
 }
-

@@ -114,6 +114,7 @@ class Inbox extends Model
                 if (! $authId || empty($this->user_ids)) {
                     return collect();
                 }
+
                 return User::whereIn('id', $this->user_ids)
                     ->where('id', '!=', $authId)
                     ->get(['*']);

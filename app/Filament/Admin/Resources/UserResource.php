@@ -230,7 +230,7 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('full_name')
                     ->searchable()
                     ->label(__('Nama Lengkap')),
-                
+
                 Tables\Columns\TextColumn::make('gender')
                     ->label(__('Jenis Kelamin'))
                     ->badge()

@@ -29,7 +29,7 @@ class TermsAndConditionsSeeder extends Seeder
                 ],
             ]
         );
-        $this->command->line("  <info>✓</info> Syarat & Ketentuan created");
+        $this->command->line('  <info>✓</info> Syarat & Ketentuan created');
 
         // 2. Privacy Policy
         PrivacyPolicy::updateOrCreate(
@@ -44,7 +44,7 @@ class TermsAndConditionsSeeder extends Seeder
                 ],
             ]
         );
-        $this->command->line("  <info>✓</info> Kebijakan Privasi created");
+        $this->command->line('  <info>✓</info> Kebijakan Privasi created');
 
         $this->command->info('--- Terms & Privacy Seeding Complete ---');
     }

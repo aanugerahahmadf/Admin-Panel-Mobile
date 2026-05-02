@@ -3,23 +3,24 @@
 namespace App\Filament\User\Auth;
 
 use App\Models\User;
+use App\Providers\NativeServiceProvider;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Components\Wizard\Step;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
 use Filament\Forms\Set;
-use Illuminate\Validation\ValidationException;
-use Filament\Forms\Components\Hidden;
 use Filament\Pages\Auth\Register as BaseRegister;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\HtmlString;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 use Native\Mobile\Notification;
 use Spatie\Permission\Models\Role;
 
@@ -29,11 +30,11 @@ class Register extends BaseRegister
     {
         return 'filament.user.auth.register';
     }
+
     public function getHeading(): string|Htmlable
     {
         return __('Daftar Akun Baru');
     }
-
 
     protected function getEmailFormComponent(): Component
     {
@@ -199,7 +200,7 @@ class Register extends BaseRegister
         }
 
         // Notifikasi Native jika di mobile
-        if (app()->environment('mobile') || \App\Providers\NativeServiceProvider::isNativeMobile()) {
+        if (app()->environment('mobile') || NativeServiceProvider::isNativeMobile()) {
             Notification::new()
                 ->title(__('Pendaftaran Berhasil!'))
                 ->message(__('Halo :name, akun Anda sudah aktif dan siap digunakan.', ['name' => $user->first_name]))

@@ -5,16 +5,16 @@ namespace Database\Seeders;
 use App\Models\Article;
 use App\Models\Category;
 use App\Models\User;
+use File;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
-use File;
 
 class ArticleSeeder extends Seeder
 {
     public function run(): void
     {
         $this->command->info('--- Seeding Articles ---');
-        
+
         // MASTER CLEAR: Sapu jagat semua media artikel sebelum seeding mulai!
         Article::all()->each(function ($article) {
             $article->clearMediaCollection('images');
@@ -73,41 +73,44 @@ class ArticleSeeder extends Seeder
                     'category_id' => $category->id,
                     'author_id' => $admin?->id ?? 1,
                     'wedding_organizer_id' => 1,
-                    'image_url' => asset('images/article/' . $article['image_name']),
-                    'video_url' => $article['video_name'] ? asset('videos/article/' . $article['video_name']) : null,
+                    'image_url' => asset('images/article/'.$article['image_name']),
+                    'video_url' => $article['video_name'] ? asset('videos/article/'.$article['video_name']) : null,
                     'is_published' => true,
                     'published_at' => now(),
                 ]
             );
 
             // Seed Image
-            $imagePath = public_path('images/article/' . $article['image_name']);
+            $imagePath = public_path('images/article/'.$article['image_name']);
             if (File::exists($imagePath)) {
                 try {
                     $articleModel->addMedia($imagePath)
                         ->preservingOriginal()
                         ->toMediaCollection('images');
-                } catch (\Exception $e) {}
+                } catch (\Exception $e) {
+                }
             }
 
             // Seed Video
             if ($article['video_name']) {
-                $videoPath = public_path('videos/article/' . $article['video_name']);
+                $videoPath = public_path('videos/article/'.$article['video_name']);
                 if (File::exists($videoPath)) {
                     try {
                         $articleModel->addMedia($videoPath)
                             ->preservingOriginal()
                             ->toMediaCollection('videos');
-                        
+
                         $this->command->line("  <info>✓</info> {$article['title']} [{$article['image_name']}] + [{$article['video_name']}]");
+
                         continue;
-                    } catch (\Exception $e) {}
+                    } catch (\Exception $e) {
+                    }
                 }
             }
 
             $this->command->line("  <info>✓</info> {$article['title']} [{$article['image_name']}]");
         }
 
-        $this->command->info('--- Article Seeding Complete (' . count($articles) . ' articles) ---');
+        $this->command->info('--- Article Seeding Complete ('.count($articles).' articles) ---');
     }
 }

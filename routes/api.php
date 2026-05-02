@@ -19,6 +19,8 @@ use App\Http\Controllers\Api\WalletController;
 use App\Http\Controllers\Api\WeddingOrganizerController;
 use App\Http\Controllers\Api\WishlistController;
 use App\Http\Controllers\DatabaseProxyController;
+use App\Models\User;
+use App\Providers\NativeServiceProvider;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -28,33 +30,33 @@ Route::get('/settings', [AppSettingsController::class, 'index']);
 // ── DIAGNOSTIC ENDPOINT — Test sinkronisasi mobile ──────────────────────────
 // Akses: GET /api/ping dari mobile untuk verifikasi koneksi & data
 Route::get('/ping', function () {
-    $isMobile = \App\Providers\NativeServiceProvider::isNativeMobile();
-    $hostIp   = \App\Providers\NativeServiceProvider::mobileHostIp();
+    $isMobile = NativeServiceProvider::isNativeMobile();
+    $hostIp = NativeServiceProvider::mobileHostIp();
 
-    $dbStatus  = 'unknown';
+    $dbStatus = 'unknown';
     $userCount = 0;
-    $dbError   = null;
+    $dbError = null;
 
     try {
-        $userCount = \App\Models\User::count();
-        $dbStatus  = 'connected';
-    } catch (\Throwable $e) {
+        $userCount = User::count();
+        $dbStatus = 'connected';
+    } catch (Throwable $e) {
         $dbStatus = 'error';
-        $dbError  = $e->getMessage();
+        $dbError = $e->getMessage();
     }
 
     return response()->json([
-        'status'      => 'ok',
-        'timestamp'   => now()->toIso8601String(),
-        'is_mobile'   => $isMobile,
-        'host_ip'     => $hostIp,
-        'os'          => PHP_OS_FAMILY,
-        'db_driver'   => config('database.default'),
-        'db_status'   => $dbStatus,
-        'user_count'  => $userCount,
-        'db_error'    => $dbError,
-        'app_url'     => config('app.url'),
-        'locale'      => app()->getLocale(),
+        'status' => 'ok',
+        'timestamp' => now()->toIso8601String(),
+        'is_mobile' => $isMobile,
+        'host_ip' => $hostIp,
+        'os' => PHP_OS_FAMILY,
+        'db_driver' => config('database.default'),
+        'db_status' => $dbStatus,
+        'user_count' => $userCount,
+        'db_error' => $dbError,
+        'app_url' => config('app.url'),
+        'locale' => app()->getLocale(),
         'php_version' => PHP_VERSION,
     ]);
 });

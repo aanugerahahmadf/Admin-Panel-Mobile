@@ -4,7 +4,6 @@ namespace App\Filament\User\Resources;
 
 use App\Filament\User\Pages\MessagesPage;
 use App\Filament\User\Resources\WeddingOrganizerResource\Pages;
-use App\Helpers\NativeNotificationHelper;
 use App\Models\Message;
 use App\Models\WeddingOrganizer;
 use Dotswan\MapPicker\Infolists\MapEntry;
@@ -25,7 +24,6 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\HtmlString;
 
 class WeddingOrganizerResource extends Resource
 {

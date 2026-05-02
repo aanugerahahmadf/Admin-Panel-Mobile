@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Providers\NativeServiceProvider;
 use App\Traits\BelongsToBrand;
 use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Model;
@@ -60,7 +61,7 @@ class Product extends Model implements HasMedia
 
     public function getImageUrlAttribute()
     {
-        $fallback = \App\Providers\NativeServiceProvider::normalizeUrl(asset('images/placeholders/image-placeholder.png'));
+        $fallback = NativeServiceProvider::normalizeUrl(asset('images/placeholders/image-placeholder.png'));
         $url = $this->getFirstMediaUrl('product_image') ?: null;
 
         return $this->normalizeImageUrl($url, $fallback);
@@ -73,14 +74,14 @@ class Product extends Model implements HasMedia
         }
 
         if (Str::startsWith($url, ['http://', 'https://', 'data:image'])) {
-            return \App\Providers\NativeServiceProvider::normalizeUrl($url);
+            return NativeServiceProvider::normalizeUrl($url);
         }
 
         if (Str::startsWith($url, '/')) {
             return $url;
         }
 
-        return \App\Providers\NativeServiceProvider::normalizeUrl(asset('storage/'.ltrim($url, '/')));
+        return NativeServiceProvider::normalizeUrl(asset('storage/'.ltrim($url, '/')));
     }
 
     public function getFinalPriceAttribute()
@@ -106,8 +107,8 @@ class Product extends Model implements HasMedia
         }
 
         try {
-            if (class_exists(\Filament\Facades\Filament::class) && \Filament\Facades\Filament::auth()->check()) {
-                return $this->wishlists()->where('user_id', \Filament\Facades\Filament::auth()->id())->exists();
+            if (class_exists(Filament::class) && Filament::auth()->check()) {
+                return $this->wishlists()->where('user_id', Filament::auth()->id())->exists();
             }
         } catch (\Throwable $e) {
             // Silently fail

@@ -12,6 +12,7 @@ use App\Filament\User\Pages\Dashboard;
 use App\Filament\User\Pages\EditProfilePage;
 use App\Http\Middleware\MidtransCspMiddleware;
 use App\Http\Middleware\SetLocale;
+use App\Providers\NativeServiceProvider;
 use Filament\Enums\ThemeMode;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -23,7 +24,6 @@ use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\MaxWidth;
-use Filament\Widgets;
 use Illuminate\Contracts\View\View;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -38,7 +38,7 @@ class UserPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        $isMobile = \App\Providers\NativeServiceProvider::isNativeMobile();
+        $isMobile = NativeServiceProvider::isNativeMobile();
 
         $panel = $panel
             ->id('user')
@@ -51,7 +51,7 @@ class UserPanelProvider extends PanelProvider
             )
             ->emailVerification(OtpEmailVerificationPrompt::class)
             ->brandName(fn () => __('Dekorasi Bunga Pernikahan'))
-            ->brandLogo(fn () => \App\Providers\NativeServiceProvider::normalizeUrl(asset('images/logo.png')))
+            ->brandLogo(fn () => NativeServiceProvider::normalizeUrl(asset('images/logo.png')))
             ->brandLogoHeight('3rem')
             ->colors([
                 'danger' => Color::Rose,
@@ -67,15 +67,15 @@ class UserPanelProvider extends PanelProvider
             ->maxContentWidth(MaxWidth::Full)
             ->spa()
             ->globalSearch()
-             ->renderHook(
+            ->renderHook(
                 'panels::global-search.after',
-                fn (): ?View => (! \App\Providers\NativeServiceProvider::isNativeMobile() && ! preg_match('/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i', request()->userAgent())) 
+                fn (): ?View => (! NativeServiceProvider::isNativeMobile() && ! preg_match('/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i', request()->userAgent()))
                     ? view('filament.filament-language-switcher.language-switcher')
                     : null
             )
             ->renderHook(
                 'panels::auth.form.before',
-                fn (): ?View => (! \App\Providers\NativeServiceProvider::isNativeMobile() && ! preg_match('/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i', request()->userAgent()))
+                fn (): ?View => (! NativeServiceProvider::isNativeMobile() && ! preg_match('/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i', request()->userAgent()))
                     ? view('filament.filament-language-switcher.language-switcher')
                     : null
             )

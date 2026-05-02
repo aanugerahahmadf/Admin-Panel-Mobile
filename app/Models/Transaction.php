@@ -8,6 +8,8 @@ use App\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class Transaction extends Model
 {
@@ -67,7 +69,7 @@ class Transaction extends Model
 
             // Mark voucher as used if exists — gunakan Eloquent bukan DB::table()
             try {
-                $voucherLink = \Illuminate\Support\Facades\DB::table('user_vouchers')
+                $voucherLink = DB::table('user_vouchers')
                     ->where('order_id', $this->order_id)
                     ->where('user_id', $this->user_id)
                     ->first();
@@ -79,7 +81,7 @@ class Transaction extends Model
                     }
                 }
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('[Transaction] Voucher mark failed: '.$e->getMessage());
+                Log::warning('[Transaction] Voucher mark failed: '.$e->getMessage());
             }
         }
     }

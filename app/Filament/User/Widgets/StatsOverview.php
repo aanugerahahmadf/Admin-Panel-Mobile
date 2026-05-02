@@ -5,12 +5,10 @@ namespace App\Filament\User\Widgets;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\Wishlist;
-use Filament\Facades\Filament;
 use Filament\Support\Enums\IconPosition;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\HtmlString;
 
 class StatsOverview extends BaseWidget
 {

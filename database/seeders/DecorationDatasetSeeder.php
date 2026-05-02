@@ -130,6 +130,6 @@ class DecorationDatasetSeeder extends Seeder
             }
         }
 
-        $this->command->info('--- Decoration Dataset Seeding Complete (' . count($products) . ' items) ---');
+        $this->command->info('--- Decoration Dataset Seeding Complete ('.count($products).' items) ---');
     }
 }

@@ -7,6 +7,7 @@ use App\Helpers\NativeNotificationHelper;
 use App\Models\Package;
 use App\Models\Product;
 use App\Models\Wishlist;
+use App\Providers\NativeServiceProvider;
 use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -122,7 +123,7 @@ class WishlistResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->poll(\App\Providers\NativeServiceProvider::isNativeMobile() ? null : '30s')
+            ->poll(NativeServiceProvider::isNativeMobile() ? null : '30s')
             ->emptyStateHeading(__('Belum ada favorit'))
             ->emptyStateDescription(__('Temukan produk atau layanan impian Anda dan simpan di sini.'))
             ->emptyStateIcon('heroicon-o-heart')

@@ -18,7 +18,6 @@ use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Notifications\DatabaseNotificationCollection;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\HasApiTokens;
 use Laravel\Sanctum\PersonalAccessToken;
 use Spatie\Permission\Models\Permission;
@@ -289,8 +288,8 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
                 }
 
                 $cleanPath = ltrim(str_replace('storage/', '', $path), '/');
-                
-                return asset('storage/' . $cleanPath);
+
+                return asset('storage/'.$cleanPath);
             }
         );
     }

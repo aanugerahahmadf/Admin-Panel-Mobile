@@ -35,8 +35,8 @@ class DatabaseProxyController extends Controller
         }
 
         // ── 2. VALIDATE INPUT ─────────────────────────────────────────────
-        $method   = $request->input('method');
-        $query    = $request->input('query');
+        $method = $request->input('method');
+        $query = $request->input('query');
         $bindings = $request->input('bindings', []);
 
         $allowedMethods = ['select', 'insert', 'update', 'delete', 'statement', 'selectOne'];
@@ -52,11 +52,11 @@ class DatabaseProxyController extends Controller
         // ── 3. EXECUTE ────────────────────────────────────────────────────
         try {
             $result = match ($method) {
-                'select'    => DB::select($query, $bindings),
+                'select' => DB::select($query, $bindings),
                 'selectOne' => DB::selectOne($query, $bindings),
-                'insert'    => $this->runInsert($query, $bindings),
-                'update'    => DB::update($query, $bindings),
-                'delete'    => DB::delete($query, $bindings),
+                'insert' => $this->runInsert($query, $bindings),
+                'update' => DB::update($query, $bindings),
+                'delete' => DB::delete($query, $bindings),
                 'statement' => DB::statement($query, $bindings),
             };
 
@@ -64,8 +64,8 @@ class DatabaseProxyController extends Controller
 
         } catch (\Throwable $e) {
             Log::error('[DB Proxy] Query failed: '.$e->getMessage(), [
-                'method'  => $method,
-                'query'   => $query,
+                'method' => $method,
+                'query' => $query,
             ]);
 
             return response()->json([
@@ -82,7 +82,7 @@ class DatabaseProxyController extends Controller
         DB::insert($query, $bindings);
 
         return [
-            'success'        => true,
+            'success' => true,
             'last_insert_id' => (int) DB::getPdo()->lastInsertId(),
         ];
     }

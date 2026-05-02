@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Models\History;
 use App\Models\Transaction;
 use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Log;
 
 class TransactionObserver
 {
@@ -38,7 +39,7 @@ class TransactionObserver
                             ->icon('heroicon-o-banknotes')
                             ->sendToDatabase($user);
                     } catch (\Throwable $e) {
-                        \Illuminate\Support\Facades\Log::warning('[TransactionObserver] Notification failed: '.$e->getMessage());
+                        Log::warning('[TransactionObserver] Notification failed: '.$e->getMessage());
                     }
                 }
             }

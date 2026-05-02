@@ -28,11 +28,10 @@ use App\Models\User;
 use App\Observers\MediaObserver;
 use App\Observers\OrderObserver;
 use App\Observers\TransactionObserver;
+use App\Providers\Filament\UserPanelProvider;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Forms\Components\Field;
 use Filament\Infolists\Components\Entry;
-use Filament\Support\Assets\Css;
-use Filament\Support\Facades\FilamentAsset;
 use Filament\Support\Facades\FilamentView;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Columns\TextColumn;
@@ -44,7 +43,6 @@ use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 use Spatie\Backup\BackupServiceProvider;
@@ -142,7 +140,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $isMobile = \App\Providers\NativeServiceProvider::isNativeMobile();
+        $isMobile = NativeServiceProvider::isNativeMobile();
 
         // 🚀 Force HTTPS for Ngrok/Production Assets
         if (str_contains(config('app.url'), 'https://')) {
@@ -175,8 +173,8 @@ class AppServiceProvider extends ServiceProvider
         // ═══════════════════════════════════════════════════════════
         config([
             'session.expire_on_close' => false,
-            'session.lottery'         => [0, 100],
-            'session.lifetime'        => 525600,
+            'session.lottery' => [0, 100],
+            'session.lifetime' => 525600,
         ]);
 
         // Grant all permissions to super_admin role
@@ -242,6 +240,7 @@ class AppServiceProvider extends ServiceProvider
                             return __($state);
                         }
                     }
+
                     return $state;
                 });
             });
@@ -252,6 +251,7 @@ class AppServiceProvider extends ServiceProvider
             $field->label(function () use ($field): string {
                 $original = $field->getName();
                 $translated = __($original);
+
                 return is_string($translated) ? $translated : $original;
             });
         });
@@ -264,6 +264,7 @@ class AppServiceProvider extends ServiceProvider
             $entry->label(function () use ($entry): string {
                 $original = $entry->getName();
                 $translated = __($original);
+
                 return is_string($translated) ? $translated : $original;
             });
         });
@@ -280,6 +281,7 @@ class AppServiceProvider extends ServiceProvider
                     if ($state instanceof \UnitEnum) {
                         $state = $state instanceof \BackedEnum ? $state->value : $state->name;
                     }
+
                     return $state !== null ? (string) $state : null;
                 });
             });
@@ -322,7 +324,7 @@ class AppServiceProvider extends ServiceProvider
 
                 return '';
             },
-            scopes: \App\Providers\Filament\UserPanelProvider::class,
+            scopes: UserPanelProvider::class,
         );
     }
 }

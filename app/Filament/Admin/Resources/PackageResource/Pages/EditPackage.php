@@ -24,7 +24,7 @@ class EditPackage extends EditRecord
         return [
             Actions\Action::make('back')
                 ->label(__('Kembali'))
-                ->url(fn() => static::getResource()::getUrl('index'))
+                ->url(fn () => static::getResource()::getUrl('index'))
                 ->color('gray')->button()
                 ->icon('heroicon-o-arrow-left'),
 
@@ -33,4 +33,3 @@ class EditPackage extends EditRecord
         ];
     }
 }
-

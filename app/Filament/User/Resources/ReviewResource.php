@@ -11,10 +11,10 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\HtmlString;
 
 class ReviewResource extends Resource
 {
@@ -193,19 +193,19 @@ class ReviewResource extends Resource
                     ->searchable()
                     ->label(__('Urutkan'))
                     ->options([
-                        'latest'      => __('Terbaru'),
-                        'oldest'      => __('Terlama'),
+                        'latest' => __('Terbaru'),
+                        'oldest' => __('Terlama'),
                         'rating_desc' => __('Rating Tertinggi'),
-                        'rating_asc'  => __('Rating Terendah'),
+                        'rating_asc' => __('Rating Terendah'),
                     ])
                     ->query(fn (Builder $query, array $data) => match ($data['value'] ?? null) {
-                        'latest'      => $query->reorder('created_at', 'desc'),
-                        'oldest'      => $query->reorder('created_at', 'asc'),
+                        'latest' => $query->reorder('created_at', 'desc'),
+                        'oldest' => $query->reorder('created_at', 'asc'),
                         'rating_desc' => $query->reorder('rating', 'desc'),
-                        'rating_asc'  => $query->reorder('rating', 'asc'),
-                        default       => $query,
+                        'rating_asc' => $query->reorder('rating', 'asc'),
+                        default => $query,
                     }),
-            ], layout: \Filament\Tables\Enums\FiltersLayout::AboveContentCollapsible)
+            ], layout: FiltersLayout::AboveContentCollapsible)
             ->headerActions([
                 Tables\Actions\CreateAction::make()
                     ->label(__('Tulis Ulasan'))

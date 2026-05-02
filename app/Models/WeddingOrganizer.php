@@ -2,10 +2,12 @@
 
 namespace App\Models;
 
+use App\Providers\NativeServiceProvider;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Spatie\MediaLibrary\HasMedia;
@@ -125,7 +127,7 @@ class WeddingOrganizer extends Model implements HasMedia
                     }
                 } catch (\Throwable $e) {
                     // Fail silently — geocoding tidak boleh block save operation
-                    \Illuminate\Support\Facades\Log::warning('[WeddingOrganizer] Geocoding failed: '.$e->getMessage());
+                    Log::warning('[WeddingOrganizer] Geocoding failed: '.$e->getMessage());
                 }
             }
         });
@@ -275,7 +277,8 @@ class WeddingOrganizer extends Model implements HasMedia
     public function getVideoUrlAttribute(): ?string
     {
         $url = $this->getFirstMediaUrl('videos') ?: null;
-        return $url ? \App\Providers\NativeServiceProvider::normalizeUrl($url) : null;
+
+        return $url ? NativeServiceProvider::normalizeUrl($url) : null;
     }
 
     public function getTotalReviewsAttribute()
@@ -305,12 +308,12 @@ class WeddingOrganizer extends Model implements HasMedia
         }
 
         if (Str::startsWith($url, ['http://', 'https://', 'data:image', '/'])) {
-            return \App\Providers\NativeServiceProvider::normalizeUrl($url);
+            return NativeServiceProvider::normalizeUrl($url);
         }
 
         $resolved = Storage::disk('public')->url(ltrim($url, '/'));
 
-        return \App\Providers\NativeServiceProvider::normalizeUrl($resolved);
+        return NativeServiceProvider::normalizeUrl($resolved);
     }
 
     private function getValidMediaUrl(?Media $media): ?string

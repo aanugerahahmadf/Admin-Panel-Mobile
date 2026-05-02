@@ -139,7 +139,7 @@ class ProductSeeder extends Seeder
                     $product->addMedia($imagePath)
                         ->preservingOriginal()
                         ->toMediaCollection('product_image');
-                    
+
                     $this->command->line("  <info>✓</info> {$data['name']} [{$data['image']}]");
                 } catch (\Exception $e) {
                     $this->command->error("  ✗ Gagal memuat gambar untuk: {$data['name']}");

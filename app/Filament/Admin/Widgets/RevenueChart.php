@@ -15,7 +15,7 @@ class RevenueChart extends ChartWidget
 
     protected static ?int $sort = 2;
 
-    protected int | string | array $columnSpan = 1;
+    protected int|string|array $columnSpan = 1;
 
     public function getHeading(): string|Htmlable
     {

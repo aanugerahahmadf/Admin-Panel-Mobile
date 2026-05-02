@@ -12,6 +12,7 @@ use App\Models\Product;
 use App\Models\Transaction;
 use App\Models\Voucher;
 use App\Models\Wishlist;
+use App\Providers\NativeServiceProvider;
 use App\Services\CBIRService;
 use App\Services\ChatService;
 use App\Services\MidtransService;
@@ -27,6 +28,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Support\Enums\ActionSize;
 use Filament\Tables;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -82,7 +84,7 @@ class ProductResource extends Resource
     {
         return $table
             ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
-            ->poll(\App\Providers\NativeServiceProvider::isNativeMobile() ? null : '30s')
+            ->poll(NativeServiceProvider::isNativeMobile() ? null : '30s')
             ->headerActions([
                 Tables\Actions\Action::make('visual_search')
                     ->label(__('Pencarian Bunga Cerdas'))
@@ -112,6 +114,7 @@ class ProductResource extends Resource
                                             $set('status_message', null);
                                             $livewire->dispatch('refresh_items');
                                             $livewire->dispatch('refresh_catalog');
+
                                             return;
                                         }
 
@@ -128,6 +131,7 @@ class ProductResource extends Resource
                                             $set('status_message', __('Tidak ada produk yang cocok untuk pencarian teks.'));
                                             $livewire->dispatch('refresh_items');
                                             $livewire->dispatch('refresh_catalog');
+
                                             return;
                                         }
 
@@ -374,11 +378,11 @@ class ProductResource extends Resource
                     ->label(__('Diskon'))
                     ->options([
                         'yes' => __('Ada Diskon'),
-                        'no'  => __('Tanpa Diskon'),
+                        'no' => __('Tanpa Diskon'),
                     ])
                     ->query(fn (Builder $query, array $data) => match ($data['value'] ?? null) {
                         'yes' => $query->where('discount_price', '>', 0),
-                        'no'  => $query->where(fn ($q) => $q->whereNull('discount_price')->orWhere('discount_price', 0)),
+                        'no' => $query->where(fn ($q) => $q->whereNull('discount_price')->orWhere('discount_price', 0)),
                         default => $query,
                     }),
 
@@ -387,11 +391,11 @@ class ProductResource extends Resource
                     ->label(__('Ketersediaan'))
                     ->options([
                         'yes' => __('Tersedia'),
-                        'no'  => __('Habis'),
+                        'no' => __('Habis'),
                     ])
                     ->query(fn (Builder $query, array $data) => match ($data['value'] ?? null) {
                         'yes' => $query->where('stock', '>', 0),
-                        'no'  => $query->where('stock', '<=', 0),
+                        'no' => $query->where('stock', '<=', 0),
                         default => $query,
                     }),
 
@@ -399,19 +403,19 @@ class ProductResource extends Resource
                     ->searchable()
                     ->label(__('Urutkan'))
                     ->options([
-                        'latest'       => __('Terbaru'),
-                        'price_asc'    => __('Harga: Terendah'),
-                        'price_desc'   => __('Harga: Tertinggi'),
+                        'latest' => __('Terbaru'),
+                        'price_asc' => __('Harga: Terendah'),
+                        'price_desc' => __('Harga: Tertinggi'),
                         'most_ordered' => __('Paling Banyak Dipesan'),
                     ])
                     ->query(fn (Builder $query, array $data) => match ($data['value'] ?? null) {
-                        'price_asc'    => $query->reorder('price', 'asc'),
-                        'price_desc'   => $query->reorder('price', 'desc'),
-                        'latest'       => $query->reorder('created_at', 'desc'),
+                        'price_asc' => $query->reorder('price', 'asc'),
+                        'price_desc' => $query->reorder('price', 'desc'),
+                        'latest' => $query->reorder('created_at', 'desc'),
                         'most_ordered' => $query->withCount('orders')->reorder('orders_count', 'desc'),
-                        default        => $query,
+                        default => $query,
                     }),
-            ], layout: \Filament\Tables\Enums\FiltersLayout::AboveContentCollapsible)
+            ], layout: FiltersLayout::AboveContentCollapsible)
             // ->actions([
             //     Tables\Actions\Action::make('view_detail')
             //         ->label(__('Lihat Detail'))

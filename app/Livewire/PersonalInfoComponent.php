@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\User;
+use App\Providers\NativeServiceProvider;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
@@ -39,7 +40,7 @@ class PersonalInfoComponent extends Component implements HasForms
         $user = Auth::user();
         if ($user) {
             $rawAvatar = $user->getRawOriginal('avatar_url');
-            
+
             $avatarValue = filter_var($rawAvatar, FILTER_VALIDATE_URL) ? null : $rawAvatar;
 
             $this->form->fill([
@@ -146,7 +147,7 @@ class PersonalInfoComponent extends Component implements HasForms
                 ->send();
 
             // Notifikasi Native jika di mobile
-            if (app()->environment('mobile') || \App\Providers\NativeServiceProvider::isNativeMobile()) {
+            if (app()->environment('mobile') || NativeServiceProvider::isNativeMobile()) {
                 NativeNotification::new()
                     ->title(__('Profil Diperbarui'))
                     ->message(__('Data pribadi Anda telah berhasil disimpan.'))

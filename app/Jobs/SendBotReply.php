@@ -124,7 +124,7 @@ class SendBotReply implements ShouldQueue
                 $wo = WeddingOrganizer::getBrand();
                 $fallbackAddress = __('Rajasinga, Kec. Terisi, Kabupaten Indramayu, Jawa Barat');
                 $officeAddress = ($wo && $wo->address) ? $wo->address : $fallbackAddress;
-                
+
                 $reply = __('Tentu :userName! Kantor utama kami berlokasi di **:address**. Kami melayani dekorasi untuk area lokal maupun luar kota. Jika :userName ingin berkunjung untuk konsultasi tatap muka, admin kami akan segera memberikan titik koordinatnya. 📍', [
                     'userName' => $userName,
                     'address' => $officeAddress,

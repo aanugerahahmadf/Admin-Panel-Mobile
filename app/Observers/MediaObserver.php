@@ -2,7 +2,9 @@
 
 namespace App\Observers;
 
+use App\Providers\NativeServiceProvider;
 use App\Services\CBIRService;
+use Illuminate\Support\Facades\Log;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class MediaObserver
@@ -20,14 +22,14 @@ class MediaObserver
 
         if (in_array($media->collection_name, $targetCollections)) {
             // Skip CBIR indexing di mobile — AI server tidak tersedia dari device
-            if (\App\Providers\NativeServiceProvider::isNativeMobile()) {
+            if (NativeServiceProvider::isNativeMobile()) {
                 return;
             }
 
             try {
                 $this->cbirService->indexMedia($media);
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('[MediaObserver] CBIR indexing failed: '.$e->getMessage());
+                Log::warning('[MediaObserver] CBIR indexing failed: '.$e->getMessage());
             }
         }
     }
@@ -35,14 +37,14 @@ class MediaObserver
     public function deleted(Media $media)
     {
         // Skip di mobile
-        if (\App\Providers\NativeServiceProvider::isNativeMobile()) {
+        if (NativeServiceProvider::isNativeMobile()) {
             return;
         }
 
         try {
             $this->cbirService->removeFromIndex($media->id);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('[MediaObserver] CBIR remove failed: '.$e->getMessage());
+            Log::warning('[MediaObserver] CBIR remove failed: '.$e->getMessage());
         }
     }
 }

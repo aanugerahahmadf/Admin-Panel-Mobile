@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Providers\NativeServiceProvider;
 use App\Traits\BelongsToBrand;
 use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Collection;
@@ -150,7 +151,8 @@ class Package extends Model implements HasMedia
     public function getVideoUrlAttribute(): ?string
     {
         $url = $this->getFirstMediaUrl('videos') ?: null;
-        return $url ? \App\Providers\NativeServiceProvider::normalizeUrl($url) : null;
+
+        return $url ? NativeServiceProvider::normalizeUrl($url) : null;
     }
 
     public function getIsOutOfStockAttribute(): bool
@@ -240,7 +242,7 @@ class Package extends Model implements HasMedia
         // If it's already a full URL or a data URI, return it
         if (Str::startsWith($url, ['http://', 'https://', 'data:image'])) {
             // Normalize host IP for NativePHP mobile
-            return \App\Providers\NativeServiceProvider::normalizeUrl($url);
+            return NativeServiceProvider::normalizeUrl($url);
         }
 
         // If it starts with a slash, check if it's already a public path
@@ -251,7 +253,7 @@ class Package extends Model implements HasMedia
         // Otherwise, resolve via the public storage disk
         $resolved = asset('storage/'.ltrim($url, '/'));
 
-        return \App\Providers\NativeServiceProvider::normalizeUrl($resolved);
+        return NativeServiceProvider::normalizeUrl($resolved);
     }
 
     private function getValidMediaUrl(?Media $media): ?string

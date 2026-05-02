@@ -4,6 +4,7 @@ namespace App\Traits;
 
 use App\Models\WeddingOrganizer;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Log;
 
 trait BelongsToBrand
 {
@@ -22,7 +23,7 @@ trait BelongsToBrand
         try {
             static::$_cachedBrandId = WeddingOrganizer::getBrand()?->id ?? 0;
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('[BelongsToBrand] getBrand failed: '.$e->getMessage());
+            Log::warning('[BelongsToBrand] getBrand failed: '.$e->getMessage());
             static::$_cachedBrandId = 0;
         }
 
@@ -52,7 +53,7 @@ trait BelongsToBrand
                     $builder->where($builder->getModel()->getTable().'.wedding_organizer_id', $brandId);
                 }
             } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::warning('[BelongsToBrand] Global scope failed: '.$e->getMessage());
+                Log::warning('[BelongsToBrand] Global scope failed: '.$e->getMessage());
             }
         });
     }

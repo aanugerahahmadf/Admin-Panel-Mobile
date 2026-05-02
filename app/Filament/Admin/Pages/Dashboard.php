@@ -12,7 +12,6 @@ class Dashboard extends BaseDashboard
 {
     protected static string $routePath = 'home';
 
-
     protected static ?string $navigationIcon = 'heroicon-o-home';
 
     public static function shouldRegisterNavigation(): bool
@@ -37,7 +36,7 @@ class Dashboard extends BaseDashboard
         return __('Beranda');
     }
 
-    public function getColumns(): int | array
+    public function getColumns(): int|array
     {
         return 2;
     }

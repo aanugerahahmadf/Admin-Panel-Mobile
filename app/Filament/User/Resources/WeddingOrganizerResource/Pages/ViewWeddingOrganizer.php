@@ -2,14 +2,13 @@
 
 namespace App\Filament\User\Resources\WeddingOrganizerResource\Pages;
 
-use Filament\Actions;
-
 use App\Filament\User\Resources\WeddingOrganizerResource;
 use App\Filament\User\Widgets\StatsOverview;
 use App\Filament\User\Widgets\UnifiedHistoryWidget;
 use App\Filament\User\Widgets\UserOrdersChart;
 use App\Filament\User\Widgets\UserSpendingChart;
 use App\Models\WeddingOrganizer;
+use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
 
 class ViewWeddingOrganizer extends ViewRecord
@@ -76,7 +75,7 @@ class ViewWeddingOrganizer extends ViewRecord
         return [
             Actions\Action::make('back')
                 ->label(__('Kembali'))
-                ->url(fn() => static::getResource()::getUrl('index'))
+                ->url(fn () => static::getResource()::getUrl('index'))
                 ->color('gray')->button()
                 ->icon('heroicon-o-arrow-left'),
         ];

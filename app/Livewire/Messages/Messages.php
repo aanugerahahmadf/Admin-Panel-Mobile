@@ -140,7 +140,7 @@ class Messages extends Component implements HasForms
         }
 
         $inboxId = $this->selectedConversation->id;
-        $userId  = auth()->id();
+        $userId = auth()->id();
 
         // Keep the key alive for 5 seconds; the poll interval will pick it up
         Cache::put("typing_{$inboxId}_{$userId}", true, now()->addSeconds(5));

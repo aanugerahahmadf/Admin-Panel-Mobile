@@ -172,7 +172,7 @@ class PackageSeeder extends Seeder
                     $package->addMedia($imagePath)
                         ->preservingOriginal()
                         ->toMediaCollection('package_image');
-                    
+
                     $this->command->line("  <info>✓</info> {$data['name']} [{$data['image']}]");
                 } catch (\Exception $e) {
                     $this->command->error("  ✗ Gagal memuat gambar untuk: {$data['name']}");

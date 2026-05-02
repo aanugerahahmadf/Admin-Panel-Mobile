@@ -36,7 +36,7 @@ class MySqlProxyConnection extends MySqlConnection
     public function __construct($pdo, $database = '', $tablePrefix = '', array $config = [])
     {
         parent::__construct($pdo, $database, $tablePrefix, $config);
-        $this->proxyUrl    = $config['proxy_url'] ?? null;
+        $this->proxyUrl = $config['proxy_url'] ?? null;
         $this->proxySecret = $config['proxy_secret'] ?? null;
     }
 
@@ -67,6 +67,7 @@ class MySqlProxyConnection extends MySqlConnection
 
         if (! is_array($result)) {
             Log::warning('[MySqlProxy] Select returned non-array result for query: '.$query);
+
             return [];
         }
 
@@ -181,12 +182,12 @@ class MySqlProxyConnection extends MySqlConnection
                 ->retry(1, 50)
                 ->withHeaders([
                     'X-DB-PROXY-SECRET' => $this->proxySecret,
-                    'Accept'            => 'application/json',
-                    'Connection'        => 'keep-alive',
+                    'Accept' => 'application/json',
+                    'Connection' => 'keep-alive',
                 ])
                 ->post($this->proxyUrl, [
-                    'method'   => $method,
-                    'query'    => $query,
+                    'method' => $method,
+                    'query' => $query,
                     'bindings' => $bindings,
                 ]);
 

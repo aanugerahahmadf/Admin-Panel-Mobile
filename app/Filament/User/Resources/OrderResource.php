@@ -4,10 +4,11 @@ namespace App\Filament\User\Resources;
 
 use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
-use App\Helpers\NativeNotificationHelper;
 use App\Filament\User\Resources\OrderResource\Pages\ManageOrders;
+use App\Helpers\NativeNotificationHelper;
 use App\Models\Order;
 use App\Models\Transaction;
+use App\Providers\NativeServiceProvider;
 use App\Services\MidtransService;
 use Filament\Facades\Filament;
 use Filament\Forms;
@@ -17,10 +18,10 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\HtmlString;
 use Livewire\Component;
 
 class OrderResource extends Resource
@@ -93,7 +94,7 @@ class OrderResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->poll(\App\Providers\NativeServiceProvider::isNativeMobile() ? null : '30s')
+            ->poll(NativeServiceProvider::isNativeMobile() ? null : '30s')
             ->emptyStateHeading(__('Belum ada pesanan'))
             ->emptyStateDescription(__('Wujudkan acara impianmu dengan paket terbaik dari kami. Mulai pesan sekarang!'))
             ->emptyStateIcon('heroicon-o-shopping-bag')
@@ -208,7 +209,7 @@ class OrderResource extends Resource
             ])
 
             ->filters([
-                Tables\Filters\SelectFilter::make('status')
+                SelectFilter::make('status')
                     ->searchable()
                     ->options(OrderStatus::class)
                     ->label(__('Status Pesanan')),
@@ -219,7 +220,7 @@ class OrderResource extends Resource
                     ])
                     ->query(fn (Builder $query, array $data) => $query->when($data['value'], fn ($q, $id) => $q->where('id', $id)))
                     ->hidden(),
-            ], layout: \Filament\Tables\Enums\FiltersLayout::AboveContentCollapsible)
+            ], layout: FiltersLayout::AboveContentCollapsible)
             ->actions([
                 Tables\Actions\ViewAction::make()
                     ->hiddenLabel()
@@ -380,21 +381,21 @@ class OrderResource extends Resource
                     ])
                     ->action(function (array $data) {
                         $query = Order::query()->where('user_id', auth()->id());
-                        
+
                         if (! empty($data['order_ids'])) {
                             // Jika ada yang dipilih spesifik, hapus yang dipilih saja
                             $query->whereIn('id', $data['order_ids']);
                         } else {
                             // Jika tidak ada yang dipilih spesifik, gunakan pilihan status
                             if ($data['type'] === 'cancelled') {
-                                $query->where('status', \App\Enums\OrderStatus::CANCELLED);
+                                $query->where('status', OrderStatus::CANCELLED);
                             } elseif ($data['type'] === 'completed') {
-                                $query->where('status', \App\Enums\OrderStatus::COMPLETED);
+                                $query->where('status', OrderStatus::COMPLETED);
                             }
                         }
 
                         $query->delete();
-                        \Filament\Notifications\Notification::make()
+                        Notification::make()
                             ->title(__('Riwayat Berhasil Dibersihkan'))
                             ->success()
                             ->send();

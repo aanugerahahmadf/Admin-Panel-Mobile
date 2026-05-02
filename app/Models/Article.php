@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Providers\NativeServiceProvider;
 use App\Traits\BelongsToBrand;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -112,7 +113,8 @@ class Article extends Model implements HasMedia
     public function getMediaVideoUrlAttribute(): ?string
     {
         $url = $this->getFirstMediaUrl('videos') ?: $this->video_url;
-        return $url ? \App\Providers\NativeServiceProvider::normalizeUrl($url) : null;
+
+        return $url ? NativeServiceProvider::normalizeUrl($url) : null;
     }
 
     public function getImageUrlAttribute(): ?string
@@ -124,11 +126,12 @@ class Article extends Model implements HasMedia
         }
 
         if (str_starts_with($url, 'http')) {
-            return \App\Providers\NativeServiceProvider::normalizeUrl($url);
+            return NativeServiceProvider::normalizeUrl($url);
         }
 
         $resolved = Storage::disk('public')->url(ltrim($url, '/'));
-        return \App\Providers\NativeServiceProvider::normalizeUrl($resolved);
+
+        return NativeServiceProvider::normalizeUrl($resolved);
     }
 
     public function packages()

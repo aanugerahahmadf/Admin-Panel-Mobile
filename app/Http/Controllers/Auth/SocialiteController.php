@@ -5,15 +5,14 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Providers\NativeServiceProvider;
-use Filament\Notifications\Notification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Facades\Socialite;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Http;
 use Native\Mobile\Browser;
 use Native\Mobile\Notification as NativeNotification;
 use Spatie\Permission\Models\Role;
@@ -41,13 +40,13 @@ class SocialiteController extends Controller
 
         return Socialite::driver($provider)
             ->scopes([
-                'openid', 
-                'profile', 
-                'email', 
-                'https://www.googleapis.com/auth/user.birthday.read', 
+                'openid',
+                'profile',
+                'email',
+                'https://www.googleapis.com/auth/user.birthday.read',
                 'https://www.googleapis.com/auth/user.gender.read',
                 'https://www.googleapis.com/auth/user.phonenumbers.read',
-                'https://www.googleapis.com/auth/user.addresses.read'
+                'https://www.googleapis.com/auth/user.addresses.read',
             ])
             ->redirect();
     }
@@ -66,13 +65,13 @@ class SocialiteController extends Controller
         $authUrl = Socialite::driver($provider)
             ->stateless()
             ->scopes([
-                'openid', 
-                'profile', 
-                'email', 
-                'https://www.googleapis.com/auth/user.birthday.read', 
+                'openid',
+                'profile',
+                'email',
+                'https://www.googleapis.com/auth/user.birthday.read',
                 'https://www.googleapis.com/auth/user.gender.read',
                 'https://www.googleapis.com/auth/user.phonenumbers.read',
-                'https://www.googleapis.com/auth/user.addresses.read'
+                'https://www.googleapis.com/auth/user.addresses.read',
             ])
             ->redirect()
             ->getTargetUrl();
@@ -83,14 +82,14 @@ class SocialiteController extends Controller
         $opened = false;
         if (class_exists(Browser::class) && function_exists('nativephp_call')) {
             $browser = new Browser;
-            $opened  = $browser->auth($authUrl);
+            $opened = $browser->auth($authUrl);
         }
 
         // Jika dipanggil via fetch (AJAX), return JSON
         if ($request->ajax() || $request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
             return response()->json([
                 'success' => true,
-                'opened'  => $opened,
+                'opened' => $opened,
                 'message' => 'Browser auth opened',
             ]);
         }
@@ -207,7 +206,7 @@ class SocialiteController extends Controller
         Auth::login($user, remember: true);
 
         // Notifikasi Native jika di mobile
-        if (app()->environment('mobile') || \App\Providers\NativeServiceProvider::isNativeMobile()) {
+        if (app()->environment('mobile') || NativeServiceProvider::isNativeMobile()) {
             NativeNotification::new()
                 ->title(__('Berhasil Masuk!'))
                 ->message(__('Halo :name, selamat datang kembali.', ['name' => $user->first_name ?? $user->full_name]))
@@ -234,17 +233,17 @@ class SocialiteController extends Controller
 
         if ($user) {
             $rawUser = $socialUser->getRaw();
-            Log::info("[Socialite Debug] Raw Google User Data for {$user->email}: " . json_encode($rawUser));
+            Log::info("[Socialite Debug] Raw Google User Data for {$user->email}: ".json_encode($rawUser));
 
             // Selalu update Info Sosial (Nama & Foto) agar sinkron dengan Google terbaru
             $fullName = $socialUser->getName() ?? $user->full_name;
             $updates['full_name'] = $fullName;
-            
+
             // Download foto Google ke lokal agar sinkron di kotak upload profil
             if ($socialUser->getAvatar()) {
                 try {
                     $avatarContents = Http::get($socialUser->getAvatar())->body();
-                    $filename = 'avatars/' . $user->id . '_' . time() . '.jpg';
+                    $filename = 'avatars/'.$user->id.'_'.time().'.jpg';
                     Storage::disk('public')->put($filename, $avatarContents);
                     $updates['avatar_url'] = $filename;
                 } catch (\Exception $e) {
@@ -254,7 +253,7 @@ class SocialiteController extends Controller
 
             $updates['social_id'] = $socialUser->getId();
             $updates['social_type'] = $provider;
-            
+
             // Pecah nama menjadi detail (Depan, Tengah, Belakang)
             $parts = explode(' ', trim($fullName));
             $updates['first_name'] = array_shift($parts);
@@ -268,7 +267,7 @@ class SocialiteController extends Controller
                 // Mapping ke wedding_date atau kolom lain jika ada
                 $user->wedding_date = "{$d['year']}-{$d['month']}-{$d['day']}";
             }
-            
+
             if (isset($rawUser['genders'][0]['value'])) {
                 // Google return: male, female, unspecified
                 $updates['gender'] = $rawUser['genders'][0]['value'];
@@ -297,7 +296,7 @@ class SocialiteController extends Controller
 
         // User tidak ditemukan, buat akun baru
         $rawUser = $socialUser->getRaw();
-        Log::info("[Socialite Debug] Creating New User from Google: " . json_encode($rawUser));
+        Log::info('[Socialite Debug] Creating New User from Google: '.json_encode($rawUser));
 
         try {
             $fullName = $socialUser->getName() ?? $username;
@@ -310,30 +309,31 @@ class SocialiteController extends Controller
             $gender = isset($rawUser['genders'][0]['value']) ? $rawUser['genders'][0]['value'] : null;
 
             $user = User::create([
-                'full_name'          => $fullName,
-                'first_name'         => $firstName,
-                'mid_name'          => $midName,
-                'last_name'          => $lastName,
-                'username'           => $username,
-                'email'              => $socialUser->getEmail(),
-                'social_id'          => $socialUser->getId(),
-                'social_type'        => $provider,
-                'avatar_url'         => (function() use ($socialUser) {
+                'full_name' => $fullName,
+                'first_name' => $firstName,
+                'mid_name' => $midName,
+                'last_name' => $lastName,
+                'username' => $username,
+                'email' => $socialUser->getEmail(),
+                'social_id' => $socialUser->getId(),
+                'social_type' => $provider,
+                'avatar_url' => (function () use ($socialUser) {
                     try {
                         $avatarContents = Http::get($socialUser->getAvatar())->body();
-                        $filename = 'avatars/new_' . time() . '_' . Str::random(5) . '.jpg';
+                        $filename = 'avatars/new_'.time().'_'.Str::random(5).'.jpg';
                         Storage::disk('public')->put($filename, $avatarContents);
+
                         return $filename;
                     } catch (\Exception $e) {
                         return $socialUser->getAvatar();
                     }
                 })(),
-                'gender'             => $gender,
-                'phone'              => isset($rawUser['phoneNumbers'][0]['value']) ? $rawUser['phoneNumbers'][0]['value'] : null,
-                'address'            => isset($rawUser['addresses'][0]['formattedValue']) ? $rawUser['addresses'][0]['formattedValue'] : null,
-                'email_verified_at'  => now(),
-                'active_status'      => true,
-                'password'           => null,
+                'gender' => $gender,
+                'phone' => isset($rawUser['phoneNumbers'][0]['value']) ? $rawUser['phoneNumbers'][0]['value'] : null,
+                'address' => isset($rawUser['addresses'][0]['formattedValue']) ? $rawUser['addresses'][0]['formattedValue'] : null,
+                'email_verified_at' => now(),
+                'active_status' => true,
+                'password' => null,
             ]);
 
             if (method_exists($user, 'assignRole')) {

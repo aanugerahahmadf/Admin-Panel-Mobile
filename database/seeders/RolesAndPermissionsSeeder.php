@@ -21,7 +21,7 @@ class RolesAndPermissionsSeeder extends Seeder
         // Create roles
         Role::firstOrCreate(['name' => 'super_admin']);
         $this->command->line('  <info>✓</info> Role: super_admin created');
-        
+
         Role::firstOrCreate(['name' => 'user']);
         $this->command->line('  <info>✓</info> Role: user created');
 

@@ -4,18 +4,15 @@ namespace App\Filament\User\Auth;
 
 use Filament\Actions\Action;
 use Filament\Forms\Components\Component;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Form;
 use Filament\Http\Responses\Auth\Contracts\LoginResponse;
 use Filament\Notifications\Notification;
 use Filament\Pages\Auth\Login as BaseLogin;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Validation\ValidationException;
-use Spatie\Permission\Models\Permission;
-use Filament\Forms\Components\Checkbox;
-use Filament\Forms\Form;
-use Illuminate\Support\HtmlString;
 
-use Illuminate\Contracts\View\View;
 class Login extends BaseLogin
 {
     public function getView(): string
@@ -41,15 +38,14 @@ class Login extends BaseLogin
         return __('Masuk');
     }
 
-
     public function form(Form $form): Form
     {
         return $form
             ->schema([
                 $this->getEmailFormComponent(),
                 $this->getPasswordFormComponent(),
-                \Filament\Forms\Components\Hidden::make('agreement'),
-                \Filament\Forms\Components\Hidden::make('remember'),
+                Hidden::make('agreement'),
+                Hidden::make('remember'),
             ])
             ->statePath('data');
     }

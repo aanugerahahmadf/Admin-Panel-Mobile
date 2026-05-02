@@ -17,10 +17,10 @@ use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables;
+use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\HtmlString;
 
 class ArticleResource extends Resource
 {
@@ -171,11 +171,11 @@ class ArticleResource extends Resource
                     ->label(__('Konten Video'))
                     ->options([
                         'yes' => __('Ada Video'),
-                        'no'  => __('Tanpa Video'),
+                        'no' => __('Tanpa Video'),
                     ])
                     ->query(fn (Builder $query, array $data) => match ($data['value'] ?? null) {
                         'yes' => $query->whereNotNull('video_url')->where('video_url', '!=', ''),
-                        'no'  => $query->where(fn ($q) => $q->whereNull('video_url')->orWhere('video_url', '')),
+                        'no' => $query->where(fn ($q) => $q->whereNull('video_url')->orWhere('video_url', '')),
                         default => $query,
                     }),
 
@@ -184,11 +184,11 @@ class ArticleResource extends Resource
                     ->label(__('Terkait Paket'))
                     ->options([
                         'yes' => __('Ada Paket Terkait'),
-                        'no'  => __('Tanpa Paket'),
+                        'no' => __('Tanpa Paket'),
                     ])
                     ->query(fn (Builder $query, array $data) => match ($data['value'] ?? null) {
                         'yes' => $query->whereHas('packages'),
-                        'no'  => $query->whereDoesntHave('packages'),
+                        'no' => $query->whereDoesntHave('packages'),
                         default => $query,
                     }),
 
@@ -202,9 +202,9 @@ class ArticleResource extends Resource
                     ->query(fn (Builder $query, array $data) => match ($data['value'] ?? null) {
                         'latest' => $query->reorder('published_at', 'desc'),
                         'oldest' => $query->reorder('published_at', 'asc'),
-                        default  => $query,
+                        default => $query,
                     }),
-            ], layout: \Filament\Tables\Enums\FiltersLayout::AboveContentCollapsible)
+            ], layout: FiltersLayout::AboveContentCollapsible)
             ->actions([
                 Tables\Actions\ViewAction::make()
                     ->label(__('Baca Artikel'))

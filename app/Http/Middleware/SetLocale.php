@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use App\Models\User;
 use App\Models\UserLanguage;
+use App\Providers\NativeServiceProvider;
 use Closure;
 use Filament\Facades\Filament;
 use Illuminate\Http\Request;
@@ -36,7 +37,7 @@ class SetLocale
         if ($user) {
             // Get current DB locale via accessor. Assuming user model has a 'lang' property or relation.
             // On NativePHP mobile, skip DB sync to avoid proxy errors — use session only
-            $isMobile = \App\Providers\NativeServiceProvider::isNativeMobile();
+            $isMobile = NativeServiceProvider::isNativeMobile();
             $dbLocale = null;
 
             if (! $isMobile) {
@@ -72,7 +73,7 @@ class SetLocale
         // Detect from browser if everything else fails (new visitor)
         if (! $locale) {
             // On NativePHP mobile: default to Indonesian, ignore device browser language
-            if (\App\Providers\NativeServiceProvider::isNativeMobile()) {
+            if (NativeServiceProvider::isNativeMobile()) {
                 $locale = 'id';
             } else {
                 $localsConfig = config('filament-language-switcher.locals', ['id' => [], 'en' => []]);

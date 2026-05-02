@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 class ManagePackages extends ManageRecords
 {
     use HasMobilePagination;
+
     protected static string $resource = PackageResource::class;
 
     public function getTabs(): array

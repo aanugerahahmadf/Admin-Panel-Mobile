@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\SocialiteController;
 use App\Http\Controllers\LanguageController;
+use App\Providers\NativeServiceProvider;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Native\Mobile\Facades\System;
@@ -11,10 +12,11 @@ use Native\Mobile\Facades\System;
 
 Route::get('/', function () {
     // NativePHP mobile: tampilkan onboarding sebagai home
-    if (\App\Providers\NativeServiceProvider::isNativeMobile()) {
+    if (NativeServiceProvider::isNativeMobile()) {
         if (auth()->check()) {
             return redirect('/user');
         }
+
         return view('onboarding');
     }
 

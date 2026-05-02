@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 class ManageProducts extends ManageRecords
 {
     use HasMobilePagination;
+
     protected static string $resource = ProductResource::class;
 
     public function getTabs(): array

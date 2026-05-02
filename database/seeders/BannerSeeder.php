@@ -34,6 +34,6 @@ class BannerSeeder extends Seeder
             $this->command->line("  <info>✓</info> Banner: {$banner['title']}");
         }
 
-        $this->command->info('--- Banner Seeding Complete (' . count($banners) . ' banners) ---');
+        $this->command->info('--- Banner Seeding Complete ('.count($banners).' banners) ---');
     }
 }

@@ -7,6 +7,7 @@ use App\Enums\OrderStatus;
 use App\Models\History;
 use App\Models\Order;
 use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Log;
 
 class OrderObserver
 {
@@ -62,7 +63,7 @@ class OrderObserver
                             ->success()
                             ->sendToDatabase($user);
                     } catch (\Throwable $e) {
-                        \Illuminate\Support\Facades\Log::warning('[OrderObserver] Notification failed: '.$e->getMessage());
+                        Log::warning('[OrderObserver] Notification failed: '.$e->getMessage());
                     }
                 }
             }
@@ -88,7 +89,7 @@ class OrderObserver
                         ->icon($statusIcon)
                         ->sendToDatabase($user);
                 } catch (\Throwable $e) {
-                    \Illuminate\Support\Facades\Log::warning('[OrderObserver] Status notification failed: '.$e->getMessage());
+                    Log::warning('[OrderObserver] Status notification failed: '.$e->getMessage());
                 }
             }
         }
