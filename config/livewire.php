@@ -183,4 +183,6 @@ return [
     */
 
     'release_token' => 'a',
+
+    'asset_url'  => '/vendor/livewire',
 ];

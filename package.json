@@ -22,6 +22,7 @@
         "#nativephp": "./vendor/nativephp/mobile/resources/dist/native.js"
     },
     "dependencies": {
+        "@popperjs/core": "^2.11.8",
         "emoji-picker-element": "^1.29.1"
     }
 }

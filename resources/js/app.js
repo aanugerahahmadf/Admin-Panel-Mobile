@@ -2,7 +2,7 @@ import './bootstrap';
 import './echo';
 import './advanced-file-upload';
 import './sidebar-auto-expand';
-import 'emoji-picker-element';
+import '../../vendor/tangodev-it/filament-emoji-picker/resources/js/index.js';
 import './pdf-preview-plugin';
 import './phpProtocolAdapter';
 

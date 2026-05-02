@@ -10,6 +10,7 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/js/app.js', 
                 './vendor/nativephp/mobile/resources/js/phpProtocolAdapter.js', 
+                './vendor/tangodev-it/filament-emoji-picker/resources/js/index.js',
                 'resources/js/echo.js'
             ],
             refresh: true,

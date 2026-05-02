@@ -85,6 +85,10 @@ class UserPanelProvider extends PanelProvider
                 'panels::styles.after',
                 fn (): string => Blade::render('@vite(\'resources/css/app.css\')')
             )
+            // ->renderHook(
+            //     'panels::scripts.after',
+            //     fn (): ?View => view('filament.map-fix-script')
+            // )
             ->renderHook(
                 'panels::footer',
                 fn (): ?View => ! str_contains(request()->route()?->getName() ?? '', 'auth') ? view('filament.footer') : null

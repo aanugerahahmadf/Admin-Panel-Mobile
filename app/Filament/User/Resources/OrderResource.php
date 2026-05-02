@@ -374,8 +374,7 @@ class OrderResource extends Resource
                                                     $order->id => "#{$order->order_number} - ".($order->package?->name ?? __('Layanan')),
                                                 ]))
                                             ->bulkToggleable()
-                                            ->searchable()
-                                            ->columns(1),
+                                            ->searchable(),
                                     ]),
                             ])->columnSpanFull(),
                     ])

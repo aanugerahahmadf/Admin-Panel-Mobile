@@ -21,22 +21,23 @@ class MidtransCspMiddleware
         $response->headers->remove('content-security-policy');
         $response->headers->remove('x-content-security-policy');
 
-        // Refined CSP: THE NUCLEAR OPTION (Extremely broad for debugging)
+        // Refined CSP: EXPLICIT MIDTRANS & EVAL SUPPORT
         $csp = "default-src * 'unsafe-inline' 'unsafe-eval' data: blob: http: https:; ";
-        $csp .= "script-src * 'unsafe-inline' 'unsafe-eval' 'unsafe-hashes' data: blob: http: https:; ";
-        $csp .= "script-src-elem * 'unsafe-inline' 'unsafe-eval' data: blob: http: https:; ";
-        $csp .= "script-src-attr * 'unsafe-inline' 'unsafe-eval' data: blob: http: https:; ";
-        $csp .= 'connect-src * http: https:; ';
-        $csp .= 'img-src * data: blob: http: https:; ';
-        $csp .= "style-src * 'unsafe-inline' http: https:; ";
-        $csp .= 'font-src * data: http: https:; ';
-        $csp .= 'frame-src * http: https:; ';
-        $csp .= 'child-src * http: https:; ';
-        $csp .= 'worker-src * blob:; ';
+        $csp .= "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'unsafe-hashes' * http: https: https://app.midtrans.com https://app.sandbox.midtrans.com https://snap-popup-app.sandbox.midtrans.com https://snap-popup-app.midtrans.com *.midtrans.com *.google.com *.googleapis.com; ";
+        $csp .= "script-src-elem 'self' 'unsafe-inline' 'unsafe-eval' * http: https: https://app.midtrans.com https://app.sandbox.midtrans.com https://snap-popup-app.sandbox.midtrans.com https://snap-popup-app.midtrans.com *.midtrans.com; ";
+        $csp .= "script-src-attr 'self' 'unsafe-inline' 'unsafe-eval' * http: https:; ";
+        $csp .= "connect-src 'self' * http: https: https://app.midtrans.com https://app.sandbox.midtrans.com *.midtrans.com; ";
+        $csp .= "img-src 'self' * data: blob: http: https: *.midtrans.com; ";
+        $csp .= "style-src 'self' 'unsafe-inline' * http: https:; ";
+        $csp .= "font-src 'self' * data: http: https:; ";
+        $csp .= "frame-src 'self' * http: https: https://app.midtrans.com https://app.sandbox.midtrans.com https://snap-popup-app.sandbox.midtrans.com https://snap-popup-app.midtrans.com *.midtrans.com; ";
+        $csp .= "child-src 'self' * http: https:; ";
+        $csp .= "worker-src 'self' * blob:; ";
         $csp .= "object-src 'none'; ";
 
         // Force set the header
         $response->headers->set('Content-Security-Policy', $csp, true);
+        $response->headers->set('X-Content-Security-Policy', $csp, true);
 
         // Log ALL final headers to verify what the browser actually sees
         Log::info('[CSP] FINAL RESPONSE HEADERS: ', $response->headers->all());
