@@ -49,6 +49,9 @@ jobs:
       - name: Generate Key
         run: php artisan key:generate
 
+      - name: Create Storage Directories
+        run: mkdir -p storage/framework/{sessions,views,cache} bootstrap/cache
+
       - name: Directory Permissions
         run: chmod -R 777 storage bootstrap/cache
 
