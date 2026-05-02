@@ -54,7 +54,7 @@
         {{-- Native select — invisible but functional --}}
         <x-filament::input.wrapper class="opacity-0 absolute inset-0 w-full h-full">
             <x-filament::input.select x-model="locale"
-                x-on:change="window.location.href = '{{ url('/language/switch') }}/' + locale"
+                x-on:change="window.location.href = '{{ NativeServiceProvider::normalizeUrl(url('/language/switch')) }}/' + locale"
                 class="!opacity-0 !absolute !inset-0 !w-full !h-full !cursor-pointer">
                 @foreach($locals as $key => $language)
                     <option value="{{ $key }}" @selected($currentLocale === $key)>
@@ -120,7 +120,7 @@
                         $flag = $language['flag'] ?? 'gb';
                         $label = match ($key) { 'en_US' => 'US', 'en' => 'UK', default => strtoupper($key)};
                     @endphp
-                    <a href="{{ $isCurrent ? 'javascript:void(0)' : route('language.switch', ['locale' => $key]) }}" @class([
+                    <a href="{{ $isCurrent ? 'javascript:void(0)' : NativeServiceProvider::normalizeUrl(route('language.switch', ['locale' => $key])) }}" @class([
                         'group flex items-center w-full justify-between gap-3 whitespace-nowrap rounded-md p-2 text-sm outline-none transition-all',
                         'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-white/5' => !$isCurrent,
                         "$activeColorClass font-bold cursor-default" => $isCurrent,
