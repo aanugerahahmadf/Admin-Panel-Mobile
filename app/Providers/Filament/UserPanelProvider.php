@@ -66,6 +66,8 @@ class UserPanelProvider extends PanelProvider
             ->topNavigation()
             ->maxContentWidth(MaxWidth::Full)
             ->spa()
+            ->unsavedChangesAlerts(false)
+            ->collapsibleNavigationGroups()
             ->globalSearch()
             ->renderHook(
                 'panels::global-search.after',

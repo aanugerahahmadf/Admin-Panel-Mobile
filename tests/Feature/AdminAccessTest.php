@@ -23,7 +23,7 @@ test('super admin can access dashboard', function (): void {
     $user->assignRole('super_admin');
 
     $response = actingAs($user, 'web')->get('/admin');
-    
+
     if ($response->isRedirect()) {
         $response = actingAs($user, 'web')->get($response->headers->get('Location'));
     }
