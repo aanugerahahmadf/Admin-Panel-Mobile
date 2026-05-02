@@ -22,16 +22,16 @@ class MidtransCspMiddleware
         $response->headers->remove('x-content-security-policy');
 
         // Refined CSP: THE NUCLEAR OPTION (Extremely broad for debugging)
-        $csp = "default-src * 'unsafe-inline' 'unsafe-eval' data: blob: https:; ";
-        $csp .= "script-src * 'unsafe-inline' 'unsafe-eval' 'unsafe-hashes' data: blob: https:; ";
-        $csp .= "script-src-elem * 'unsafe-inline' 'unsafe-eval' data: blob: https:; ";
-        $csp .= "script-src-attr * 'unsafe-inline' 'unsafe-eval' data: blob: https:; ";
-        $csp .= 'connect-src * https:; ';
-        $csp .= 'img-src * data: blob: https:; ';
-        $csp .= "style-src * 'unsafe-inline' https:; ";
-        $csp .= 'font-src * data: https:; ';
-        $csp .= 'frame-src * https:; ';
-        $csp .= 'child-src * https:; ';
+        $csp = "default-src * 'unsafe-inline' 'unsafe-eval' data: blob: http: https:; ";
+        $csp .= "script-src * 'unsafe-inline' 'unsafe-eval' 'unsafe-hashes' data: blob: http: https:; ";
+        $csp .= "script-src-elem * 'unsafe-inline' 'unsafe-eval' data: blob: http: https:; ";
+        $csp .= "script-src-attr * 'unsafe-inline' 'unsafe-eval' data: blob: http: https:; ";
+        $csp .= 'connect-src * http: https:; ';
+        $csp .= 'img-src * data: blob: http: https:; ';
+        $csp .= "style-src * 'unsafe-inline' http: https:; ";
+        $csp .= 'font-src * data: http: https:; ';
+        $csp .= 'frame-src * http: https:; ';
+        $csp .= 'child-src * http: https:; ';
         $csp .= 'worker-src * blob:; ';
         $csp .= "object-src 'none'; ";
 
