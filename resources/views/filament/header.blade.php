@@ -7,7 +7,7 @@
     style="pointer-events: auto; -webkit-tap-highlight-color: transparent;">
     
     {{-- Logo & Brand Name: hidden di mobile, tampil di web --}}
-    <a href="{{ url('/') }}" class="flex items-center shrink-0 {{ $isMobile || (isset($hideLogo) && $hideLogo) ? 'hidden' : '' }}">
+    <a href="{{ NativeServiceProvider::normalizeUrl(url('/')) }}" class="flex items-center shrink-0 {{ $isMobile || (isset($hideLogo) && $hideLogo) ? 'hidden' : '' }}">
         <img src="{{ asset('favicon.ico') }}" alt="{{ __('Dekorasi Bunga Pernikahan Logo') }}"
             class="w-8 h-8 rounded shrink-0">
         <span
@@ -21,16 +21,16 @@
     
     <nav class="flex items-center {{ $isMobile ? 'gap-2' : 'gap-3 lg:gap-6' }}">
             @auth
-                <a href="{{ route('filament.user.resources.home.index', ['record' => 1]) }}"
+                <a href="{{ NativeServiceProvider::normalizeUrl(route('filament.user.resources.home.index', ['record' => 1])) }}"
                     class="flex items-center justify-center {{ $isMobile ? 'px-3 h-8 text-xs' : 'px-5 h-10 text-sm' }} min-w-10 dark:text-[#EDEDEC] text-[#1b1b18] ring-1 ring-gray-950/10 dark:ring-white/20 hover:bg-gray-50 dark:hover:bg-white/5 rounded-md font-medium transition-all active:scale-95 whitespace-nowrap">
                     {{ __('Beranda') }}
                 </a>
             @else
-                <a href="{{ route('filament.user.auth.login') }}"
+                <a href="{{ NativeServiceProvider::normalizeUrl(route('filament.user.auth.login')) }}"
                     class="flex items-center justify-center {{ $isMobile ? 'px-3 h-8 text-xs' : 'px-5 h-10 text-sm' }} min-w-10 dark:text-[#EDEDEC] text-[#1b1b18] ring-1 ring-gray-950/10 dark:ring-white/20 hover:bg-gray-50 dark:hover:bg-white/5 rounded-md font-medium transition-all active:scale-95 whitespace-nowrap">
                     {{ __('Log in') }}
                 </a>
-                <a href="{{ route('filament.user.auth.register') }}"
+                <a href="{{ NativeServiceProvider::normalizeUrl(route('filament.user.auth.register')) }}"
                     class="flex items-center justify-center {{ $isMobile ? 'px-3 h-8 text-xs' : 'px-5 h-10 text-sm' }} min-w-10 dark:text-[#EDEDEC] text-[#1b1b18] ring-1 ring-gray-950/10 dark:ring-white/20 hover:bg-gray-50 dark:hover:bg-white/5 rounded-md font-medium transition-all active:scale-95 whitespace-nowrap">
                     {{ __('Register') }}
                 </a>

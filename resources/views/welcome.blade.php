@@ -117,7 +117,7 @@
 
                 <ul class="flex w-full mt-4 lg:mt-6" style="position: relative; z-index: 10;">
                     <li class="w-full lg:w-auto">
-                        <a href="{{ route('filament.user.resources.home.index', ['record' => 1]) }}"
+                        <a href="{{ NativeServiceProvider::normalizeUrl(route('filament.user.resources.home.index', ['record' => 1])) }}"
                             style="display: inline-block; position: relative; z-index: 10; cursor: pointer;"
                             class="dark:bg-white dark:text-gray-950 dark:hover:bg-gray-200 hover:bg-black hover:border-black px-5 py-1.5 bg-gray-900 rounded-sm border border-black text-white text-sm font-semibold leading-normal transition-all active:scale-95 shadow-sm">
                             {{ __('Buka Beranda') }}
