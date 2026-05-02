@@ -22,3 +22,4 @@ class EditWeddingOrganizer extends EditRecord
         ];
     }
 }
+

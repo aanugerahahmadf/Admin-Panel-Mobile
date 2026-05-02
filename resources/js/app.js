@@ -1,6 +1,7 @@
 import './bootstrap';
 import './echo';
 import './advanced-file-upload';
+import './sidebar-auto-expand';
 import 'emoji-picker-element';
 import './pdf-preview-plugin';
 import './phpProtocolAdapter';

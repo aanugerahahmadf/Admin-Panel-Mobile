@@ -35,9 +35,19 @@ class SetLocale
 
         if ($user) {
             // Get current DB locale via accessor. Assuming user model has a 'lang' property or relation.
-            $dbLocale = $user->lang;
+            // On NativePHP mobile, skip DB sync to avoid proxy errors — use session only
+            $isMobile = \App\Providers\NativeServiceProvider::isNativeMobile();
+            $dbLocale = null;
 
-            if ($sessionLocale && $sessionLocale !== $dbLocale) {
+            if (! $isMobile) {
+                try {
+                    $dbLocale = $user->lang;
+                } catch (\Throwable $e) {
+                    $dbLocale = null;
+                }
+            }
+
+            if ($sessionLocale && $sessionLocale !== $dbLocale && ! $isMobile) {
                 // SYNC: Session changed (e.g. from Welcome page switcher). Persist to Database.
                 try {
                     UserLanguage::updateOrCreate(
@@ -54,14 +64,21 @@ class SetLocale
                 // SYNC: Database is source of truth if session is empty or old. Persist to Session.
                 $locale = (string) $dbLocale;
                 session()->put('locale', $locale);
+            } elseif ($sessionLocale) {
+                $locale = $sessionLocale;
             }
         }
 
         // Detect from browser if everything else fails (new visitor)
         if (! $locale) {
-            $localsConfig = config('filament-language-switcher.locals', ['id' => [], 'en' => []]);
-            $supported = array_keys($localsConfig);
-            $locale = $request->getPreferredLanguage($supported ?: ['id', 'en']);
+            // On NativePHP mobile: default to Indonesian, ignore device browser language
+            if (\App\Providers\NativeServiceProvider::isNativeMobile()) {
+                $locale = 'id';
+            } else {
+                $localsConfig = config('filament-language-switcher.locals', ['id' => [], 'en' => []]);
+                $supported = array_keys($localsConfig);
+                $locale = $request->getPreferredLanguage($supported ?: ['id', 'en']);
+            }
         }
 
         if ($locale) {

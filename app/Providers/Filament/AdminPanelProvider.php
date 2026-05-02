@@ -14,6 +14,7 @@ use App\Filament\Admin\Widgets\OrdersChart;
 use App\Filament\Admin\Widgets\RecentOrders;
 use App\Filament\Admin\Widgets\RevenueChart;
 use App\Filament\Admin\Widgets\StatsOverview;
+use App\Http\Middleware\MidtransCspMiddleware;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\SuperAdmin;
 use App\Http\Middleware\VerifyCsrfToken;
@@ -71,16 +72,17 @@ class AdminPanelProvider extends PanelProvider
             ->databaseNotifications()
             ->renderHook(
                 'panels::global-search.after',
-                fn (): View => view('filament.filament-language-switcher.language-switcher')
+                fn (): ?View => (! \App\Providers\NativeServiceProvider::isNativeMobile() && ! preg_match('/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i', request()->userAgent())) 
+                    ? view('filament.filament-language-switcher.language-switcher')
+                    : null
             )
             ->renderHook(
                 'panels::auth.form.before',
-                fn (): View => view('filament.filament-language-switcher.language-switcher')
+                fn (): ?View => (! \App\Providers\NativeServiceProvider::isNativeMobile() && ! preg_match('/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i', request()->userAgent()))
+                    ? view('filament.filament-language-switcher.language-switcher')
+                    : null
             )
-            ->renderHook(
-                'panels::styles.after',
-                fn (): View => view('filament.snap-script')
-            )
+            // snap-script — Handled globally in AppServiceProvider
             ->renderHook(
                 'panels::styles.after',
                 fn (): string => Blade::render('@vite(\'resources/css/app.css\')')
@@ -120,6 +122,7 @@ class AdminPanelProvider extends PanelProvider
                 RecentOrders::class,
             ])
             ->middleware([
+                MidtransCspMiddleware::class,
                 VerifyCsrfToken::class,
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

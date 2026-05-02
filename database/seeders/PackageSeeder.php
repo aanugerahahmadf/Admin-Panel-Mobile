@@ -106,7 +106,7 @@ class PackageSeeder extends Seeder
                 'color' => '#6B3A2A',
                 'image' => 'package-7.png',
                 'features' => ['Pendopo joglo replika', 'Ornamen emas', 'Bunga melati segar', 'Backdrop batik tulis', 'Pelaminan ukir'],
-                'description' => 'Nuansa pendopo joglo kerajaan Jawa yang autentik dengan ornamen emas dan rangkaian melati segar.',
+                'description' => 'Nuansa pendopo joglo kerajaan Jawa yang autentik dengan ornamen emas and rangkaian melati segar.',
             ],
             [
                 'name' => 'Contemporary White Luxe Package',
@@ -168,12 +168,17 @@ class PackageSeeder extends Seeder
             $imagePath = public_path('images/package/'.$data['image']);
             if (file_exists($imagePath)) {
                 $package->clearMediaCollection('package_image');
-                $package->addMedia($imagePath)
-                    ->preservingOriginal()
-                    ->toMediaCollection('package_image');
-                $this->command->info("  ✓ {$data['name']} [{$data['image']}]");
+                try {
+                    $package->addMedia($imagePath)
+                        ->preservingOriginal()
+                        ->toMediaCollection('package_image');
+                    
+                    $this->command->line("  <info>✓</info> {$data['name']} [{$data['image']}]");
+                } catch (\Exception $e) {
+                    $this->command->error("  ✗ Gagal memuat gambar untuk: {$data['name']}");
+                }
             } else {
-                $this->command->warn("  ⚠ {$data['name']} — image not found: images/package/{$data['image']}");
+                $this->command->line("  <info>✓</info> {$data['name']} (Tanpa Gambar)");
             }
         }
 

@@ -26,58 +26,28 @@ class UnifiedHistoryWidget extends BaseWidget
     {
         $userId = Filament::auth()->id();
 
-        $unified = Transaction::where('user_id', $userId)
-            ->select(['id', 'total_amount as amount', 'reference_number as ref', 'status', 'created_at', 'type']);
-
-        if (Schema::hasTable('withdrawals')) {
-            $withdrawals = DB::table('withdrawals')
-                ->select([DB::raw('id + 1000000 as id'), 'amount', 'reference_number as ref', 'status', 'created_at', DB::raw("'withdrawal' as type")])
-                ->where('user_id', $userId);
-            $unified = $unified->unionAll($withdrawals);
-        }
-
         return $table
             ->query(
-                Transaction::query()
-                    ->fromSub($unified, 'unified_history')
-                    ->orderByDesc('created_at')
+                Transaction::where('user_id', $userId)
+                    ->where('type', 'order')
+                    ->latest()
             )
             ->columns([
                 Tables\Columns\TextColumn::make('ref')
                     ->label(__('ID Transaksi'))
                     ->weight('bold')
                     ->color('gray')
-                    ->icon(fn ($record) => match ($record->type) {
-                        'topup' => 'heroicon-m-arrow-down-left',
-                        'withdrawal' => 'heroicon-m-arrow-up-right',
-                        'order' => 'heroicon-m-shopping-bag',
-                        default => 'heroicon-m-ticket',
-                    })
-                    ->iconColor(fn ($record) => match ($record->type) {
-                        'topup' => 'success',
-                        'withdrawal' => 'danger',
-                        'order' => 'info',
-                        default => 'gray',
-                    }),
+                    ->icon('heroicon-m-shopping-bag')
+                    ->iconColor('info'),
                 Tables\Columns\TextColumn::make('type')
                     ->label(__('Tipe'))
                     ->badge()
-                    ->formatStateUsing(fn ($state) => match ($state) {
-                        'topup' => __('Deposit'),
-                        'withdrawal' => __('Tarik'),
-                        'order' => __('Beli'),
-                        default => $state,
-                    })
-                    ->color(fn ($state) => match ($state) {
-                        'topup' => 'success',
-                        'withdrawal' => 'danger',
-                        'order' => 'info',
-                        default => 'gray',
-                    }),
-                Tables\Columns\TextColumn::make('amount')
+                    ->formatStateUsing(fn () => __('Beli'))
+                    ->color('info'),
+                Tables\Columns\TextColumn::make('total_amount')
                     ->label(__('Nominal'))
-                    ->formatStateUsing(fn ($state, $record) => ($record->type === 'topup' ? '+' : '-').' Rp '.number_format($state, 0, ',', '.'))
-                    ->color(fn ($record) => $record->type === 'topup' ? 'success' : 'danger')
+                    ->formatStateUsing(fn ($state) => '- Rp '.number_format($state, 0, ',', '.'))
+                    ->color('danger')
                     ->weight('black'),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
@@ -115,16 +85,7 @@ class UnifiedHistoryWidget extends BaseWidget
                     ->size('xs')
                     ->color('gray')
                     ->url(function ($record) {
-                        $actualId = $record->id;
-                        if ($record->type === 'withdrawal') {
-                            $actualId -= 1000000;
-                        }
-
-                        return match ($record->type) {
-                            'topup', 'order' => route('filament.user.resources.transactions.index', ['tableFilters[id][value]' => $actualId]),
-                            'withdrawal' => route('filament.user.resources.transactions.index'), // Fallback if no specific withdrawal resource
-                            default => '#',
-                        };
+                        return route('filament.user.resources.transactions.index', ['tableFilters[id][value]' => $record->id]);
                     }),
             ]);
     }

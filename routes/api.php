@@ -25,6 +25,40 @@ use Illuminate\Support\Facades\Route;
 // Public: app config (app_name, owner_name, demo_video_url) — data dari backend, bukan template
 Route::get('/settings', [AppSettingsController::class, 'index']);
 
+// ── DIAGNOSTIC ENDPOINT — Test sinkronisasi mobile ──────────────────────────
+// Akses: GET /api/ping dari mobile untuk verifikasi koneksi & data
+Route::get('/ping', function () {
+    $isMobile = \App\Providers\NativeServiceProvider::isNativeMobile();
+    $hostIp   = \App\Providers\NativeServiceProvider::mobileHostIp();
+
+    $dbStatus  = 'unknown';
+    $userCount = 0;
+    $dbError   = null;
+
+    try {
+        $userCount = \App\Models\User::count();
+        $dbStatus  = 'connected';
+    } catch (\Throwable $e) {
+        $dbStatus = 'error';
+        $dbError  = $e->getMessage();
+    }
+
+    return response()->json([
+        'status'      => 'ok',
+        'timestamp'   => now()->toIso8601String(),
+        'is_mobile'   => $isMobile,
+        'host_ip'     => $hostIp,
+        'os'          => PHP_OS_FAMILY,
+        'db_driver'   => config('database.default'),
+        'db_status'   => $dbStatus,
+        'user_count'  => $userCount,
+        'db_error'    => $dbError,
+        'app_url'     => config('app.url'),
+        'locale'      => app()->getLocale(),
+        'php_version' => PHP_VERSION,
+    ]);
+});
+
 // NativePHP Mobile DB Proxy — receives SQL queries from the Android/iOS app and executes them
 // against the real MySQL database on the dev machine.
 // ⚠️  Protected by X-DB-PROXY-SECRET header (must match APP_KEY).

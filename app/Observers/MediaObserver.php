@@ -19,14 +19,30 @@ class MediaObserver
         $targetCollections = ['gallery', 'product_image', 'package_image', 'category_image'];
 
         if (in_array($media->collection_name, $targetCollections)) {
-            // Index the image for CBIR
-            $this->cbirService->indexMedia($media);
+            // Skip CBIR indexing di mobile — AI server tidak tersedia dari device
+            if (\App\Providers\NativeServiceProvider::isNativeMobile()) {
+                return;
+            }
+
+            try {
+                $this->cbirService->indexMedia($media);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('[MediaObserver] CBIR indexing failed: '.$e->getMessage());
+            }
         }
     }
 
     public function deleted(Media $media)
     {
-        // Remove from CBIR index when media is deleted
-        $this->cbirService->removeFromIndex($media->id);
+        // Skip di mobile
+        if (\App\Providers\NativeServiceProvider::isNativeMobile()) {
+            return;
+        }
+
+        try {
+            $this->cbirService->removeFromIndex($media->id);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('[MediaObserver] CBIR remove failed: '.$e->getMessage());
+        }
     }
 }

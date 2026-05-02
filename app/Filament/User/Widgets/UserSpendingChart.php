@@ -35,7 +35,7 @@ class UserSpendingChart extends ChartWidget
             ->selectRaw("{$monthExpr} as month, SUM(total_price) as sum")
             ->where('created_at', '>=', now()->subMonths(6))
             ->groupBy('month')
-            ->orderBy('month')
+            ->orderByRaw('MIN(created_at) ASC', [])
             ->pluck('sum', 'month')
             ->toArray();
 

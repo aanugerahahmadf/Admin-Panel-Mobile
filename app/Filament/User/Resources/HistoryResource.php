@@ -69,7 +69,6 @@ class HistoryResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            // ->description(new \Illuminate\Support\HtmlString('<style>.fi-ta-ctn, .fi-ta-content, .fi-ta-header-toolbar, .fi-ta-pagination { background-color: transparent !important; box-shadow: none !important; border-color: transparent !important; }</style>'))
             ->emptyStateHeading(__('Belum ada histori transaksi'))
             ->emptyStateDescription(__('Temukan layanan pernikahan impianmu dan mulai transaksi pertama hari ini!'))
             ->emptyStateIcon('heroicon-o-clock')
@@ -85,7 +84,7 @@ class HistoryResource extends Resource
             ->actionsAlignment('center')
             ->defaultSort('created_at', 'desc')
             ->contentGrid([
-                'sm' => 1,
+                'default' => 2,
                 'md' => 2,
                 'lg' => 3,
                 'xl' => 4,
@@ -177,7 +176,7 @@ class HistoryResource extends Resource
                     ])
                     ->query(fn (Builder $query, array $data) => $query->when($data['value'], fn ($q, $id) => $q->where('id', $id)))
                     ->hidden(),
-            ])
+            ], layout: \Filament\Tables\Enums\FiltersLayout::AboveContentCollapsible)
             ->actions([
                 Tables\Actions\ViewAction::make()
                     ->label(__('Rincian'))

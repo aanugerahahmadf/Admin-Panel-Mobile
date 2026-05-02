@@ -80,7 +80,6 @@ class VoucherResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->description(new HtmlString('<style>.fi-ta-ctn, .fi-ta-content, .fi-ta-header-toolbar, .fi-ta-pagination { background-color: transparent !important; box-shadow: none !important; border-color: transparent !important; }</style>'))
             ->emptyStateHeading(__('Belum ada promo baru'))
             ->emptyStateDescription(__('Voucher spesial dari kami akan otomatis muncul di sini. Coba tanyakan admin untuk promo menarik!'))
             ->emptyStateIcon('heroicon-o-ticket')
@@ -94,7 +93,7 @@ class VoucherResource extends Resource
                     ->icon('heroicon-m-chat-bubble-bottom-center-text'),
             ])
             ->contentGrid([
-                'sm' => 1,
+                'default' => 2,
                 'md' => 2,
                 'lg' => 3,
                 'xl' => 4,

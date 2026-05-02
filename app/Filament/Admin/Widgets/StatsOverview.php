@@ -3,6 +3,8 @@
 namespace App\Filament\Admin\Widgets;
 
 use App\Models\Order;
+use App\Models\Package;
+use App\Models\Product;
 use App\Models\User;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -13,9 +15,16 @@ class StatsOverview extends BaseWidget
 {
     protected static ?int $sort = 1;
 
+    protected int | string | array $columnSpan = 'full';
+
+    protected function getColumns(): int
+    {
+        return 5;
+    }
+
     protected function getStats(): array
     {
-        return Cache::remember('stats_overview_data', now()->addMinutes(5), function () {
+        $data = Cache::remember('stats_overview_data_v2', now()->addMinutes(5), function () {
             // Helper to get trend data for the last 10 days
             $getTrend = function ($model) {
                 /** @var Builder $query */
@@ -33,6 +42,8 @@ class StatsOverview extends BaseWidget
 
             $userCounts = $getTrend(User::class);
             $orderCounts = $getTrend(Order::class);
+            $packageCounts = $getTrend(Package::class);
+            $productCounts = $getTrend(Product::class);
 
             // Calculate Revenue Trend (Last 10 days vs previous 10 days)
             /** @var Builder $query */
@@ -66,37 +77,83 @@ class StatsOverview extends BaseWidget
             $newOrderQuery = Order::where('created_at', '>=', now()->subDays(7));
             $newOrderCount = $newOrderQuery->count();
 
+            /** @var Builder $newPackageQuery */
+            $newPackageQuery = Package::where('created_at', '>=', now()->subDays(7));
+            $newPackageCount = $newPackageQuery->count();
+
+            /** @var Builder $newProductQuery */
+            $newProductQuery = Product::where('created_at', '>=', now()->subDays(7));
+            $newProductCount = $newProductQuery->count();
+
             return [
-                Stat::make(__('Total Pengguna'), (string) User::query()->count())
-                    ->description($newUserCount.' '.__('baru minggu ini'))
-                    ->descriptionIcon('heroicon-m-arrow-trending-up')
-                    ->chart($userCounts)
-                    ->color('success')
-                    ->extraAttributes([
-                        'class' => 'cursor-pointer hover:shadow-lg transition-all duration-300',
-                        'onclick' => "window.location.href='".route('filament.admin.resources.users.index')."'",
-                    ]),
-
-                Stat::make(__('Total Pesanan'), (string) Order::query()->count())
-                    ->description($newOrderCount.' '.__('baru minggu ini'))
-                    ->descriptionIcon('heroicon-m-shopping-bag')
-                    ->chart($orderCounts)
-                    ->color('info')
-                    ->extraAttributes([
-                        'class' => 'cursor-pointer hover:shadow-lg transition-all duration-300',
-                        'onclick' => "window.location.href='".route('filament.admin.resources.orders.index')."'",
-                    ]),
-
-                Stat::make(__('Total Pendapatan'), 'IDR '.number_format($totalRevenue, 0, ',', '.'))
-                    ->description('IDR '.number_format($thisMonthRevenue, 0, ',', '.').' '.__('bulan ini'))
-                    ->descriptionIcon($thisMonthRevenue > 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-banknotes')
-                    ->chart($revenueCounts)
-                    ->color('success')
-                    ->extraAttributes([
-                        'class' => 'cursor-pointer hover:shadow-lg transition-all duration-300',
-                        'onclick' => "window.location.href='".route('filament.admin.resources.transactions.index')."'",
-                    ]),
+                'userCounts' => $userCounts,
+                'orderCounts' => $orderCounts,
+                'packageCounts' => $packageCounts,
+                'productCounts' => $productCounts,
+                'revenueCounts' => $revenueCounts,
+                'totalUsers' => User::query()->count(),
+                'totalOrders' => Order::query()->count(),
+                'totalPackages' => Package::query()->count(),
+                'totalProducts' => Product::query()->count(),
+                'totalRevenue' => $totalRevenue,
+                'thisMonthRevenue' => $thisMonthRevenue,
+                'newUserCount' => $newUserCount,
+                'newOrderCount' => $newOrderCount,
+                'newPackageCount' => $newPackageCount,
+                'newProductCount' => $newProductCount,
             ];
         });
+
+        return [
+            Stat::make(__('Total Pengguna'), (string) $data['totalUsers'])
+                ->description($data['newUserCount'].' '.__('baru minggu ini'))
+                ->descriptionIcon($data['newUserCount'] > 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-minus')
+                ->chart($data['userCounts'])
+                ->color($data['totalUsers'] > 0 ? 'info' : 'danger')
+                ->extraAttributes([
+                    'class' => 'cursor-pointer hover:shadow-lg transition-all duration-300',
+                    'onclick' => "window.location.href='".route('filament.admin.resources.users.index')."'",
+                ]),
+
+            Stat::make(__('Total Pesanan'), (string) $data['totalOrders'])
+                ->description($data['newOrderCount'].' '.__('baru minggu ini'))
+                ->descriptionIcon($data['newOrderCount'] > 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-minus')
+                ->chart($data['orderCounts'])
+                ->color($data['totalOrders'] > 0 ? 'warning' : 'danger')
+                ->extraAttributes([
+                    'class' => 'cursor-pointer hover:shadow-lg transition-all duration-300',
+                    'onclick' => "window.location.href='".route('filament.admin.resources.orders.index')."'",
+                ]),
+
+            Stat::make(__('Total Paket'), (string) $data['totalPackages'])
+                ->description($data['newPackageCount'].' '.__('baru minggu ini'))
+                ->descriptionIcon($data['newPackageCount'] > 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-minus')
+                ->chart($data['packageCounts'])
+                ->color($data['totalPackages'] > 0 ? 'success' : 'danger')
+                ->extraAttributes([
+                    'class' => 'cursor-pointer hover:shadow-lg transition-all duration-300',
+                    'onclick' => "window.location.href='".route('filament.admin.resources.packages.index')."'",
+                ]),
+
+            Stat::make(__('Total Produk'), (string) $data['totalProducts'])
+                ->description($data['newProductCount'].' '.__('baru minggu ini'))
+                ->descriptionIcon($data['newProductCount'] > 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-minus')
+                ->chart($data['productCounts'])
+                ->color($data['totalProducts'] > 0 ? 'purple' : 'danger')
+                ->extraAttributes([
+                    'class' => 'cursor-pointer hover:shadow-lg transition-all duration-300',
+                    'onclick' => "window.location.href='".route('filament.admin.resources.products.index')."'",
+                ]),
+
+            Stat::make(__('Total Pendapatan'), 'Rp '.number_format($data['totalRevenue'], 0, ',', '.'))
+                ->description('Rp '.number_format($data['thisMonthRevenue'], 0, ',', '.').' '.__('bulan ini'))
+                ->descriptionIcon($data['thisMonthRevenue'] > 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-minus')
+                ->chart($data['revenueCounts'])
+                ->color($data['totalRevenue'] > 0 ? 'success' : 'danger')
+                ->extraAttributes([
+                    'class' => 'cursor-pointer hover:shadow-lg transition-all duration-300',
+                    'onclick' => "window.location.href='".route('filament.admin.resources.transactions.index')."'",
+                ]),
+        ];
     }
 }

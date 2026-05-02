@@ -10,7 +10,8 @@ use Filament\Pages\Dashboard as BaseDashboard;
 
 class Dashboard extends BaseDashboard
 {
-    protected static ?string $slug = 'home';
+    protected static string $routePath = 'home';
+
 
     protected static ?string $navigationIcon = 'heroicon-o-home';
 
@@ -34,6 +35,11 @@ class Dashboard extends BaseDashboard
     public static function getNavigationLabel(): string
     {
         return __('Beranda');
+    }
+
+    public function getColumns(): int | array
+    {
+        return 2;
     }
 
     public function getWidgets(): array

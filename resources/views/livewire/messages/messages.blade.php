@@ -105,7 +105,7 @@
                                             <div class="flex-1 min-w-0">
                                                 <div class="flex justify-between items-start gap-2">
                                                     <div class="flex-1 min-w-0">
-                                                        <p class="text-[9px] text-primary-600 dark:text-primary-400 font-black uppercase tracking-tighter mb-0.5">
+                                                        <p class="text-[9px] text-primary-600 dark:text-primary-400 font-black tracking-tighter mb-0.5">
                                                             @if(isset($meta['is_order']) && $meta['is_order'])
                                                                 {{ __('Pesanan') }} #{{ $meta['order_number'] }}
                                                             @else
@@ -120,9 +120,9 @@
                                                         </p>
                                                     </div>
                                                     <div class="flex-shrink-0 self-center">
-                                                        <a href="{{ $meta['url'] }}" 
+                                                        <a href="{{ $meta['url'] }}"
                                                            wire:navigate
-                                                           class="inline-flex items-center px-3 py-1.5 text-[11px] bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-bold transition-all shadow-sm active:scale-95 whitespace-nowrap">
+                                                           class="inline-flex items-center px-3 py-1.5 text-[11px] bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-400 text-white hover:text-white visited:text-white rounded-lg font-bold transition-all shadow-sm active:scale-95 whitespace-nowrap">
                                                             {{ isset($meta['is_order']) && $meta['is_order'] ? __('Ubah Pesanan') : __('Detail') }}
                                                         </a>
                                                     </div>
@@ -133,8 +133,25 @@
                                 @endif
 
                                 @if ($message->message)
+                                    @php
+                                        $displayMessage = $message->message;
+                                        $meta = $message->meta ?? [];
+
+                                        if (is_array($meta) && isset($meta['type'], $meta['name']) && ! isset($meta['is_order'])) {
+                                            $displayMessage = __('Saya menanyakan tentang :itemType ini: :name', [
+                                                'itemType' => __($meta['type'] === 'product' ? 'Produk' : 'Paket'),
+                                                'name' => $meta['name'],
+                                            ]);
+                                        }
+
+                                        if (is_array($meta) && ! empty($meta['is_order']) && isset($meta['order_number'])) {
+                                            $displayMessage = __('Halo Admin, saya baru saja membuat pesanan baru dengan nomor: :orderNumber', [
+                                                'orderNumber' => $meta['order_number'],
+                                            ]);
+                                        }
+                                    @endphp
                                     <p class="text-sm">
-                                        {!! nl2br($message->message) !!}
+                                        {!! nl2br(e($displayMessage)) !!}
                                     </p>
                                 @endif
                                 @if (
@@ -221,13 +238,20 @@
                                     // Check if anyone else has read it (excluding the sender)
                                     $isRead = !empty($message->read_by) && count(array_filter($message->read_by, fn($id) => $id !== auth()->id())) > 0;
                                 @endphp
-                                <div class="flex items-center">
+                                <div class="flex items-center gap-0.5">
                                     @if($isRead)
-                                        <x-filament::icon icon="heroicon-m-check-badge" class="w-3 h-3 text-white" />
-                                        <span class="text-[9px] text-white/70 ml-1">{{ __('Dilihat') }}</span>
+                                        {{-- Double blue check = Dibaca --}}
+                                        <svg class="w-3.5 h-3.5 text-blue-300" viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M1.5 12.5l5 5L18 5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                                            <path d="M6 12.5l5 5L22.5 5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                                        </svg>
+                                        <span class="text-[9px] text-blue-200 ml-0.5">{{ __('Dibaca') }}</span>
                                     @else
-                                        <x-filament::icon icon="heroicon-m-check" class="w-3 h-3 text-white/50" />
-                                        <span class="text-[9px] text-white/50 ml-1">{{ __('Terkirim') }}</span>
+                                        {{-- Single gray check = Terkirim --}}
+                                        <svg class="w-3.5 h-3.5 text-white/50" viewBox="0 0 24 24" fill="none">
+                                            <path d="M4 12.5l5 5L20 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                        <span class="text-[9px] text-white/50 ml-0.5">{{ __('Terkirim') }}</span>
                                     @endif
                                 </div>
                             @endif
@@ -249,7 +273,7 @@
                 @if ($showDateBadge)
                     <div class="flex justify-center my-4">
                         <x-filament::badge>
-                            {{ \Carbon\Carbon::parse($message->created_at)->setTimezone(config('messages.timezone', 'app.timezone'))->format('F j, Y') }}
+                            {{ \Carbon\Carbon::parse($message->created_at)->setTimezone(config('messages.timezone', 'app.timezone'))->translatedFormat('F j, Y') }}
                         </x-filament::badge>
                     </div>
                 @endif
@@ -262,7 +286,22 @@
         </div>
         <!-- Chat Box : End -->
         <!-- Chat Input : Start -->
-        <div class="w-full p-4 relative">
+        <div class="w-full px-4 pt-2 pb-4 relative">
+            {{-- Typing Indicator --}}
+            @if($this->otherUserIsTyping)
+                <div class="flex items-center gap-2 mb-2 px-1" wire:key="typing-indicator">
+                    <div class="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-700 rounded-2xl rounded-bl-none px-3 py-2 shadow-sm">
+                        <span class="text-xs text-gray-500 dark:text-gray-400 italic">
+                            {{ $this->typingUserName ? $this->typingUserName . ' ' . __('sedang mengetik') : __('Sedang mengetik') }}
+                        </span>
+                        <span class="flex gap-0.5 items-center">
+                            <span class="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+                            <span class="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-400 rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+                            <span class="w-1.5 h-1.5 bg-gray-400 dark:bg-gray-400 rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+                        </span>
+                    </div>
+                </div>
+            @endif
             <form wire:submit="sendMessage()" class="flex items-end justify-between w-full gap-4">
                 <div class="w-full max-h-96 overflow-y-auto p-1">
                     {{ $this->form }}

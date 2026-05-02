@@ -6,7 +6,7 @@
 
 <div
     wire:ignore
-    class="articles-video-player w-full bg-black rounded-2xl overflow-hidden shadow-2xl mt-4 border-4 border-white/10 relative z-30 pointer-events-auto"
+    class="articles-video-player w-full bg-black rounded-2xl overflow-hidden shadow-lg mt-4"
 >
     @if($videoUrl)
         <video 

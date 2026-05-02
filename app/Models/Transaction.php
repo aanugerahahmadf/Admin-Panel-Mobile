@@ -65,17 +65,21 @@ class Transaction extends Model
                 'payment_status' => OrderPaymentStatus::PAID,
             ]);
 
-            // Mark voucher as used if exists
-            $voucherLink = \DB::table('user_vouchers')
-                ->where('order_id', $this->order_id)
-                ->where('user_id', $this->user_id)
-                ->first();
+            // Mark voucher as used if exists — gunakan Eloquent bukan DB::table()
+            try {
+                $voucherLink = \Illuminate\Support\Facades\DB::table('user_vouchers')
+                    ->where('order_id', $this->order_id)
+                    ->where('user_id', $this->user_id)
+                    ->first();
 
-            if ($voucherLink && $voucherLink->voucher_id) {
-                $voucher = Voucher::find($voucherLink->voucher_id);
-                if ($voucher) {
-                    $voucher->markAsUsedBy($this->user_id, $this->order_id);
+                if ($voucherLink && $voucherLink->voucher_id) {
+                    $voucher = Voucher::find($voucherLink->voucher_id);
+                    if ($voucher) {
+                        $voucher->markAsUsedBy($this->user_id, $this->order_id);
+                    }
                 }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('[Transaction] Voucher mark failed: '.$e->getMessage());
             }
         }
     }

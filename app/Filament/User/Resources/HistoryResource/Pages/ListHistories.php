@@ -2,6 +2,7 @@
 
 namespace App\Filament\User\Resources\HistoryResource\Pages;
 
+use App\Filament\User\Concerns\HasMobilePagination;
 use App\Filament\User\Resources\HistoryResource;
 use App\Models\History;
 use Filament\Facades\Filament;
@@ -10,6 +11,8 @@ use Filament\Resources\Pages\ListRecords;
 
 class ListHistories extends ListRecords
 {
+    use HasMobilePagination;
+
     protected static string $resource = HistoryResource::class;
 
     public function getTabs(): array

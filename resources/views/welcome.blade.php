@@ -22,6 +22,14 @@
         [x-cloak] {
             display: none !important;
         }
+
+        /* Hide semua scrollbar — web & mobile */
+        *, *::-webkit-scrollbar { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+        *::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
+
+        /* Force hide scrollbar pada semua overflow element */
+        [style*="overflow"] { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+        [style*="overflow"]::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; }
     </style>
     <script>
         (function () {
@@ -36,17 +44,45 @@
                 console.error('Theme sync failed:', e);
             }
         })();
+
+        // Inject scrollbar-hiding style ke semua elemen overflow secara dinamis
+        (function hideAllScrollbars() {
+            const style = document.createElement('style');
+            style.textContent = `
+                * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+                *::-webkit-scrollbar { display: none !important; width: 0 !important; height: 0 !important; background: transparent !important; }
+                *::-webkit-scrollbar-thumb { background: transparent !important; }
+                *::-webkit-scrollbar-track { background: transparent !important; }
+            `;
+            document.head.appendChild(style);
+        })();
     </script>
 </head>
 
 <body
-    class="nativephp-safe-area bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 flex p-6 pt-24 lg:p-8 lg:pt-24 items-center lg:justify-center min-h-screen flex-col transition-colors duration-500">
+    class="bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 flex flex-col"
+    style="height: 100dvh; overflow: hidden; position: fixed; width: 100%; -webkit-tap-highlight-color: transparent;">
+
     @livewireScripts
     @include('filament.header')
 
-    <div class="flex items-center justify-center w-full transition-opacity opacity-100 duration-750 lg:grow">
-        <main
-            class="flex max-w-[335px] w-full flex-col-reverse lg:max-w-4xl lg:flex-row shadow-sm rounded-lg overflow-hidden border border-[#19140015] dark:border-[#ffffff10]">
+    {{-- Hanya area ini yang scroll — header & footer tetap diam --}}
+    <div style="
+            position: absolute;
+            top: 4rem;
+            bottom: 3rem;
+            left: 0;
+            right: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        ">
+
+        <div class="flex items-center justify-center w-full min-h-full p-6 lg:p-8">
+            <main
+                class="flex max-w-[335px] w-full flex-col-reverse lg:max-w-4xl lg:flex-row shadow-sm rounded-lg overflow-hidden border border-[#19140015] dark:border-[#ffffff10]">
             <div
                 class="text-[13px] leading-[20px] flex-1 p-6 pb-12 lg:p-20 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
                 <h1 class="mb-1 font-semibold text-lg text-gray-950 dark:text-white">
@@ -79,10 +115,11 @@
                     </li>
                 </ul>
 
-                <ul class="flex w-full mt-4 lg:mt-6">
+                <ul class="flex w-full mt-4 lg:mt-6" style="position: relative; z-index: 10;">
                     <li class="w-full lg:w-auto">
                         <a href="{{ route('filament.user.resources.home.index', ['record' => 1]) }}"
-                            class="inline-block dark:bg-white dark:text-gray-950 dark:hover:bg-gray-200 hover:bg-black hover:border-black px-5 py-1.5 bg-gray-900 rounded-sm border border-black text-white text-sm font-semibold leading-normal transition-all active:scale-95 shadow-sm">
+                            style="display: inline-block; position: relative; z-index: 10; cursor: pointer;"
+                            class="dark:bg-white dark:text-gray-950 dark:hover:bg-gray-200 hover:bg-black hover:border-black px-5 py-1.5 bg-gray-900 rounded-sm border border-black text-white text-sm font-semibold leading-normal transition-all active:scale-95 shadow-sm">
                             {{ __('Buka Beranda') }}
                         </a>
                     </li>
@@ -95,9 +132,6 @@
                     <h2 class="text-3xl lg:text-4xl font-bold text-[#E91E63] dark:text-[#FF80AB] mb-2">
                         {{ __('Dekorasi Bunga Pernikahan') }}
                     </h2>
-                    <p class="text-xs uppercase tracking-[0.3em] text-[#D81B60] dark:text-[#F48FB1] font-medium">
-                        {{ __('Dekorasi Bunga Pernikahan') }}
-                    </p>
                 </div>
             </div>
         </main>

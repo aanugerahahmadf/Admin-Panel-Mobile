@@ -3,6 +3,7 @@
 namespace App\Filament\User\Resources;
 
 use App\Filament\User\Resources\ReviewResource\Pages\ManageReviews;
+use App\Helpers\NativeNotificationHelper;
 use App\Models\Review;
 use Filament\Facades\Filament;
 use Filament\Forms;
@@ -10,6 +11,7 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\HtmlString;
@@ -109,11 +111,10 @@ class ReviewResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->description(new HtmlString('<style>.fi-ta-ctn, .fi-ta-content, .fi-ta-header-toolbar, .fi-ta-pagination { background-color: transparent !important; box-shadow: none !important; border-color: transparent !important; }</style>'))
             ->emptyStateHeading(__('Belum ada ulasan'))
             ->emptyStateDescription(__('Bagikan pengalamanmu dengan kami!'))
             ->contentGrid([
-                'sm' => 1,
+                'default' => 2,
                 'md' => 2,
                 'lg' => 3,
                 'xl' => 4,
@@ -162,18 +163,49 @@ class ReviewResource extends Resource
                     ->color('warning')
                     ->size('sm')
                     ->extraAttributes(['class' => 'flex-1 justify-center rounded-lg shadow-sm font-bold'])
-                    ->slideOver(),
+                    ->slideOver()
+                    ->after(fn () => NativeNotificationHelper::success(__('Ulasan berhasil diperbarui.'))),
                 Tables\Actions\DeleteAction::make()
                     ->label(__('Hapus'))
                     ->button()
                     ->color('danger')
                     ->size('sm')
-                    ->extraAttributes(['class' => 'flex-1 justify-center rounded-lg shadow-sm font-bold']),
+                    ->extraAttributes(['class' => 'flex-1 justify-center rounded-lg shadow-sm font-bold'])
+                    ->after(fn () => NativeNotificationHelper::info(__('Dihapus'), __('Ulasan Anda telah dihapus.'))),
             ])
             ->actionsAlignment('center')
             ->extraAttributes([
                 'class' => 'filament-table-actions-container !flex !flex-row !gap-1 !p-3 !bg-gray-50/50 dark:!bg-white/5 !border-t dark:!border-gray-800',
             ])
+            ->filters([
+                SelectFilter::make('rating')
+                    ->searchable()
+                    ->label(__('Rating'))
+                    ->options([
+                        '5' => '⭐⭐⭐⭐⭐ '.__('5 Bintang'),
+                        '4' => '⭐⭐⭐⭐ '.__('4 Bintang'),
+                        '3' => '⭐⭐⭐ '.__('3 Bintang'),
+                        '2' => '⭐⭐ '.__('2 Bintang'),
+                        '1' => '⭐ '.__('1 Bintang'),
+                    ]),
+
+                SelectFilter::make('sort_by')
+                    ->searchable()
+                    ->label(__('Urutkan'))
+                    ->options([
+                        'latest'      => __('Terbaru'),
+                        'oldest'      => __('Terlama'),
+                        'rating_desc' => __('Rating Tertinggi'),
+                        'rating_asc'  => __('Rating Terendah'),
+                    ])
+                    ->query(fn (Builder $query, array $data) => match ($data['value'] ?? null) {
+                        'latest'      => $query->reorder('created_at', 'desc'),
+                        'oldest'      => $query->reorder('created_at', 'asc'),
+                        'rating_desc' => $query->reorder('rating', 'desc'),
+                        'rating_asc'  => $query->reorder('rating', 'asc'),
+                        default       => $query,
+                    }),
+            ], layout: \Filament\Tables\Enums\FiltersLayout::AboveContentCollapsible)
             ->headerActions([
                 Tables\Actions\CreateAction::make()
                     ->label(__('Tulis Ulasan'))
@@ -186,7 +218,8 @@ class ReviewResource extends Resource
                         $data['user_id'] = Filament::auth()->id();
 
                         return $data;
-                    }),
+                    })
+                    ->after(fn () => NativeNotificationHelper::success(__('Terima kasih atas ulasan Anda!'))),
             ]);
     }
 

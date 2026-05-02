@@ -33,7 +33,7 @@ class UserOrdersChart extends ChartWidget
             ->selectRaw("{$monthExpr} as month, count(*) as count")
             ->where('created_at', '>=', now()->subMonths(6))
             ->groupBy('month')
-            ->orderBy('month')
+            ->orderByRaw('MIN(created_at) ASC', [])
             ->pluck('count', 'month')
             ->toArray();
 

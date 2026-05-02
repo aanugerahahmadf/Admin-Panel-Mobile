@@ -25,6 +25,8 @@ class WeddingOrganizerResource extends Resource
 {
     protected static ?string $model = WeddingOrganizer::class;
 
+    protected static ?string $slug = 'Profile';
+
     protected static ?string $navigationIcon = 'heroicon-o-sparkles';
 
     protected static ?int $navigationSort = 1;

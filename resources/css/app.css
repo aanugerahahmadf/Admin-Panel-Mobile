@@ -22,10 +22,85 @@ html, body, * {
     background: transparent !important;
 }
 .nativephp-safe-area {
-    padding-top: calc(3rem + env(safe-area-inset-top, 0px)) !important;
-    padding-bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px)) !important;
-    padding-left: calc(1.5rem + env(safe-area-inset-left, 0px)) !important;
-    padding-right: calc(1.5rem + env(safe-area-inset-right, 0px)) !important;
+    padding-top: calc(3rem + var(--inset-top, env(safe-area-inset-top, 0px))) !important;
+    padding-bottom: calc(1.5rem + var(--inset-bottom, env(safe-area-inset-bottom, 0px))) !important;
+    padding-left: calc(1.5rem + var(--inset-left, env(safe-area-inset-left, 0px))) !important;
+    padding-right: calc(1.5rem + var(--inset-right, env(safe-area-inset-right, 0px))) !important;
+}
+
+/* ─── NativePHP Mobile Safe Area for Filament ─── */
+
+/* Top navigation bar — sticky di semua ukuran */
+.fi-topbar {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 40 !important;
+}
+
+/* Mobile: tambahkan safe area padding untuk notch/status bar */
+@media (max-width: 768px) {
+    .fi-topbar {
+        padding-top: var(--inset-top, env(safe-area-inset-top, 0px)) !important;
+    }
+}
+
+/* Footer — FIXED di bawah di semua ukuran */
+footer.fixed,
+.fi-footer {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    z-index: 10 !important;
+    pointer-events: none !important; /* Footer tidak menghalangi klik konten */
+}
+
+/* Tapi teks footer tetap bisa diklik */
+footer.fixed > *,
+.fi-footer > * {
+    pointer-events: auto !important;
+}
+
+/* Mobile: tambahkan safe area padding untuk home indicator */
+@media (max-width: 768px) {
+    footer.fixed,
+    .fi-footer {
+        padding-bottom: var(--inset-bottom, env(safe-area-inset-bottom, 0px)) !important;
+    }
+}
+
+/* Konten utama: padding bawah agar tidak tertutup footer fixed */
+.fi-main {
+    padding-bottom: 5rem !important;
+}
+
+/* Mobile: padding bawah lebih besar untuk safe area */
+@media (max-width: 768px) {
+    .fi-main {
+        padding-bottom: calc(5rem + var(--inset-bottom, env(safe-area-inset-bottom, 0px))) !important;
+    }
+}
+
+/* ─── Hilangkan garis border di atas filter AboveContent ─── */
+.fi-ta-filters-above-content-ctn {
+    border-top: none !important;
+    border-bottom: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.fi-ta-filters-above-content-ctn,
+.fi-ta-filters-above-content-ctn > div,
+.fi-ta-filters-above-content-ctn > * {
+    border-top: none !important;
+    border-bottom: none !important;
+    border: none !important;
+}
+
+/* Filament uses divide-y on the table container which adds lines */
+.fi-ta-ctn > .divide-y > *,
+.fi-ta > .divide-y > * {
+    border-top: none !important;
 }
 
 @source '../views';
@@ -91,3 +166,300 @@ select:focus[data-flux-control] {
 /* \[:where(&)\]:size-4 {
     @apply size-4;
 } */
+
+/* ═══════════════════════════════════════════════════════════════════
+   MOBILE RESPONSIVE — NativePHP Android/iOS + Web Mobile
+   Ukuran gambar kartu adaptif, tidak merusak layout Filament
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Gambar kartu: responsive via class fi-card-img / fi-card-img-wrap ── */
+/* Default desktop */
+.fi-card-img-wrap {
+    overflow: hidden;
+}
+/* ── Marketplace Style Cards (Layout only) ── */
+.fi-ta-record {
+    border-radius: 12px !important;
+    overflow: hidden !important;
+}
+
+.fi-card-img {
+    width: 100% !important;
+    aspect-ratio: 1 / 1 !important;
+    object-fit: cover !important;
+    display: block !important;
+}
+
+/* Mobile < 480px (Extreme Compact Style) */
+@media (max-width: 479px) {
+    .fi-ta-content > div.grid { 
+        gap: 6px !important; 
+        padding: 6px !important; 
+    }
+    .fi-card-img-wrap { 
+        aspect-ratio: 16 / 10 !important; 
+        height: auto !important; 
+        width: 100% !important;
+        display: block !important;
+    }
+    .fi-card-img { 
+        aspect-ratio: 16 / 10 !important; 
+        height: 100% !important; 
+        width: 100% !important; 
+        object-fit: cover !important; 
+    }
+    .fi-ta-record .p-4, .fi-ta-record .p-6 { 
+        padding: 2px !important; 
+    }
+    .fi-ta-record .gap-y-4 { 
+        gap: 0px !important; 
+    }
+    /* Title: 11px, ultra compact */
+    .fi-ta-record h3, .fi-ta-record .text-lg, .fi-ta-record .text-xl { 
+        font-size: 11px !important; 
+        line-height: 1 !important;
+        font-weight: 500 !important;
+        display: -webkit-box !important;
+        -webkit-line-clamp: 2 !important;
+        -webkit-box-orient: vertical !important;
+        overflow: hidden !important;
+        margin-bottom: 0px !important;
+    }
+    /* Price: 12px Bold */
+    .fi-ta-record .text-primary-600, .fi-ta-record [style*="color"] {
+        font-size: 12px !important;
+        font-weight: 700 !important;
+    }
+}
+
+/* Tablet & Desktop */
+@media (min-width: 480px) {
+    .fi-card-img-wrap { aspect-ratio: 1 / 1 !important; height: auto !important; }
+}
+
+/* Desktop ≥ 1024px — biarkan nilai asli dari PHP */
+
+/* ── Artikel: class article-img-wrap ── */
+.article-img-wrap img {
+    width: 100% !important;
+    object-fit: cover !important;
+}
+@media (max-width: 479px) {
+    .article-img-wrap img { aspect-ratio: 4 / 3 !important; height: auto !important; width: 100% !important; object-fit: cover !important; }
+}
+@media (min-width: 480px) and (max-width: 639px) {
+    .article-img-wrap img { aspect-ratio: 4 / 3 !important; height: auto !important; width: 100% !important; object-fit: cover !important; }
+}
+@media (min-width: 640px) and (max-width: 1023px) {
+    .article-img-wrap img { aspect-ratio: 4 / 3 !important; height: auto !important; width: 100% !important; object-fit: cover !important; }
+}
+@media (min-width: 1024px) {
+    .article-img-wrap img { height: 220px !important; max-height: 220px !important; }
+}
+
+/* ── Kartu: cegah teks meluber keluar batas kartu ── */
+.fi-ta-record {
+    min-width: 0 !important;
+}
+
+/* ── Touch optimizations ── */
+.fi-ta-record,
+.fi-ta-record * {
+    -webkit-tap-highlight-color: transparent !important;
+}
+
+/* ── Smooth scroll ── */
+.fi-main-ctn {
+    scroll-behavior: smooth !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   FILAMENT TABLE & FILTERS OVERRIDES
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Remove table backgrounds and borders — hanya di user panel */
+.fi-panel-user .fi-ta-ctn, 
+.fi-panel-user .fi-ta-content, 
+.fi-panel-user .fi-ta-header-toolbar, 
+.fi-panel-user .fi-ta-pagination { 
+    background-color: transparent !important; 
+    box-shadow: none !important; 
+    border-color: transparent !important; 
+}
+
+/* Hide default search inputs and pagination — hanya di user panel */
+.fi-panel-user .fi-ta-header-toolbar .fi-input-wrp, 
+.fi-panel-user .fi-ta-header-toolbar form[wire\:submit], 
+.fi-panel-user .fi-ta-search, 
+.fi-panel-user .fi-ta-pagination { 
+    display: none !important; 
+}
+
+/* Flex layout for header actions */
+.fi-ta-header-toolbar { 
+    display: flex !important; 
+    flex-direction: row !important; 
+    align-items: center !important; 
+    gap: 0.5rem !important; 
+    flex-wrap: wrap !important; 
+}
+.fi-ta-header-toolbar > * { flex-shrink: 0; }
+.fi-ta-header-actions { 
+    display: flex !important; 
+    flex-wrap: wrap !important; 
+    gap: 0.5rem !important; 
+}
+.fi-ta-header-actions .fi-btn { 
+    font-size: 0.75rem !important; 
+    padding: 0.4rem 0.75rem !important; 
+}
+
+/* Horizontal Scrollable Filters on Mobile */
+@media (max-width: 768px) {
+    .fi-ta-filters-above-content-ctn form > div.grid, 
+    .fi-ta-filters-above-content form > div.grid {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        gap: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
+        scrollbar-width: none;
+    }
+    .fi-ta-filters-above-content-ctn form > div.grid::-webkit-scrollbar, 
+    .fi-ta-filters-above-content form > div.grid::-webkit-scrollbar {
+        display: none;
+    }
+    .fi-ta-filters-above-content-ctn form > div.grid > *, 
+    .fi-ta-filters-above-content form > div.grid > * {
+        flex: 0 0 auto !important;
+        min-width: 130px !important;
+        width: 130px !important;
+    }
+}
+
+/* Stats Overview 5 columns on XL & Center Align */
+@media (min-width: 1280px) { 
+    .fi-wi-stats-overview-stats-ctn { 
+        grid-template-columns: repeat(5, minmax(0, 1fr)) !important; 
+    } 
+}
+
+.fi-wi-stats-overview-stat {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+}
+
+.fi-wi-stats-overview-stat > div.grid {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    height: 100% !important;
+    width: 100% !important;
+}
+
+.fi-wi-stats-overview-stat .flex.items-center {
+    justify-content: center !important;
+}
+
+
+/* ─── Full-Width Mobile Sidebar & Navigation ─── */
+@media (max-width: 1024px) {
+    /* Make sidebar drawer full width */
+    .fi-sidebar {
+        width: 100vw !important;
+        max-width: 100vw !important;
+        transform: translateX(-100%);
+    }
+    .fi-sidebar.fi-sidebar-open {
+        transform: translateX(0);
+    }
+
+    /* Remove horizontal margins from navigation items */
+    .fi-sidebar-nav-item > a,
+    .fi-sidebar-group {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        border-radius: 0 !important;
+    }
+
+    /* Make navigation group headers full width */
+    .fi-sidebar-group-button {
+        padding-left: 1.5rem !important;
+        padding-right: 1.5rem !important;
+        width: 100% !important;
+    }
+
+    /* Active item full width */
+    .fi-sidebar-nav-item > a.fi-active {
+        border-radius: 0 !important;
+    }
+}
+
+/* --- Sidebar Navigation Group Chevron Rotation Animation --- */
+.fi-sidebar-group-button svg,
+.fi-sidebar-group-button > *:last-child {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    transform: rotate(0deg);
+}
+
+.fi-sidebar-group[aria-expanded='true'] .fi-sidebar-group-button svg,
+.fi-sidebar-group[aria-expanded='true'] .fi-sidebar-group-button > *:last-child,
+.fi-sidebar-group-button[aria-expanded='true'] svg,
+.fi-sidebar-group-button[aria-expanded='true'] > *:last-child {
+    transform: rotate(180deg) !important;
+}
+
+/* --- Table Widget Visibility (Specific for Widgets) --- */
+.fi-wi-table-widget .fi-ta-ctn {
+    background-color: white !important;
+    border: 1px solid rgb(var(--gray-200)) !important;
+    border-radius: 0.75rem !important;
+    box-shadow: var(--shadow-sm) !important;
+    overflow: hidden !important;
+    display: block !important;
+}
+
+.dark .fi-wi-table-widget .fi-ta-ctn {
+    background-color: rgb(var(--gray-900)) !important;
+    border-color: rgb(var(--gray-800)) !important;
+}
+
+.fi-wi-table-widget table {
+    display: table !important;
+    width: 100% !important;
+}
+
+.fi-wi-table-widget .fi-ta-header {
+    display: table-header-group !important;
+    background-color: rgb(var(--gray-50)) !important;
+}
+
+.dark .fi-wi-table-widget .fi-ta-header {
+    background-color: rgb(var(--gray-950)) !important;
+}
+
+.fi-wi-table-widget .fi-ta-header-cell {
+    padding: 0.75rem 1rem !important;
+    font-weight: 600 !important;
+    color: rgb(var(--gray-700)) !important;
+    border-bottom: 2px solid rgb(var(--gray-200)) !important;
+}
+
+.dark .fi-wi-table-widget .fi-ta-header-cell {
+    color: rgb(var(--gray-200)) !important;
+    border-bottom-color: rgb(var(--gray-800)) !important;
+}
+
+.fi-wi-table-widget .fi-ta-cell {
+    padding: 0.75rem 1rem !important;
+    border-bottom: 1px solid rgb(var(--gray-100)) !important;
+}
+
+.dark .fi-wi-table-widget .fi-ta-cell {
+    border-bottom-color: rgb(var(--gray-800)) !important;
+}
+

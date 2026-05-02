@@ -31,10 +31,12 @@ class MySqlProxyConnection extends MySqlConnection
 
     protected ?string $proxySecret;
 
+    protected int $lastInsertId = 0;
+
     public function __construct($pdo, $database = '', $tablePrefix = '', array $config = [])
     {
         parent::__construct($pdo, $database, $tablePrefix, $config);
-        $this->proxyUrl = $config['proxy_url'] ?? null;
+        $this->proxyUrl    = $config['proxy_url'] ?? null;
         $this->proxySecret = $config['proxy_secret'] ?? null;
     }
 
@@ -45,25 +47,34 @@ class MySqlProxyConnection extends MySqlConnection
 
     public function select($query, $bindings = [], $useReadPdo = true): array
     {
+        // Jangan cache query yang berkaitan dengan auth/session — data harus selalu fresh
+        $skipCachePatterns = ['users', 'sessions', 'personal_access_tokens', 'model_has_roles', 'roles'];
+        $shouldCache = true;
+        foreach ($skipCachePatterns as $pattern) {
+            if (stripos($query, $pattern) !== false) {
+                $shouldCache = false;
+                break;
+            }
+        }
+
         $cacheKey = md5($query.serialize($bindings));
 
-        if (isset(static::$queryCache[$cacheKey])) {
+        if ($shouldCache && isset(static::$queryCache[$cacheKey])) {
             return static::$queryCache[$cacheKey];
         }
 
         $result = $this->runProxy('select', $query, $bindings);
 
-        // Ensure result is an array before processing
         if (! is_array($result)) {
             Log::warning('[MySqlProxy] Select returned non-array result for query: '.$query);
-
             return [];
         }
 
-        // Proxy returns JSON array of plain objects — cast each row to stdClass
         $rows = array_map(fn ($row) => (object) (array) $row, $result);
 
-        static::$queryCache[$cacheKey] = $rows;
+        if ($shouldCache) {
+            static::$queryCache[$cacheKey] = $rows;
+        }
 
         return $rows;
     }
@@ -79,7 +90,14 @@ class MySqlProxyConnection extends MySqlConnection
     {
         $this->clearQueryCache();
 
-        return (bool) $this->runProxy('insert', $query, $bindings);
+        $result = $this->runProxy('insert', $query, $bindings);
+
+        // Store last insert ID jika proxy mengembalikannya
+        if (is_array($result) && isset($result['last_insert_id'])) {
+            $this->lastInsertId = (int) $result['last_insert_id'];
+        }
+
+        return is_array($result) ? ($result['success'] ?? true) : (bool) $result;
     }
 
     public function update($query, $bindings = []): int
@@ -133,6 +151,14 @@ class MySqlProxyConnection extends MySqlConnection
         return $this->getPdo();
     }
 
+    /**
+     * Return the last insert ID dari INSERT yang terakhir dijalankan via proxy.
+     */
+    public function lastInsertId(): int
+    {
+        return $this->lastInsertId;
+    }
+
     // ── Core Proxy Method ─────────────────────────────────────────────────
 
     /**
@@ -150,16 +176,17 @@ class MySqlProxyConnection extends MySqlConnection
         }
 
         try {
-            // Use concurrent-safe and faster options
-            $response = Http::timeout(10)
-                ->retry(2, 100)
+            // Optimized: shorter timeout, single retry untuk mobile responsiveness
+            $response = Http::timeout(8)
+                ->retry(1, 50)
                 ->withHeaders([
                     'X-DB-PROXY-SECRET' => $this->proxySecret,
-                    'Accept' => 'application/json',
+                    'Accept'            => 'application/json',
+                    'Connection'        => 'keep-alive',
                 ])
                 ->post($this->proxyUrl, [
-                    'method' => $method,
-                    'query' => $query,
+                    'method'   => $method,
+                    'query'    => $query,
                     'bindings' => $bindings,
                 ]);
 

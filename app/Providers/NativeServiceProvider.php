@@ -7,6 +7,8 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Native\Mobile\Network;
+use Native\Mobile\Providers\DeviceServiceProvider;
+use Native\Mobile\Providers\NetworkServiceProvider;
 use Native\Mobile\Providers\SystemServiceProvider;
 use Native\Mobile\System;
 use SRWieZ\NativePHP\Mobile\Screen\ScreenServiceProvider;
@@ -33,18 +35,40 @@ class NativeServiceProvider extends ServiceProvider
             return $result;
         }
 
-        // 1. Explicit NativePHP constant (most reliable)
+        // 1. Explicit NativePHP constant (most reliable — set by NativePHP bootstrapper)
         if (defined('NATIVEPHP_RUNNING') && constant('NATIVEPHP_RUNNING')) {
             return $result = true;
         }
 
-        // 2. Explicit env flag (set in .env or native bootstrap)
+        // 2. Explicit env flag
         if (env('NATIVEPHP_RUNNING') || env('IS_NATIVE_MOBILE')) {
             return $result = true;
         }
 
-        // 3. Heuristic: non-Windows OS with no HTTP client (embedded PHP on device)
-        // CRITICAL: Skip this on CI (GitHub Actions), Unit Tests, Cloud, or Production.
+        // 3. NativePHP sets database.default = 'nativephp' (SQLite) on device
+        //    Check this BEFORE any DB operations to avoid circular dependency
+        $dbDefault = env('DB_CONNECTION', config('database.default', 'sqlite'));
+        if ($dbDefault === 'nativephp' || $dbDefault === 'sqlite') {
+            // Only treat as mobile if also running on Linux/Darwin (device OS)
+            if (PHP_OS_FAMILY === 'Linux' || PHP_OS_FAMILY === 'Darwin') {
+                return $result = true;
+            }
+        }
+
+        // 4. Android WebView User-Agent detection
+        //    NativePHP Android embeds Chromium WebView which sends "wv)" in UA
+        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+        if (! empty($userAgent)) {
+            if (preg_match('/Android.*wv\)/i', $userAgent)) {
+                return $result = true;
+            }
+            // iOS WKWebView
+            if (preg_match('/iPhone|iPad.*Mobile.*Safari/i', $userAgent) && ! str_contains($userAgent, 'CriOS') && ! str_contains($userAgent, 'FxiOS')) {
+                return $result = true;
+            }
+        }
+
+        // 5. Heuristic: non-Windows OS with no HTTP client (embedded PHP CLI server on device)
         $isCI = env('GITHUB_ACTIONS') || app()->runningUnitTests();
         $isCloud = env('LARAVEL_CLOUD') || env('DOCKER_ENV') || env('APP_ENV') === 'production';
 
@@ -81,6 +105,26 @@ class NativeServiceProvider extends ServiceProvider
         }
 
         return $ip = '127.0.0.1';
+    }
+
+    /**
+     * Normalize a URL so it works on the current platform.
+     * On mobile, replaces 127.0.0.1/localhost with the correct host IP.
+     * On web, returns the URL unchanged.
+     */
+    public static function normalizeUrl(string $url): string
+    {
+        if (! self::isNativeMobile()) {
+            return $url;
+        }
+
+        $hostIp = self::mobileHostIp();
+
+        return str_replace(
+            ['http://127.0.0.1', 'http://localhost', 'https://127.0.0.1', 'https://localhost'],
+            ["http://{$hostIp}", "http://{$hostIp}", "https://{$hostIp}", "https://{$hostIp}"],
+            $url
+        );
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -120,11 +164,12 @@ class NativeServiceProvider extends ServiceProvider
 
         // ── 1. RESOLVE HOST IPs ───────────────────────────────────────────
         $hostIp = self::mobileHostIp();           // e.g. 10.0.2.2 (Android)
-        $serverPort = env('NATIVE_SERVER_PORT', 80);  // port Laragon/artisan serve
+        $serverPort = env('NATIVE_SERVER_PORT', 8000);  // port Laragon/artisan serve
 
         $dbHost = env('DB_HOST', '127.0.0.1');
         $reverbHost = env('REVERB_HOST', 'localhost');
         $appUrl = env('APP_URL', 'http://127.0.0.1');
+        $currentHost = parse_url($appUrl, PHP_URL_HOST) ?? '127.0.0.1'; // default agar tidak undefined
 
         // Dynamic Host Detection: If accessed via LAN IP, emulator IP, or ngrok
         if (! app()->runningInConsole() && isset($_SERVER['HTTP_HOST'])) {
@@ -156,6 +201,7 @@ class NativeServiceProvider extends ServiceProvider
             // Rebuild host PC URL to proxy requests to (preserve port if set)
             $parsedUrl = parse_url($appUrl);
             $scheme = $parsedUrl['scheme'] ?? 'http';
+            // Priority: APP_URL port > NATIVE_SERVER_PORT > 8000
             $port = $parsedUrl['port'] ?? $serverPort;
 
             // Only append port if not standard (80 for http, 443 for https)
@@ -172,6 +218,9 @@ class NativeServiceProvider extends ServiceProvider
                 explode(',', env('SANCTUM_STATEFUL_DOMAINS', 'localhost,127.0.0.1')),
                 [$currentHost ?? '']
             )),
+
+            // Session: use file driver on mobile to avoid proxy loop
+            'session.driver' => $isMobile ? 'file' : env('SESSION_DRIVER', 'database'),
 
             // Database
             'database.connections.mysql.host' => $dbHost,
@@ -191,7 +240,7 @@ class NativeServiceProvider extends ServiceProvider
             'services.cbir_api_url' => $isMobile ? str_replace(['127.0.0.1', 'localhost'], $hostIp, env('CBIR_API_URL', 'http://127.0.0.1:5000')) : env('CBIR_API_URL', 'http://127.0.0.1:5000'),
         ];
 
-        $proxyUrl = "{$hostServerUrl}/nativephp-db-proxy";
+        $proxyUrl = "{$hostServerUrl}/api/db-proxy";
 
         if ($isMobile) {
             $runtimeConfig['database.default'] = 'mysql_proxy';
@@ -237,10 +286,32 @@ class NativeServiceProvider extends ServiceProvider
                     error_log('[NativePHP] Database empty. Initializing...');
                     Artisan::call('migrate', ['--force' => true]);
 
-                    Artisan::call('db:seed', ['--class' => 'RolesAndPermissionsSeeder', '--force' => true]);
-                    Artisan::call('db:seed', ['--class' => 'SuperAdminSeeder',           '--force' => true]);
-                    Artisan::call('db:seed', ['--class' => 'WeddingDataSeeder',          '--force' => true]);
-                    Artisan::call('db:seed', ['--class' => 'PaymentMethodSeeder',        '--force' => true]);
+                    // Jalankan semua seeder sama persis seperti DatabaseSeeder::run()
+                    // Urutan penting: roles → admin → organizer → products → packages → banners → articles → terms
+                    $seeders = [
+                        'RolesAndPermissionsSeeder',
+                        'SuperAdminSeeder',
+                        'WeddingOrganizerSeeder',
+                        'ProductSeeder',
+                        'PackageSeeder',
+                        'BannerSeeder',
+                        'ArticleSeeder',
+                        'TermsAndConditionsSeeder',
+                    ];
+
+                    foreach ($seeders as $seeder) {
+                        try {
+                            Artisan::call('db:seed', [
+                                '--class' => "Database\\Seeders\\{$seeder}",
+                                '--force' => true,
+                            ]);
+                            error_log("[NativePHP] Seeder done: {$seeder}");
+                        } catch (\Throwable $e) {
+                            error_log("[NativePHP] Seeder failed ({$seeder}): ".$e->getMessage());
+                            // Lanjut ke seeder berikutnya meski ada yang gagal
+                        }
+                    }
+
                     error_log('[NativePHP] Initialization done.');
                 }
 
@@ -268,6 +339,8 @@ class NativeServiceProvider extends ServiceProvider
         return [
             ScreenServiceProvider::class,
             SystemServiceProvider::class,
+            DeviceServiceProvider::class,
+            NetworkServiceProvider::class,
         ];
     }
 }

@@ -4,6 +4,7 @@ namespace App\Filament\User\Resources;
 
 use App\Filament\User\Pages\MessagesPage;
 use App\Filament\User\Resources\WeddingOrganizerResource\Pages;
+use App\Helpers\NativeNotificationHelper;
 use App\Models\Message;
 use App\Models\WeddingOrganizer;
 use Dotswan\MapPicker\Infolists\MapEntry;
@@ -24,6 +25,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\HtmlString;
 
 class WeddingOrganizerResource extends Resource
 {
@@ -41,9 +43,9 @@ class WeddingOrganizerResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         $count = Message::query()
-            ->whereJsonDoesntContain('read_by', Filament::auth()->id())
+            ->whereJsonDoesntContain('read_by', Filament::auth()->id(), 'and')
             ->where('user_id', '!=', Filament::auth()->id())
-            ->count();
+            ->count('id');
 
         return $count > 0 ? (string) $count : null;
     }
@@ -95,7 +97,7 @@ class WeddingOrganizerResource extends Resource
     {
         return $table
             ->contentGrid([
-                'sm' => 2,
+                'default' => 2,
                 'md' => 3,
                 'lg' => 4,
                 'xl' => 6,
@@ -182,7 +184,8 @@ class WeddingOrganizerResource extends Resource
                                     ->label('')
                                     ->hiddenLabel()
                                     ->weight('bold')
-                                    ->size('3xl'),
+                                    ->size('3xl')
+                                    ->alignCenter(),
 
                                 Grid::make(1)
                                     ->schema([
@@ -193,7 +196,8 @@ class WeddingOrganizerResource extends Resource
                                             ->color('success')
                                             ->icon('heroicon-s-check-badge')
                                             ->getStateUsing(fn ($record) => $record->is_verified ? __('Terverifikasi') : '')
-                                            ->visible(fn ($record) => $record->is_verified),
+                                            ->visible(fn ($record) => $record->is_verified)
+                                            ->alignCenter(),
 
                                         TextEntry::make('city')
                                             ->label('')
@@ -201,7 +205,8 @@ class WeddingOrganizerResource extends Resource
                                             ->formatStateUsing(fn ($state) => __($state))
                                             ->icon('heroicon-m-map-pin')
                                             ->color('gray')
-                                            ->size('sm'),
+                                            ->size('sm')
+                                            ->alignCenter(),
                                     ]),
                             ])->grow(),
 
@@ -216,7 +221,7 @@ class WeddingOrganizerResource extends Resource
                                     ->openUrlInNewTab(false),
                             ])->grow(false),
                         ])
-                            ->extraAttributes(['class' => 'products-center gap-6 p-6']),
+                            ->extraAttributes(['class' => 'items-center gap-6 p-6']),
                     ])
                     ->compact()
                     ->extraAttributes(['class' => 'shadow-md border-gray-100 dark:border-gray-800 rounded-3xl overflow-hidden mb-4']),
@@ -348,20 +353,23 @@ class WeddingOrganizerResource extends Resource
                                     ->schema([
                                         Section::make(__('Saluran Komunikasi'))
                                             ->schema([
-                                                TextEntry::make('whatsapp')
-                                                    ->label(__('WhatsApp'))
-                                                    ->icon('ri-whatsapp-line')
-                                                    ->getStateUsing(fn ($record) => $record->whatsapp ?: ($record->phone ?: '-')),
+                                                Grid::make(3)
+                                                    ->schema([
+                                                        TextEntry::make('whatsapp')
+                                                            ->label(__('WhatsApp'))
+                                                            ->icon('ri-whatsapp-line')
+                                                            ->getStateUsing(fn ($record) => $record->whatsapp ?: ($record->phone ?: '-')),
 
-                                                TextEntry::make('email')
-                                                    ->label(__('Email'))
-                                                    ->icon('heroicon-o-envelope')
-                                                    ->getStateUsing(fn ($record) => $record->email ?: '-'),
+                                                        TextEntry::make('email')
+                                                            ->label(__('Email'))
+                                                            ->icon('heroicon-o-envelope')
+                                                            ->getStateUsing(fn ($record) => $record->email ?: '-'),
 
-                                                TextEntry::make('instagram')
-                                                    ->label(__('Instagram'))
-                                                    ->icon('ri-instagram-line')
-                                                    ->getStateUsing(fn ($record) => $record->instagram ? "@{$record->instagram}" : '-'),
+                                                        TextEntry::make('instagram')
+                                                            ->label(__('Instagram'))
+                                                            ->icon('ri-instagram-line')
+                                                            ->getStateUsing(fn ($record) => $record->instagram ? "@{$record->instagram}" : '-'),
+                                                    ]),
 
                                                 Actions::make([
                                                     Action::make('whatsapp_contact')

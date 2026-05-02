@@ -125,7 +125,6 @@ class CategoryResource extends Resource
                     ->label(__('Slug URL')),
                 Tables\Columns\TextColumn::make('icon')
                     ->label(__('Ikon'))
-
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Dibuat Pada'))

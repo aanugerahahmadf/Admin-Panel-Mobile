@@ -106,13 +106,15 @@ class WeddingOrganizer extends Model implements HasMedia
 
             if ($model->isDirty('address') && $model->address && $isMissingCoords) {
                 try {
-                    $response = Http::withHeaders([
-                        'User-Agent' => 'WeddingOrganizerApp/1.0',
-                    ])->get('https://nominatim.openstreetmap.org/search', [
-                        'q' => $model->address,
-                        'format' => 'json',
-                        'limit' => 1,
-                    ]);
+                    $response = Http::timeout(5)  // Timeout 5 detik agar tidak hang di mobile
+                        ->retry(1, 200, throw: false)
+                        ->withHeaders([
+                            'User-Agent' => 'WeddingOrganizerApp/1.0',
+                        ])->get('https://nominatim.openstreetmap.org/search', [
+                            'q' => $model->address,
+                            'format' => 'json',
+                            'limit' => 1,
+                        ]);
 
                     if ($response->successful() && $json = $response->json()) {
                         if (isset($json[0])) {
@@ -121,8 +123,9 @@ class WeddingOrganizer extends Model implements HasMedia
                             $model->longitude = (float) $result['lon'];
                         }
                     }
-                } catch (\Exception $e) {
-                    // Fail silently
+                } catch (\Throwable $e) {
+                    // Fail silently — geocoding tidak boleh block save operation
+                    \Illuminate\Support\Facades\Log::warning('[WeddingOrganizer] Geocoding failed: '.$e->getMessage());
                 }
             }
         });
@@ -271,7 +274,8 @@ class WeddingOrganizer extends Model implements HasMedia
 
     public function getVideoUrlAttribute(): ?string
     {
-        return $this->getFirstMediaUrl('videos') ?: null;
+        $url = $this->getFirstMediaUrl('videos') ?: null;
+        return $url ? \App\Providers\NativeServiceProvider::normalizeUrl($url) : null;
     }
 
     public function getTotalReviewsAttribute()
@@ -301,10 +305,12 @@ class WeddingOrganizer extends Model implements HasMedia
         }
 
         if (Str::startsWith($url, ['http://', 'https://', 'data:image', '/'])) {
-            return $url;
+            return \App\Providers\NativeServiceProvider::normalizeUrl($url);
         }
 
-        return Storage::disk('public')->url(ltrim($url, '/'));
+        $resolved = Storage::disk('public')->url(ltrim($url, '/'));
+
+        return \App\Providers\NativeServiceProvider::normalizeUrl($resolved);
     }
 
     private function getValidMediaUrl(?Media $media): ?string

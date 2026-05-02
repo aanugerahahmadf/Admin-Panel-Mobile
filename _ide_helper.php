@@ -5,7 +5,7 @@
 
 /**
  * A helper file for Laravel, to provide autocomplete information to your IDE
- * Generated for Laravel 12.56.0.
+ * Generated for Laravel 12.58.0.
  *
  * This file should not be included in your code, only analyzed by your IDE!
  *
@@ -12030,421 +12030,6 @@ namespace Illuminate\Support\Facades {
 
             }
     /**
-     * @see \Illuminate\Notifications\ChannelManager
-     * @see \Illuminate\Support\Testing\Fakes\NotificationFake
-     */
-    class Notification {
-        /**
-         * Send the given notification to the given notifiable entities.
-         *
-         * @param \Illuminate\Support\Collection|mixed $notifiables
-         * @param mixed $notification
-         * @return void
-         * @static
-         */
-        public static function send($notifiables, $notification)
-        {
-            /** @var \Illuminate\Notifications\ChannelManager $instance */
-            $instance->send($notifiables, $notification);
-        }
-
-        /**
-         * Send the given notification immediately.
-         *
-         * @param \Illuminate\Support\Collection|mixed $notifiables
-         * @param mixed $notification
-         * @param array|null $channels
-         * @return void
-         * @static
-         */
-        public static function sendNow($notifiables, $notification, $channels = null)
-        {
-            /** @var \Illuminate\Notifications\ChannelManager $instance */
-            $instance->sendNow($notifiables, $notification, $channels);
-        }
-
-        /**
-         * Get a channel instance.
-         *
-         * @param string|null $name
-         * @return mixed
-         * @static
-         */
-        public static function channel($name = null)
-        {
-            /** @var \Illuminate\Notifications\ChannelManager $instance */
-            return $instance->channel($name);
-        }
-
-        /**
-         * Get the default channel driver name.
-         *
-         * @return string
-         * @static
-         */
-        public static function getDefaultDriver()
-        {
-            /** @var \Illuminate\Notifications\ChannelManager $instance */
-            return $instance->getDefaultDriver();
-        }
-
-        /**
-         * Get the default channel driver name.
-         *
-         * @return string
-         * @static
-         */
-        public static function deliversVia()
-        {
-            /** @var \Illuminate\Notifications\ChannelManager $instance */
-            return $instance->deliversVia();
-        }
-
-        /**
-         * Set the default channel driver name.
-         *
-         * @param string $channel
-         * @return void
-         * @static
-         */
-        public static function deliverVia($channel)
-        {
-            /** @var \Illuminate\Notifications\ChannelManager $instance */
-            $instance->deliverVia($channel);
-        }
-
-        /**
-         * Set the locale of notifications.
-         *
-         * @param string $locale
-         * @return \Illuminate\Notifications\ChannelManager
-         * @static
-         */
-        public static function locale($locale)
-        {
-            /** @var \Illuminate\Notifications\ChannelManager $instance */
-            return $instance->locale($locale);
-        }
-
-        /**
-         * Register a custom macro.
-         *
-         * @param string $name
-         * @param object|callable $macro
-         * @param-closure-this static  $macro
-         * @return void
-         * @static
-         */
-        public static function macro($name, $macro)
-        {
-            \Illuminate\Notifications\ChannelManager::macro($name, $macro);
-        }
-
-        /**
-         * Mix another object into the class.
-         *
-         * @param object $mixin
-         * @param bool $replace
-         * @return void
-         * @throws \ReflectionException
-         * @static
-         */
-        public static function mixin($mixin, $replace = true)
-        {
-            \Illuminate\Notifications\ChannelManager::mixin($mixin, $replace);
-        }
-
-        /**
-         * Checks if macro is registered.
-         *
-         * @param string $name
-         * @return bool
-         * @static
-         */
-        public static function hasMacro($name)
-        {
-            return \Illuminate\Notifications\ChannelManager::hasMacro($name);
-        }
-
-        /**
-         * Flush the existing macros.
-         *
-         * @return void
-         * @static
-         */
-        public static function flushMacros()
-        {
-            \Illuminate\Notifications\ChannelManager::flushMacros();
-        }
-
-        /**
-         * Get a driver instance.
-         *
-         * @param string|null $driver
-         * @return mixed
-         * @throws \InvalidArgumentException
-         * @static
-         */
-        public static function driver($driver = null)
-        {
-            //Method inherited from \Illuminate\Support\Manager 
-            /** @var \Illuminate\Notifications\ChannelManager $instance */
-            return $instance->driver($driver);
-        }
-
-        /**
-         * Register a custom driver creator Closure.
-         *
-         * @param string $driver
-         * @param \Closure $callback
-         * @return \Illuminate\Notifications\ChannelManager
-         * @static
-         */
-        public static function extend($driver, $callback)
-        {
-            //Method inherited from \Illuminate\Support\Manager 
-            /** @var \Illuminate\Notifications\ChannelManager $instance */
-            return $instance->extend($driver, $callback);
-        }
-
-        /**
-         * Get all of the created "drivers".
-         *
-         * @return array
-         * @static
-         */
-        public static function getDrivers()
-        {
-            //Method inherited from \Illuminate\Support\Manager 
-            /** @var \Illuminate\Notifications\ChannelManager $instance */
-            return $instance->getDrivers();
-        }
-
-        /**
-         * Get the container instance used by the manager.
-         *
-         * @return \Illuminate\Contracts\Container\Container
-         * @static
-         */
-        public static function getContainer()
-        {
-            //Method inherited from \Illuminate\Support\Manager 
-            /** @var \Illuminate\Notifications\ChannelManager $instance */
-            return $instance->getContainer();
-        }
-
-        /**
-         * Set the container instance used by the manager.
-         *
-         * @param \Illuminate\Contracts\Container\Container $container
-         * @return \Illuminate\Notifications\ChannelManager
-         * @static
-         */
-        public static function setContainer($container)
-        {
-            //Method inherited from \Illuminate\Support\Manager 
-            /** @var \Illuminate\Notifications\ChannelManager $instance */
-            return $instance->setContainer($container);
-        }
-
-        /**
-         * Forget all of the resolved driver instances.
-         *
-         * @return \Illuminate\Notifications\ChannelManager
-         * @static
-         */
-        public static function forgetDrivers()
-        {
-            //Method inherited from \Illuminate\Support\Manager 
-            /** @var \Illuminate\Notifications\ChannelManager $instance */
-            return $instance->forgetDrivers();
-        }
-
-        /**
-         * Assert if a notification was sent on-demand based on a truth-test callback.
-         *
-         * @param string|\Closure $notification
-         * @param callable|null $callback
-         * @return void
-         * @throws \Exception
-         * @static
-         */
-        public static function assertSentOnDemand($notification, $callback = null)
-        {
-            /** @var \Illuminate\Support\Testing\Fakes\NotificationFake $instance */
-            $instance->assertSentOnDemand($notification, $callback);
-        }
-
-        /**
-         * Assert if a notification was sent based on a truth-test callback.
-         *
-         * @param mixed $notifiable
-         * @param string|\Closure $notification
-         * @param callable|null $callback
-         * @return void
-         * @throws \Exception
-         * @static
-         */
-        public static function assertSentTo($notifiable, $notification, $callback = null)
-        {
-            /** @var \Illuminate\Support\Testing\Fakes\NotificationFake $instance */
-            $instance->assertSentTo($notifiable, $notification, $callback);
-        }
-
-        /**
-         * Assert if a notification was sent on-demand a number of times.
-         *
-         * @param string $notification
-         * @param int $times
-         * @return void
-         * @static
-         */
-        public static function assertSentOnDemandTimes($notification, $times = 1)
-        {
-            /** @var \Illuminate\Support\Testing\Fakes\NotificationFake $instance */
-            $instance->assertSentOnDemandTimes($notification, $times);
-        }
-
-        /**
-         * Assert if a notification was sent a number of times.
-         *
-         * @param mixed $notifiable
-         * @param string $notification
-         * @param int $times
-         * @return void
-         * @static
-         */
-        public static function assertSentToTimes($notifiable, $notification, $times = 1)
-        {
-            /** @var \Illuminate\Support\Testing\Fakes\NotificationFake $instance */
-            $instance->assertSentToTimes($notifiable, $notification, $times);
-        }
-
-        /**
-         * Determine if a notification was sent based on a truth-test callback.
-         *
-         * @param mixed $notifiable
-         * @param string|\Closure $notification
-         * @param callable|null $callback
-         * @return void
-         * @throws \Exception
-         * @static
-         */
-        public static function assertNotSentTo($notifiable, $notification, $callback = null)
-        {
-            /** @var \Illuminate\Support\Testing\Fakes\NotificationFake $instance */
-            $instance->assertNotSentTo($notifiable, $notification, $callback);
-        }
-
-        /**
-         * Assert that no notifications were sent.
-         *
-         * @return void
-         * @static
-         */
-        public static function assertNothingSent()
-        {
-            /** @var \Illuminate\Support\Testing\Fakes\NotificationFake $instance */
-            $instance->assertNothingSent();
-        }
-
-        /**
-         * Assert that no notifications were sent to the given notifiable.
-         *
-         * @param mixed $notifiable
-         * @return void
-         * @throws \Exception
-         * @static
-         */
-        public static function assertNothingSentTo($notifiable)
-        {
-            /** @var \Illuminate\Support\Testing\Fakes\NotificationFake $instance */
-            $instance->assertNothingSentTo($notifiable);
-        }
-
-        /**
-         * Assert the total amount of times a notification was sent.
-         *
-         * @param string $notification
-         * @param int $expectedCount
-         * @return void
-         * @static
-         */
-        public static function assertSentTimes($notification, $expectedCount)
-        {
-            /** @var \Illuminate\Support\Testing\Fakes\NotificationFake $instance */
-            $instance->assertSentTimes($notification, $expectedCount);
-        }
-
-        /**
-         * Assert the total count of notification that were sent.
-         *
-         * @param int $expectedCount
-         * @return void
-         * @static
-         */
-        public static function assertCount($expectedCount)
-        {
-            /** @var \Illuminate\Support\Testing\Fakes\NotificationFake $instance */
-            $instance->assertCount($expectedCount);
-        }
-
-        /**
-         * Get all of the notifications matching a truth-test callback.
-         *
-         * @param mixed $notifiable
-         * @param string $notification
-         * @param callable|null $callback
-         * @return \Illuminate\Support\Collection
-         * @static
-         */
-        public static function sent($notifiable, $notification, $callback = null)
-        {
-            /** @var \Illuminate\Support\Testing\Fakes\NotificationFake $instance */
-            return $instance->sent($notifiable, $notification, $callback);
-        }
-
-        /**
-         * Determine if there are more notifications left to inspect.
-         *
-         * @param mixed $notifiable
-         * @param string $notification
-         * @return bool
-         * @static
-         */
-        public static function hasSent($notifiable, $notification)
-        {
-            /** @var \Illuminate\Support\Testing\Fakes\NotificationFake $instance */
-            return $instance->hasSent($notifiable, $notification);
-        }
-
-        /**
-         * Specify if notification should be serialized and restored when being "pushed" to the queue.
-         *
-         * @param bool $serializeAndRestore
-         * @return \Illuminate\Support\Testing\Fakes\NotificationFake
-         * @static
-         */
-        public static function serializeAndRestore($serializeAndRestore = true)
-        {
-            /** @var \Illuminate\Support\Testing\Fakes\NotificationFake $instance */
-            return $instance->serializeAndRestore($serializeAndRestore);
-        }
-
-        /**
-         * Get the notifications that have been sent.
-         *
-         * @return array
-         * @static
-         */
-        public static function sentNotifications()
-        {
-            /** @var \Illuminate\Support\Testing\Fakes\NotificationFake $instance */
-            return $instance->sentNotifications();
-        }
-
-            }
-    /**
      * @method static string sendResetLink(array $credentials, \Closure|null $callback = null)
      * @method static mixed reset(array $credentials, \Closure $callback)
      * @method static \Illuminate\Contracts\Auth\CanResetPassword|null getUser(array $credentials)
@@ -12493,329 +12078,6 @@ namespace Illuminate\Support\Facades {
         {
             /** @var \Illuminate\Auth\Passwords\PasswordBrokerManager $instance */
             $instance->setDefaultDriver($name);
-        }
-
-            }
-    /**
-     * @method static \Illuminate\Process\PendingProcess command(array|string $command)
-     * @method static \Illuminate\Process\PendingProcess path(string $path)
-     * @method static \Illuminate\Process\PendingProcess timeout(int $timeout)
-     * @method static \Illuminate\Process\PendingProcess idleTimeout(int $timeout)
-     * @method static \Illuminate\Process\PendingProcess forever()
-     * @method static \Illuminate\Process\PendingProcess env(array $environment)
-     * @method static \Illuminate\Process\PendingProcess input(\Traversable|resource|string|int|float|bool|null $input)
-     * @method static \Illuminate\Process\PendingProcess quietly()
-     * @method static \Illuminate\Process\PendingProcess tty(bool $tty = true)
-     * @method static \Illuminate\Process\PendingProcess options(array $options)
-     * @method static \Illuminate\Contracts\Process\ProcessResult run(array|string|null $command = null, callable|null $output = null)
-     * @method static \Illuminate\Process\InvokedProcess start(array|string|null $command = null, callable|null $output = null)
-     * @method static bool supportsTty()
-     * @method static \Illuminate\Process\PendingProcess withFakeHandlers(array $fakeHandlers)
-     * @method static \Illuminate\Process\PendingProcess|mixed when(\Closure|mixed|null $value = null, callable|null $callback = null, callable|null $default = null)
-     * @method static \Illuminate\Process\PendingProcess|mixed unless(\Closure|mixed|null $value = null, callable|null $callback = null, callable|null $default = null)
-     * @see \Illuminate\Process\PendingProcess
-     * @see \Illuminate\Process\Factory
-     */
-    class Process {
-        /**
-         * Create a new fake process response for testing purposes.
-         *
-         * @param array|string $output
-         * @param array|string $errorOutput
-         * @param int $exitCode
-         * @return \Illuminate\Process\FakeProcessResult
-         * @static
-         */
-        public static function result($output = '', $errorOutput = '', $exitCode = 0)
-        {
-            /** @var \Illuminate\Process\Factory $instance */
-            return $instance->result($output, $errorOutput, $exitCode);
-        }
-
-        /**
-         * Begin describing a fake process lifecycle.
-         *
-         * @return \Illuminate\Process\FakeProcessDescription
-         * @static
-         */
-        public static function describe()
-        {
-            /** @var \Illuminate\Process\Factory $instance */
-            return $instance->describe();
-        }
-
-        /**
-         * Begin describing a fake process sequence.
-         *
-         * @param array $processes
-         * @return \Illuminate\Process\FakeProcessSequence
-         * @static
-         */
-        public static function sequence($processes = [])
-        {
-            /** @var \Illuminate\Process\Factory $instance */
-            return $instance->sequence($processes);
-        }
-
-        /**
-         * Indicate that the process factory should fake processes.
-         *
-         * @param \Closure|array|null $callback
-         * @return \Illuminate\Process\Factory
-         * @static
-         */
-        public static function fake($callback = null)
-        {
-            /** @var \Illuminate\Process\Factory $instance */
-            return $instance->fake($callback);
-        }
-
-        /**
-         * Determine if the process factory has fake process handlers and is recording processes.
-         *
-         * @return bool
-         * @static
-         */
-        public static function isRecording()
-        {
-            /** @var \Illuminate\Process\Factory $instance */
-            return $instance->isRecording();
-        }
-
-        /**
-         * Record the given process if processes should be recorded.
-         *
-         * @param \Illuminate\Process\PendingProcess $process
-         * @param \Illuminate\Contracts\Process\ProcessResult $result
-         * @return \Illuminate\Process\Factory
-         * @static
-         */
-        public static function recordIfRecording($process, $result)
-        {
-            /** @var \Illuminate\Process\Factory $instance */
-            return $instance->recordIfRecording($process, $result);
-        }
-
-        /**
-         * Record the given process.
-         *
-         * @param \Illuminate\Process\PendingProcess $process
-         * @param \Illuminate\Contracts\Process\ProcessResult $result
-         * @return \Illuminate\Process\Factory
-         * @static
-         */
-        public static function record($process, $result)
-        {
-            /** @var \Illuminate\Process\Factory $instance */
-            return $instance->record($process, $result);
-        }
-
-        /**
-         * Indicate that an exception should be thrown if any process is not faked.
-         *
-         * @param bool $prevent
-         * @return \Illuminate\Process\Factory
-         * @static
-         */
-        public static function preventStrayProcesses($prevent = true)
-        {
-            /** @var \Illuminate\Process\Factory $instance */
-            return $instance->preventStrayProcesses($prevent);
-        }
-
-        /**
-         * Determine if stray processes are being prevented.
-         *
-         * @return bool
-         * @static
-         */
-        public static function preventingStrayProcesses()
-        {
-            /** @var \Illuminate\Process\Factory $instance */
-            return $instance->preventingStrayProcesses();
-        }
-
-        /**
-         * Assert that a process was recorded matching a given truth test.
-         *
-         * @param \Closure|string $callback
-         * @return \Illuminate\Process\Factory
-         * @static
-         */
-        public static function assertRan($callback)
-        {
-            /** @var \Illuminate\Process\Factory $instance */
-            return $instance->assertRan($callback);
-        }
-
-        /**
-         * Assert that a process was recorded a given number of times matching a given truth test.
-         *
-         * @param \Closure|string $callback
-         * @param int $times
-         * @return \Illuminate\Process\Factory
-         * @static
-         */
-        public static function assertRanTimes($callback, $times = 1)
-        {
-            /** @var \Illuminate\Process\Factory $instance */
-            return $instance->assertRanTimes($callback, $times);
-        }
-
-        /**
-         * Assert that a process was not recorded matching a given truth test.
-         *
-         * @param \Closure|string $callback
-         * @return \Illuminate\Process\Factory
-         * @static
-         */
-        public static function assertNotRan($callback)
-        {
-            /** @var \Illuminate\Process\Factory $instance */
-            return $instance->assertNotRan($callback);
-        }
-
-        /**
-         * Assert that a process was not recorded matching a given truth test.
-         *
-         * @param \Closure|string $callback
-         * @return \Illuminate\Process\Factory
-         * @static
-         */
-        public static function assertDidntRun($callback)
-        {
-            /** @var \Illuminate\Process\Factory $instance */
-            return $instance->assertDidntRun($callback);
-        }
-
-        /**
-         * Assert that no processes were recorded.
-         *
-         * @return \Illuminate\Process\Factory
-         * @static
-         */
-        public static function assertNothingRan()
-        {
-            /** @var \Illuminate\Process\Factory $instance */
-            return $instance->assertNothingRan();
-        }
-
-        /**
-         * Start defining a pool of processes.
-         *
-         * @param callable $callback
-         * @return \Illuminate\Process\Pool
-         * @static
-         */
-        public static function pool($callback)
-        {
-            /** @var \Illuminate\Process\Factory $instance */
-            return $instance->pool($callback);
-        }
-
-        /**
-         * Start defining a series of piped processes.
-         *
-         * @param callable|array $callback
-         * @return \Illuminate\Contracts\Process\ProcessResult
-         * @static
-         */
-        public static function pipe($callback, $output = null)
-        {
-            /** @var \Illuminate\Process\Factory $instance */
-            return $instance->pipe($callback, $output);
-        }
-
-        /**
-         * Run a pool of processes and wait for them to finish executing.
-         *
-         * @param callable $callback
-         * @param callable|null $output
-         * @return \Illuminate\Process\ProcessPoolResults
-         * @static
-         */
-        public static function concurrently($callback, $output = null)
-        {
-            /** @var \Illuminate\Process\Factory $instance */
-            return $instance->concurrently($callback, $output);
-        }
-
-        /**
-         * Create a new pending process associated with this factory.
-         *
-         * @return \Illuminate\Process\PendingProcess
-         * @static
-         */
-        public static function newPendingProcess()
-        {
-            /** @var \Illuminate\Process\Factory $instance */
-            return $instance->newPendingProcess();
-        }
-
-        /**
-         * Register a custom macro.
-         *
-         * @param string $name
-         * @param object|callable $macro
-         * @param-closure-this static  $macro
-         * @return void
-         * @static
-         */
-        public static function macro($name, $macro)
-        {
-            \Illuminate\Process\Factory::macro($name, $macro);
-        }
-
-        /**
-         * Mix another object into the class.
-         *
-         * @param object $mixin
-         * @param bool $replace
-         * @return void
-         * @throws \ReflectionException
-         * @static
-         */
-        public static function mixin($mixin, $replace = true)
-        {
-            \Illuminate\Process\Factory::mixin($mixin, $replace);
-        }
-
-        /**
-         * Checks if macro is registered.
-         *
-         * @param string $name
-         * @return bool
-         * @static
-         */
-        public static function hasMacro($name)
-        {
-            return \Illuminate\Process\Factory::hasMacro($name);
-        }
-
-        /**
-         * Flush the existing macros.
-         *
-         * @return void
-         * @static
-         */
-        public static function flushMacros()
-        {
-            \Illuminate\Process\Factory::flushMacros();
-        }
-
-        /**
-         * Dynamically handle calls to the class.
-         *
-         * @param string $method
-         * @param array $parameters
-         * @return mixed
-         * @throws \BadMethodCallException
-         * @static
-         */
-        public static function macroCall($method, $parameters)
-        {
-            /** @var \Illuminate\Process\Factory $instance */
-            return $instance->macroCall($method, $parameters);
         }
 
             }
@@ -13566,89 +12828,6 @@ namespace Illuminate\Support\Facades {
         }
 
         /**
-         * Release a reserved job back onto the queue after (n) seconds.
-         *
-         * @param string $queue
-         * @param \Illuminate\Queue\Jobs\DatabaseJobRecord $job
-         * @param int $delay
-         * @return mixed
-         * @static
-         */
-        public static function release($queue, $job, $delay)
-        {
-            /** @var \Illuminate\Queue\DatabaseQueue $instance */
-            return $instance->release($queue, $job, $delay);
-        }
-
-        /**
-         * Delete a reserved job from the queue.
-         *
-         * @param string $queue
-         * @param string $id
-         * @return void
-         * @throws \Throwable
-         * @static
-         */
-        public static function deleteReserved($queue, $id)
-        {
-            /** @var \Illuminate\Queue\DatabaseQueue $instance */
-            $instance->deleteReserved($queue, $id);
-        }
-
-        /**
-         * Delete a reserved job from the reserved queue and release it.
-         *
-         * @param string $queue
-         * @param \Illuminate\Queue\Jobs\DatabaseJob $job
-         * @param int $delay
-         * @return void
-         * @static
-         */
-        public static function deleteAndRelease($queue, $job, $delay)
-        {
-            /** @var \Illuminate\Queue\DatabaseQueue $instance */
-            $instance->deleteAndRelease($queue, $job, $delay);
-        }
-
-        /**
-         * Delete all of the jobs from the queue.
-         *
-         * @param string $queue
-         * @return int
-         * @static
-         */
-        public static function clear($queue)
-        {
-            /** @var \Illuminate\Queue\DatabaseQueue $instance */
-            return $instance->clear($queue);
-        }
-
-        /**
-         * Get the queue or return the default.
-         *
-         * @param string|null $queue
-         * @return string
-         * @static
-         */
-        public static function getQueue($queue)
-        {
-            /** @var \Illuminate\Queue\DatabaseQueue $instance */
-            return $instance->getQueue($queue);
-        }
-
-        /**
-         * Get the underlying database instance.
-         *
-         * @return \Illuminate\Database\Connection
-         * @static
-         */
-        public static function getDatabase()
-        {
-            /** @var \Illuminate\Queue\DatabaseQueue $instance */
-            return $instance->getDatabase();
-        }
-
-        /**
          * Get the maximum number of attempts for an object-based queue handler.
          *
          * @param mixed $job
@@ -13658,7 +12837,7 @@ namespace Illuminate\Support\Facades {
         public static function getJobTries($job)
         {
             //Method inherited from \Illuminate\Queue\Queue 
-            /** @var \Illuminate\Queue\DatabaseQueue $instance */
+            /** @var \Illuminate\Queue\SyncQueue $instance */
             return $instance->getJobTries($job);
         }
 
@@ -13672,7 +12851,7 @@ namespace Illuminate\Support\Facades {
         public static function getJobBackoff($job)
         {
             //Method inherited from \Illuminate\Queue\Queue 
-            /** @var \Illuminate\Queue\DatabaseQueue $instance */
+            /** @var \Illuminate\Queue\SyncQueue $instance */
             return $instance->getJobBackoff($job);
         }
 
@@ -13686,7 +12865,7 @@ namespace Illuminate\Support\Facades {
         public static function getJobExpiration($job)
         {
             //Method inherited from \Illuminate\Queue\Queue 
-            /** @var \Illuminate\Queue\DatabaseQueue $instance */
+            /** @var \Illuminate\Queue\SyncQueue $instance */
             return $instance->getJobExpiration($job);
         }
 
@@ -13700,7 +12879,7 @@ namespace Illuminate\Support\Facades {
         public static function createPayloadUsing($callback)
         {
             //Method inherited from \Illuminate\Queue\Queue 
-            \Illuminate\Queue\DatabaseQueue::createPayloadUsing($callback);
+            \Illuminate\Queue\SyncQueue::createPayloadUsing($callback);
         }
 
         /**
@@ -13712,7 +12891,7 @@ namespace Illuminate\Support\Facades {
         public static function getConfig()
         {
             //Method inherited from \Illuminate\Queue\Queue 
-            /** @var \Illuminate\Queue\DatabaseQueue $instance */
+            /** @var \Illuminate\Queue\SyncQueue $instance */
             return $instance->getConfig();
         }
 
@@ -13720,13 +12899,13 @@ namespace Illuminate\Support\Facades {
          * Set the queue configuration array.
          *
          * @param array $config
-         * @return \Illuminate\Queue\DatabaseQueue
+         * @return \Illuminate\Queue\SyncQueue
          * @static
          */
         public static function setConfig($config)
         {
             //Method inherited from \Illuminate\Queue\Queue 
-            /** @var \Illuminate\Queue\DatabaseQueue $instance */
+            /** @var \Illuminate\Queue\SyncQueue $instance */
             return $instance->setConfig($config);
         }
 
@@ -13739,7 +12918,7 @@ namespace Illuminate\Support\Facades {
         public static function getContainer()
         {
             //Method inherited from \Illuminate\Queue\Queue 
-            /** @var \Illuminate\Queue\DatabaseQueue $instance */
+            /** @var \Illuminate\Queue\SyncQueue $instance */
             return $instance->getContainer();
         }
 
@@ -13753,7 +12932,7 @@ namespace Illuminate\Support\Facades {
         public static function setContainer($container)
         {
             //Method inherited from \Illuminate\Queue\Queue 
-            /** @var \Illuminate\Queue\DatabaseQueue $instance */
+            /** @var \Illuminate\Queue\SyncQueue $instance */
             $instance->setContainer($container);
         }
 
@@ -20738,6 +19917,7 @@ namespace Illuminate\Support\Facades {
          * @param array $headers
          * @param string|null $disposition
          * @return \Symfony\Component\HttpFoundation\StreamedResponse
+         * @throws UnableToRetrieveMetadata
          * @static
          */
         public static function response($path, $name = null, $headers = [], $disposition = 'inline')
@@ -20755,6 +19935,7 @@ namespace Illuminate\Support\Facades {
          * @param string|null $name
          * @param array $headers
          * @return \Symfony\Component\HttpFoundation\StreamedResponse
+         * @throws UnableToRetrieveMetadata
          * @static
          */
         public static function serve($request, $path, $name = null, $headers = [])
@@ -20771,6 +19952,7 @@ namespace Illuminate\Support\Facades {
          * @param string|null $name
          * @param array $headers
          * @return \Symfony\Component\HttpFoundation\StreamedResponse
+         * @throws UnableToRetrieveMetadata
          * @static
          */
         public static function download($path, $name = null, $headers = [])
@@ -20969,6 +20151,7 @@ namespace Illuminate\Support\Facades {
          *
          * @param string $path
          * @return string|false
+         * @throws UnableToRetrieveMetadata
          * @static
          */
         public static function mimeType($path)
@@ -23546,6 +22729,1075 @@ namespace Illuminate\Support\Facades {
             }
     }
 
+namespace Native\Laravel\Facades {
+    /**
+     */
+    class Notification {
+        /**
+         * @static
+         */
+        public static function new()
+        {
+            return \Native\Laravel\Notification::new();
+        }
+
+        /**
+         * @static
+         */
+        public static function reference($reference)
+        {
+            /** @var \Native\Laravel\Notification $instance */
+            return $instance->reference($reference);
+        }
+
+        /**
+         * @static
+         */
+        public static function title($title)
+        {
+            /** @var \Native\Laravel\Notification $instance */
+            return $instance->title($title);
+        }
+
+        /**
+         * @static
+         */
+        public static function event($event)
+        {
+            /** @var \Native\Laravel\Notification $instance */
+            return $instance->event($event);
+        }
+
+        /**
+         * @static
+         */
+        public static function hasReply($placeholder = '')
+        {
+            /** @var \Native\Laravel\Notification $instance */
+            return $instance->hasReply($placeholder);
+        }
+
+        /**
+         * @static
+         */
+        public static function addAction($label)
+        {
+            /** @var \Native\Laravel\Notification $instance */
+            return $instance->addAction($label);
+        }
+
+        /**
+         * @static
+         */
+        public static function message($body)
+        {
+            /** @var \Native\Laravel\Notification $instance */
+            return $instance->message($body);
+        }
+
+        /**
+         * @static
+         */
+        public static function show()
+        {
+            /** @var \Native\Laravel\Notification $instance */
+            return $instance->show();
+        }
+
+            }
+    /**
+     */
+    class Process {
+        /**
+         * @static
+         */
+        public static function arch()
+        {
+            /** @var \Native\Laravel\Process $instance */
+            return $instance->arch();
+        }
+
+        /**
+         * @static
+         */
+        public static function platform()
+        {
+            /** @var \Native\Laravel\Process $instance */
+            return $instance->platform();
+        }
+
+        /**
+         * @static
+         */
+        public static function uptime()
+        {
+            /** @var \Native\Laravel\Process $instance */
+            return $instance->uptime();
+        }
+
+        /**
+         * @static
+         */
+        public static function fresh()
+        {
+            /** @var \Native\Laravel\Process $instance */
+            return $instance->fresh();
+        }
+
+            }
+    /**
+     */
+    class Dock {
+        /**
+         * @static
+         */
+        public static function menu($menu)
+        {
+            /** @var \Native\Laravel\Dock $instance */
+            return $instance->menu($menu);
+        }
+
+        /**
+         * @static
+         */
+        public static function show()
+        {
+            /** @var \Native\Laravel\Dock $instance */
+            return $instance->show();
+        }
+
+        /**
+         * @static
+         */
+        public static function hide()
+        {
+            /** @var \Native\Laravel\Dock $instance */
+            return $instance->hide();
+        }
+
+        /**
+         * @static
+         */
+        public static function icon($path)
+        {
+            /** @var \Native\Laravel\Dock $instance */
+            return $instance->icon($path);
+        }
+
+        /**
+         * @static
+         */
+        public static function bounce($type = 'informational')
+        {
+            /** @var \Native\Laravel\Dock $instance */
+            return $instance->bounce($type);
+        }
+
+        /**
+         * @static
+         */
+        public static function cancelBounce()
+        {
+            /** @var \Native\Laravel\Dock $instance */
+            return $instance->cancelBounce();
+        }
+
+        /**
+         * @static
+         */
+        public static function badge($label = null)
+        {
+            /** @var \Native\Laravel\Dock $instance */
+            return $instance->badge($label);
+        }
+
+            }
+    /**
+     */
+    class Shell {
+        /**
+         * @static
+         */
+        public static function showInFolder($path)
+        {
+            /** @var \Native\Laravel\Shell $instance */
+            return $instance->showInFolder($path);
+        }
+
+        /**
+         * @static
+         */
+        public static function openFile($path)
+        {
+            /** @var \Native\Laravel\Shell $instance */
+            return $instance->openFile($path);
+        }
+
+        /**
+         * @static
+         */
+        public static function trashFile($path)
+        {
+            /** @var \Native\Laravel\Shell $instance */
+            return $instance->trashFile($path);
+        }
+
+        /**
+         * @static
+         */
+        public static function openExternal($url)
+        {
+            /** @var \Native\Laravel\Shell $instance */
+            return $instance->openExternal($url);
+        }
+
+            }
+    /**
+     */
+    class System {
+        /**
+         * @static
+         */
+        public static function canPromptTouchID()
+        {
+            /** @var \Native\Laravel\System $instance */
+            return $instance->canPromptTouchID();
+        }
+
+        /**
+         * @static
+         */
+        public static function promptTouchID($reason)
+        {
+            /** @var \Native\Laravel\System $instance */
+            return $instance->promptTouchID($reason);
+        }
+
+        /**
+         * @static
+         */
+        public static function canEncrypt()
+        {
+            /** @var \Native\Laravel\System $instance */
+            return $instance->canEncrypt();
+        }
+
+        /**
+         * @static
+         */
+        public static function encrypt($string)
+        {
+            /** @var \Native\Laravel\System $instance */
+            return $instance->encrypt($string);
+        }
+
+        /**
+         * @static
+         */
+        public static function decrypt($string)
+        {
+            /** @var \Native\Laravel\System $instance */
+            return $instance->decrypt($string);
+        }
+
+        /**
+         * @return array<\Native\Laravel\DataObjects\Printer>
+         * @static
+         */
+        public static function printers()
+        {
+            /** @var \Native\Laravel\System $instance */
+            return $instance->printers();
+        }
+
+        /**
+         * For $settings options, see https://www.electronjs.org/docs/latest/api/web-contents#contentsprintoptions-callback
+         *
+         * @static
+         */
+        public static function print($html, $printer = null, $settings = [])
+        {
+            /** @var \Native\Laravel\System $instance */
+            return $instance->print($html, $printer, $settings);
+        }
+
+        /**
+         * For $settings options, see https://www.electronjs.org/docs/latest/api/web-contents#contentsprinttopdfoptions
+         *
+         * @static
+         */
+        public static function printToPDF($html, $settings = [])
+        {
+            /** @var \Native\Laravel\System $instance */
+            return $instance->printToPDF($html, $settings);
+        }
+
+        /**
+         * @static
+         */
+        public static function timezone()
+        {
+            /** @var \Native\Laravel\System $instance */
+            return $instance->timezone();
+        }
+
+        /**
+         * @static
+         */
+        public static function theme($theme = null)
+        {
+            /** @var \Native\Laravel\System $instance */
+            return $instance->theme($theme);
+        }
+
+            }
+    /**
+     * @method static void zoomFactor(float $zoomFactor = 1.0)
+     * @method static void preventLeaveDomain(bool $preventLeaveDomain = true)
+     * @method static void preventLeavePage(bool $preventLeavePage = true): self
+     * @method static void suppressNewWindows()
+     */
+    class Window {
+        /**
+         * @static
+         */
+        public static function open($id = 'main')
+        {
+            /** @var \Native\Laravel\Windows\WindowManager $instance */
+            return $instance->open($id);
+        }
+
+        /**
+         * @static
+         */
+        public static function close($id = null)
+        {
+            /** @var \Native\Laravel\Windows\WindowManager $instance */
+            return $instance->close($id);
+        }
+
+        /**
+         * @static
+         */
+        public static function hide($id = null)
+        {
+            /** @var \Native\Laravel\Windows\WindowManager $instance */
+            return $instance->hide($id);
+        }
+
+        /**
+         * @static
+         */
+        public static function show($id = null)
+        {
+            /** @var \Native\Laravel\Windows\WindowManager $instance */
+            return $instance->show($id);
+        }
+
+        /**
+         * @static
+         */
+        public static function current()
+        {
+            /** @var \Native\Laravel\Windows\WindowManager $instance */
+            return $instance->current();
+        }
+
+        /**
+         * @static
+         */
+        public static function all()
+        {
+            /** @var \Native\Laravel\Windows\WindowManager $instance */
+            return $instance->all();
+        }
+
+        /**
+         * @static
+         */
+        public static function get($id)
+        {
+            /** @var \Native\Laravel\Windows\WindowManager $instance */
+            return $instance->get($id);
+        }
+
+        /**
+         * @static
+         */
+        public static function resize($width, $height, $id = null)
+        {
+            /** @var \Native\Laravel\Windows\WindowManager $instance */
+            return $instance->resize($width, $height, $id);
+        }
+
+        /**
+         * @static
+         */
+        public static function position($x, $y, $animated = false, $id = null)
+        {
+            /** @var \Native\Laravel\Windows\WindowManager $instance */
+            return $instance->position($x, $y, $animated, $id);
+        }
+
+        /**
+         * @static
+         */
+        public static function alwaysOnTop($alwaysOnTop = true, $id = null)
+        {
+            /** @var \Native\Laravel\Windows\WindowManager $instance */
+            return $instance->alwaysOnTop($alwaysOnTop, $id);
+        }
+
+        /**
+         * @static
+         */
+        public static function maximize($id = null)
+        {
+            /** @var \Native\Laravel\Windows\WindowManager $instance */
+            return $instance->maximize($id);
+        }
+
+        /**
+         * @static
+         */
+        public static function minimize($id = null)
+        {
+            /** @var \Native\Laravel\Windows\WindowManager $instance */
+            return $instance->minimize($id);
+        }
+
+        /**
+         * @static
+         */
+        public static function reload($id = null)
+        {
+            /** @var \Native\Laravel\Windows\WindowManager $instance */
+            return $instance->reload($id);
+        }
+
+        /**
+         * @param array<int, Window> $windows
+         * @static
+         */
+        public static function alwaysReturnWindows($windows)
+        {
+            /** @var \Native\Laravel\Fakes\WindowManagerFake $instance */
+            return $instance->alwaysReturnWindows($windows);
+        }
+
+        /**
+         * @param string|\Closure(string):  bool  $id
+         * @static
+         */
+        public static function assertOpened($id)
+        {
+            /** @var \Native\Laravel\Fakes\WindowManagerFake $instance */
+            return $instance->assertOpened($id);
+        }
+
+        /**
+         * @param string|\Closure(string):  bool  $id
+         * @static
+         */
+        public static function assertClosed($id)
+        {
+            /** @var \Native\Laravel\Fakes\WindowManagerFake $instance */
+            return $instance->assertClosed($id);
+        }
+
+        /**
+         * @param string|\Closure(string):  bool  $id
+         * @static
+         */
+        public static function assertHidden($id)
+        {
+            /** @var \Native\Laravel\Fakes\WindowManagerFake $instance */
+            return $instance->assertHidden($id);
+        }
+
+        /**
+         * @param string|\Closure(string):  bool  $id
+         * @static
+         */
+        public static function assertShown($id)
+        {
+            /** @var \Native\Laravel\Fakes\WindowManagerFake $instance */
+            return $instance->assertShown($id);
+        }
+
+        /**
+         * @static
+         */
+        public static function assertOpenedCount($expected)
+        {
+            /** @var \Native\Laravel\Fakes\WindowManagerFake $instance */
+            return $instance->assertOpenedCount($expected);
+        }
+
+        /**
+         * @static
+         */
+        public static function assertClosedCount($expected)
+        {
+            /** @var \Native\Laravel\Fakes\WindowManagerFake $instance */
+            return $instance->assertClosedCount($expected);
+        }
+
+        /**
+         * @static
+         */
+        public static function assertHiddenCount($expected)
+        {
+            /** @var \Native\Laravel\Fakes\WindowManagerFake $instance */
+            return $instance->assertHiddenCount($expected);
+        }
+
+        /**
+         * @static
+         */
+        public static function assertShownCount($expected)
+        {
+            /** @var \Native\Laravel\Fakes\WindowManagerFake $instance */
+            return $instance->assertShownCount($expected);
+        }
+
+            }
+    /**
+     */
+    class MenuBar {
+        /**
+         * @static
+         */
+        public static function create()
+        {
+            /** @var \Native\Laravel\MenuBar\MenuBarManager $instance */
+            return $instance->create();
+        }
+
+        /**
+         * @static
+         */
+        public static function show()
+        {
+            /** @var \Native\Laravel\MenuBar\MenuBarManager $instance */
+            return $instance->show();
+        }
+
+        /**
+         * @static
+         */
+        public static function hide()
+        {
+            /** @var \Native\Laravel\MenuBar\MenuBarManager $instance */
+            return $instance->hide();
+        }
+
+        /**
+         * @static
+         */
+        public static function label($label)
+        {
+            /** @var \Native\Laravel\MenuBar\MenuBarManager $instance */
+            return $instance->label($label);
+        }
+
+        /**
+         * @static
+         */
+        public static function tooltip($tooltip)
+        {
+            /** @var \Native\Laravel\MenuBar\MenuBarManager $instance */
+            return $instance->tooltip($tooltip);
+        }
+
+        /**
+         * @static
+         */
+        public static function icon($icon)
+        {
+            /** @var \Native\Laravel\MenuBar\MenuBarManager $instance */
+            return $instance->icon($icon);
+        }
+
+        /**
+         * @static
+         */
+        public static function resize($width, $height)
+        {
+            /** @var \Native\Laravel\MenuBar\MenuBarManager $instance */
+            return $instance->resize($width, $height);
+        }
+
+        /**
+         * @static
+         */
+        public static function contextMenu($contextMenu)
+        {
+            /** @var \Native\Laravel\MenuBar\MenuBarManager $instance */
+            return $instance->contextMenu($contextMenu);
+        }
+
+            }
+    /**
+     */
+    class Settings {
+        /**
+         * @static
+         */
+        public static function set($key, $value)
+        {
+            /** @var \Native\Laravel\Settings $instance */
+            return $instance->set($key, $value);
+        }
+
+        /**
+         * @static
+         */
+        public static function get($key, $default = null)
+        {
+            /** @var \Native\Laravel\Settings $instance */
+            return $instance->get($key, $default);
+        }
+
+        /**
+         * @static
+         */
+        public static function forget($key)
+        {
+            /** @var \Native\Laravel\Settings $instance */
+            return $instance->forget($key);
+        }
+
+        /**
+         * @static
+         */
+        public static function clear()
+        {
+            /** @var \Native\Laravel\Settings $instance */
+            return $instance->clear();
+        }
+
+            }
+    /**
+     */
+    class Clipboard {
+        /**
+         * @static
+         */
+        public static function clear()
+        {
+            /** @var \Native\Laravel\Clipboard $instance */
+            return $instance->clear();
+        }
+
+        /**
+         * @static
+         */
+        public static function text($text = null)
+        {
+            /** @var \Native\Laravel\Clipboard $instance */
+            return $instance->text($text);
+        }
+
+        /**
+         * @static
+         */
+        public static function html($html = null)
+        {
+            /** @var \Native\Laravel\Clipboard $instance */
+            return $instance->html($html);
+        }
+
+        /**
+         * @static
+         */
+        public static function image($image = null)
+        {
+            /** @var \Native\Laravel\Clipboard $instance */
+            return $instance->image($image);
+        }
+
+            }
+    /**
+     */
+    class ContextMenu {
+        /**
+         * @static
+         */
+        public static function register($menu)
+        {
+            /** @var \Native\Laravel\ContextMenu $instance */
+            return $instance->register($menu);
+        }
+
+        /**
+         * @static
+         */
+        public static function remove()
+        {
+            /** @var \Native\Laravel\ContextMenu $instance */
+            return $instance->remove();
+        }
+
+            }
+    /**
+     */
+    class QueueWorker {
+        /**
+         * @static
+         */
+        public static function up($config)
+        {
+            /** @var \Native\Laravel\QueueWorker $instance */
+            return $instance->up($config);
+        }
+
+        /**
+         * @static
+         */
+        public static function down($alias)
+        {
+            /** @var \Native\Laravel\QueueWorker $instance */
+            return $instance->down($alias);
+        }
+
+        /**
+         * @static
+         */
+        public static function assertUp($callback)
+        {
+            /** @var \Native\Laravel\Fakes\QueueWorkerFake $instance */
+            return $instance->assertUp($callback);
+        }
+
+        /**
+         * @static
+         */
+        public static function assertDown($alias)
+        {
+            /** @var \Native\Laravel\Fakes\QueueWorkerFake $instance */
+            return $instance->assertDown($alias);
+        }
+
+            }
+    /**
+     */
+    class ChildProcess {
+        /**
+         * @static
+         */
+        public static function get($alias = null)
+        {
+            /** @var \Native\Laravel\ChildProcess $instance */
+            return $instance->get($alias);
+        }
+
+        /**
+         * @static
+         */
+        public static function all()
+        {
+            /** @var \Native\Laravel\ChildProcess $instance */
+            return $instance->all();
+        }
+
+        /**
+         * @param string|string[] $cmd
+         * @return \Native\Laravel\ChildProcess
+         * @static
+         */
+        public static function start($cmd, $alias, $cwd = null, $env = null, $persistent = false)
+        {
+            /** @var \Native\Laravel\ChildProcess $instance */
+            return $instance->start($cmd, $alias, $cwd, $env, $persistent);
+        }
+
+        /**
+         * @param string|string[] $cmd
+         * @return \Native\Laravel\ChildProcess
+         * @static
+         */
+        public static function php($cmd, $alias, $env = null, $persistent = false, $iniSettings = null)
+        {
+            /** @var \Native\Laravel\ChildProcess $instance */
+            return $instance->php($cmd, $alias, $env, $persistent, $iniSettings);
+        }
+
+        /**
+         * @param string|string[] $cmd
+         * @return \Native\Laravel\ChildProcess
+         * @static
+         */
+        public static function artisan($cmd, $alias, $env = null, $persistent = false, $iniSettings = null)
+        {
+            /** @var \Native\Laravel\ChildProcess $instance */
+            return $instance->artisan($cmd, $alias, $env, $persistent, $iniSettings);
+        }
+
+        /**
+         * @static
+         */
+        public static function stop($alias = null)
+        {
+            /** @var \Native\Laravel\ChildProcess $instance */
+            return $instance->stop($alias);
+        }
+
+        /**
+         * @static
+         */
+        public static function restart($alias = null)
+        {
+            /** @var \Native\Laravel\ChildProcess $instance */
+            return $instance->restart($alias);
+        }
+
+        /**
+         * @static
+         */
+        public static function message($message, $alias = null)
+        {
+            /** @var \Native\Laravel\ChildProcess $instance */
+            return $instance->message($message, $alias);
+        }
+
+        /**
+         * @param string|\Closure(string):  bool  $alias
+         * @static
+         */
+        public static function assertGet($alias)
+        {
+            /** @var \Native\Laravel\Fakes\ChildProcessFake $instance */
+            return $instance->assertGet($alias);
+        }
+
+        /**
+         * @param \Closure(array|string $cmd, string $alias, ?string $cwd, ?array $env, bool $persistent):  bool  $callback
+         * @static
+         */
+        public static function assertStarted($callback)
+        {
+            /** @var \Native\Laravel\Fakes\ChildProcessFake $instance */
+            return $instance->assertStarted($callback);
+        }
+
+        /**
+         * @param \Closure(array|string $cmd, string $alias, ?array $env, ?bool $persistent):  bool  $callback
+         * @static
+         */
+        public static function assertPhp($callback)
+        {
+            /** @var \Native\Laravel\Fakes\ChildProcessFake $instance */
+            return $instance->assertPhp($callback);
+        }
+
+        /**
+         * @param \Closure(array|string $cmd, string $alias, ?array $env, ?bool $persistent):  bool  $callback
+         * @static
+         */
+        public static function assertArtisan($callback)
+        {
+            /** @var \Native\Laravel\Fakes\ChildProcessFake $instance */
+            return $instance->assertArtisan($callback);
+        }
+
+        /**
+         * @param string|\Closure(string):  bool  $alias
+         * @static
+         */
+        public static function assertStop($alias)
+        {
+            /** @var \Native\Laravel\Fakes\ChildProcessFake $instance */
+            return $instance->assertStop($alias);
+        }
+
+        /**
+         * @param string|\Closure(string):  bool  $alias
+         * @static
+         */
+        public static function assertRestart($alias)
+        {
+            /** @var \Native\Laravel\Fakes\ChildProcessFake $instance */
+            return $instance->assertRestart($alias);
+        }
+
+        /**
+         * @param \Closure(string $message, string|null $alias):  bool  $callback
+         * @static
+         */
+        public static function assertMessage($callback)
+        {
+            /** @var \Native\Laravel\Fakes\ChildProcessFake $instance */
+            return $instance->assertMessage($callback);
+        }
+
+            }
+    /**
+     */
+    class PowerMonitor {
+        /**
+         * @static
+         */
+        public static function getSystemIdleState($threshold)
+        {
+            /** @var \Native\Laravel\PowerMonitor $instance */
+            return $instance->getSystemIdleState($threshold);
+        }
+
+        /**
+         * @static
+         */
+        public static function getSystemIdleTime()
+        {
+            /** @var \Native\Laravel\PowerMonitor $instance */
+            return $instance->getSystemIdleTime();
+        }
+
+        /**
+         * @static
+         */
+        public static function getCurrentThermalState()
+        {
+            /** @var \Native\Laravel\PowerMonitor $instance */
+            return $instance->getCurrentThermalState();
+        }
+
+        /**
+         * @static
+         */
+        public static function isOnBatteryPower()
+        {
+            /** @var \Native\Laravel\PowerMonitor $instance */
+            return $instance->isOnBatteryPower();
+        }
+
+        /**
+         * @param int|\Closure(int):  bool  $key
+         * @static
+         */
+        public static function assertGetSystemIdleState($key)
+        {
+            /** @var \Native\Laravel\Fakes\PowerMonitorFake $instance */
+            return $instance->assertGetSystemIdleState($key);
+        }
+
+        /**
+         * @static
+         */
+        public static function assertGetSystemIdleStateCount($count)
+        {
+            /** @var \Native\Laravel\Fakes\PowerMonitorFake $instance */
+            return $instance->assertGetSystemIdleStateCount($count);
+        }
+
+        /**
+         * @static
+         */
+        public static function assertGetSystemIdleTimeCount($count)
+        {
+            /** @var \Native\Laravel\Fakes\PowerMonitorFake $instance */
+            return $instance->assertGetSystemIdleTimeCount($count);
+        }
+
+        /**
+         * @static
+         */
+        public static function assertGetCurrentThermalStateCount($count)
+        {
+            /** @var \Native\Laravel\Fakes\PowerMonitorFake $instance */
+            return $instance->assertGetCurrentThermalStateCount($count);
+        }
+
+        /**
+         * @static
+         */
+        public static function assertIsOnBatteryPowerCount($count)
+        {
+            /** @var \Native\Laravel\Fakes\PowerMonitorFake $instance */
+            return $instance->assertIsOnBatteryPowerCount($count);
+        }
+
+            }
+    /**
+     */
+    class GlobalShortcut {
+        /**
+         * @static
+         */
+        public static function key($key)
+        {
+            /** @var \Native\Laravel\GlobalShortcut $instance */
+            return $instance->key($key);
+        }
+
+        /**
+         * @static
+         */
+        public static function event($event)
+        {
+            /** @var \Native\Laravel\GlobalShortcut $instance */
+            return $instance->event($event);
+        }
+
+        /**
+         * @static
+         */
+        public static function register()
+        {
+            /** @var \Native\Laravel\GlobalShortcut $instance */
+            return $instance->register();
+        }
+
+        /**
+         * @static
+         */
+        public static function unregister()
+        {
+            /** @var \Native\Laravel\GlobalShortcut $instance */
+            return $instance->unregister();
+        }
+
+        /**
+         * @param string|\Closure(string):  bool  $key
+         * @static
+         */
+        public static function assertKey($key)
+        {
+            /** @var \Native\Laravel\Fakes\GlobalShortcutFake $instance */
+            return $instance->assertKey($key);
+        }
+
+        /**
+         * @param string|\Closure(string):  bool  $event
+         * @static
+         */
+        public static function assertEvent($event)
+        {
+            /** @var \Native\Laravel\Fakes\GlobalShortcutFake $instance */
+            return $instance->assertEvent($event);
+        }
+
+        /**
+         * @static
+         */
+        public static function assertRegisteredCount($count)
+        {
+            /** @var \Native\Laravel\Fakes\GlobalShortcutFake $instance */
+            return $instance->assertRegisteredCount($count);
+        }
+
+        /**
+         * @static
+         */
+        public static function assertUnregisteredCount($count)
+        {
+            /** @var \Native\Laravel\Fakes\GlobalShortcutFake $instance */
+            return $instance->assertUnregisteredCount($count);
+        }
+
+            }
+    }
+
 namespace AnourValar\EloquentSerialize\Facades {
     /**
      */
@@ -25240,594 +25492,6 @@ namespace Maatwebsite\Excel\Facades {
             }
     }
 
-namespace Nwidart\Modules\Facades {
-    /**
-     * @method static array getCached()
-     */
-    class Module {
-        /**
-         * Add other module location.
-         *
-         * @static
-         */
-        public static function addLocation($path)
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->addLocation($path);
-        }
-
-        /**
-         * Get all additional paths.
-         *
-         * @static
-         */
-        public static function getPaths()
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->getPaths();
-        }
-
-        /**
-         * Get scanned modules paths.
-         *
-         * @static
-         */
-        public static function getScanPaths()
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->getScanPaths();
-        }
-
-        /**
-         * Get & scan all modules.
-         *
-         * @static
-         */
-        public static function scan()
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->scan();
-        }
-
-        /**
-         * Get all modules.
-         *
-         * @static
-         */
-        public static function all()
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->all();
-        }
-
-        /**
-         * Get all modules as collection instance.
-         *
-         * @static
-         */
-        public static function toCollection()
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->toCollection();
-        }
-
-        /**
-         * Get modules by status.
-         *
-         * @static
-         */
-        public static function getByStatus($status)
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->getByStatus($status);
-        }
-
-        /**
-         * Determine whether the given module exist.
-         *
-         * @static
-         */
-        public static function has($name)
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->has($name);
-        }
-
-        /**
-         * Get list of enabled modules.
-         *
-         * @static
-         */
-        public static function allEnabled()
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->allEnabled();
-        }
-
-        /**
-         * Get list of disabled modules.
-         *
-         * @static
-         */
-        public static function allDisabled()
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->allDisabled();
-        }
-
-        /**
-         * Get count from all modules.
-         *
-         * @static
-         */
-        public static function count()
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->count();
-        }
-
-        /**
-         * Get all ordered modules.
-         *
-         * @static
-         */
-        public static function getOrdered($direction = 'asc')
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->getOrdered($direction);
-        }
-
-        /**
-         * {@inheritDoc}
-         *
-         * @static
-         */
-        public static function getPath()
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->getPath();
-        }
-
-        /**
-         * {@inheritDoc}
-         *
-         * @static
-         */
-        public static function register()
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->register();
-        }
-
-        /**
-         * {@inheritDoc}
-         *
-         * @static
-         */
-        public static function boot()
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->boot();
-        }
-
-        /**
-         * {@inheritDoc}
-         *
-         * @static
-         */
-        public static function find($name)
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->find($name);
-        }
-
-        /**
-         * Find a specific module, if there return that, otherwise throw exception.
-         *
-         * @throws ModuleNotFoundException
-         * @static
-         */
-        public static function findOrFail($name)
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->findOrFail($name);
-        }
-
-        /**
-         * Get all modules as laravel collection instance.
-         *
-         * @static
-         */
-        public static function collections($status = 1)
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->collections($status);
-        }
-
-        /**
-         * Get module path for a specific module.
-         *
-         * @static
-         */
-        public static function getModulePath($module)
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->getModulePath($module);
-        }
-
-        /**
-         * {@inheritDoc}
-         *
-         * @static
-         */
-        public static function assetPath($module)
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->assetPath($module);
-        }
-
-        /**
-         * {@inheritDoc}
-         *
-         * @static
-         */
-        public static function config($key, $default = null)
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->config($key, $default);
-        }
-
-        /**
-         * Get storage path for module used.
-         *
-         * @static
-         */
-        public static function getUsedStoragePath()
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->getUsedStoragePath();
-        }
-
-        /**
-         * Set module used for cli session.
-         *
-         * @throws ModuleNotFoundException
-         * @static
-         */
-        public static function setUsed($name)
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->setUsed($name);
-        }
-
-        /**
-         * Forget the module used for cli session.
-         *
-         * @static
-         */
-        public static function forgetUsed()
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->forgetUsed();
-        }
-
-        /**
-         * Get module used for cli session.
-         *
-         * @throws ModuleNotFoundException
-         * @static
-         */
-        public static function getUsedNow()
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->getUsedNow();
-        }
-
-        /**
-         * Get laravel filesystem instance.
-         *
-         * @static
-         */
-        public static function getFiles()
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->getFiles();
-        }
-
-        /**
-         * Get module assets path.
-         *
-         * @static
-         */
-        public static function getAssetsPath()
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->getAssetsPath();
-        }
-
-        /**
-         * Get asset url from a specific module.
-         *
-         * @throws InvalidAssetPath
-         * @static
-         */
-        public static function asset($asset)
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->asset($asset);
-        }
-
-        /**
-         * {@inheritDoc}
-         *
-         * @static
-         */
-        public static function isEnabled($name)
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->isEnabled($name);
-        }
-
-        /**
-         * {@inheritDoc}
-         *
-         * @static
-         */
-        public static function isDisabled($name)
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->isDisabled($name);
-        }
-
-        /**
-         * Enabling a specific module.
-         *
-         * @throws ModuleNotFoundException
-         * @static
-         */
-        public static function enable($name)
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->enable($name);
-        }
-
-        /**
-         * Disabling a specific module.
-         *
-         * @throws ModuleNotFoundException
-         * @static
-         */
-        public static function disable($name)
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->disable($name);
-        }
-
-        /**
-         * {@inheritDoc}
-         *
-         * @static
-         */
-        public static function delete($name)
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->delete($name);
-        }
-
-        /**
-         * Update dependencies for the specified module.
-         *
-         * @static
-         */
-        public static function update($module)
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->update($module);
-        }
-
-        /**
-         * Install the specified module.
-         *
-         * @static
-         */
-        public static function install($name, $version = 'dev-master', $type = 'composer', $subtree = false)
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->install($name, $version, $type, $subtree);
-        }
-
-        /**
-         * Get stub path.
-         *
-         * @static
-         */
-        public static function getStubPath()
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->getStubPath();
-        }
-
-        /**
-         * Set stub path.
-         *
-         * @static
-         */
-        public static function setStubPath($stubPath)
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->setStubPath($stubPath);
-        }
-
-        /**
-         * @static
-         */
-        public static function resetModules()
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
-            return $instance->resetModules();
-        }
-
-        /**
-         * Register a custom macro.
-         *
-         * @param string $name
-         * @param object|callable $macro
-         * @param-closure-this static  $macro
-         * @return void
-         * @static
-         */
-        public static function macro($name, $macro)
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            \Nwidart\Modules\Laravel\LaravelFileRepository::macro($name, $macro);
-        }
-
-        /**
-         * Mix another object into the class.
-         *
-         * @param object $mixin
-         * @param bool $replace
-         * @return void
-         * @throws \ReflectionException
-         * @static
-         */
-        public static function mixin($mixin, $replace = true)
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            \Nwidart\Modules\Laravel\LaravelFileRepository::mixin($mixin, $replace);
-        }
-
-        /**
-         * Checks if macro is registered.
-         *
-         * @param string $name
-         * @return bool
-         * @static
-         */
-        public static function hasMacro($name)
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            return \Nwidart\Modules\Laravel\LaravelFileRepository::hasMacro($name);
-        }
-
-        /**
-         * Flush the existing macros.
-         *
-         * @return void
-         * @static
-         */
-        public static function flushMacros()
-        {
-            //Method inherited from \Nwidart\Modules\FileRepository 
-            \Nwidart\Modules\Laravel\LaravelFileRepository::flushMacros();
-        }
-
-            }
-    }
-
-namespace Spatie\Health\Facades {
-    /**
-     * @mixin \Spatie\Health\Health
-     */
-    class Health {
-        /**
-         * @param array<int, Check> $checks
-         * @static
-         */
-        public static function checks($checks)
-        {
-            /** @var \Spatie\Health\Health $instance */
-            return $instance->checks($checks);
-        }
-
-        /**
-         * @static
-         */
-        public static function clearChecks()
-        {
-            /** @var \Spatie\Health\Health $instance */
-            return $instance->clearChecks();
-        }
-
-        /**
-         * @return Collection<int, Check>
-         * @static
-         */
-        public static function registeredChecks()
-        {
-            /** @var \Spatie\Health\Health $instance */
-            return $instance->registeredChecks();
-        }
-
-        /**
-         * @return Collection<int, ResultStore>
-         * @static
-         */
-        public static function resultStores()
-        {
-            /** @var \Spatie\Health\Health $instance */
-            return $instance->resultStores();
-        }
-
-        /**
-         * @static
-         */
-        public static function inlineStylesheet($stylesheet)
-        {
-            /** @var \Spatie\Health\Health $instance */
-            return $instance->inlineStylesheet($stylesheet);
-        }
-
-        /**
-         * @static
-         */
-        public static function assets()
-        {
-            /** @var \Spatie\Health\Health $instance */
-            return $instance->assets();
-        }
-
-            }
-    }
-
 namespace Spatie\Menu\Laravel\Facades {
     /**
      */
@@ -26756,6 +26420,694 @@ namespace Spatie\Menu\Laravel\Facades {
             }
     }
 
+namespace SRWieZ\NativePHP\Mobile\Screen\Facades {
+    /**
+     * @see \SRWieZ\NativePHP\Mobile\Screen\Screen
+     */
+    class Screen {
+        /**
+         * Keep the screen awake (prevent the device from sleeping)
+         *
+         * @static
+         */
+        public static function keepAwake($enabled = true)
+        {
+            /** @var \SRWieZ\NativePHP\Mobile\Screen\Screen $instance */
+            return $instance->keepAwake($enabled);
+        }
+
+        /**
+         * Allow the screen to sleep (disable wake lock)
+         *
+         * @static
+         */
+        public static function allowSleep()
+        {
+            /** @var \SRWieZ\NativePHP\Mobile\Screen\Screen $instance */
+            return $instance->allowSleep();
+        }
+
+        /**
+         * Check if the screen wake lock is currently active
+         *
+         * @static
+         */
+        public static function isAwake()
+        {
+            /** @var \SRWieZ\NativePHP\Mobile\Screen\Screen $instance */
+            return $instance->isAwake();
+        }
+
+        /**
+         * Set the screen brightness level
+         *
+         * @param float $level Brightness level from 0.0 (minimum) to 1.0 (maximum)
+         * @return bool|float Returns the actual brightness level set, or false on failure
+         * @static
+         */
+        public static function setBrightness($level)
+        {
+            /** @var \SRWieZ\NativePHP\Mobile\Screen\Screen $instance */
+            return $instance->setBrightness($level);
+        }
+
+        /**
+         * Get the current screen brightness level
+         *
+         * @return float|null Brightness level from 0.0 to 1.0, or null if unavailable
+         * @static
+         */
+        public static function getBrightness()
+        {
+            /** @var \SRWieZ\NativePHP\Mobile\Screen\Screen $instance */
+            return $instance->getBrightness();
+        }
+
+        /**
+         * Reset the screen brightness to the system default
+         *
+         * @return bool|float Returns the new brightness level, or false on failure
+         * @static
+         */
+        public static function resetBrightness()
+        {
+            /** @var \SRWieZ\NativePHP\Mobile\Screen\Screen $instance */
+            return $instance->resetBrightness();
+        }
+
+        /**
+         * Start listening for brightness changes (iOS only)
+         *
+         * @static
+         */
+        public static function startBrightnessListener()
+        {
+            /** @var \SRWieZ\NativePHP\Mobile\Screen\Screen $instance */
+            return $instance->startBrightnessListener();
+        }
+
+        /**
+         * Stop listening for brightness changes
+         *
+         * @static
+         */
+        public static function stopBrightnessListener()
+        {
+            /** @var \SRWieZ\NativePHP\Mobile\Screen\Screen $instance */
+            return $instance->stopBrightnessListener();
+        }
+
+            }
+    }
+
+namespace Nwidart\Modules\Facades {
+    /**
+     * @method static array getCached()
+     */
+    class Module {
+        /**
+         * Add other module location.
+         *
+         * @static
+         */
+        public static function addLocation($path)
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->addLocation($path);
+        }
+
+        /**
+         * Get all additional paths.
+         *
+         * @static
+         */
+        public static function getPaths()
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->getPaths();
+        }
+
+        /**
+         * Get scanned modules paths.
+         *
+         * @static
+         */
+        public static function getScanPaths()
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->getScanPaths();
+        }
+
+        /**
+         * Get & scan all modules.
+         *
+         * @static
+         */
+        public static function scan()
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->scan();
+        }
+
+        /**
+         * Get all modules.
+         *
+         * @static
+         */
+        public static function all()
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->all();
+        }
+
+        /**
+         * Get all modules as collection instance.
+         *
+         * @static
+         */
+        public static function toCollection()
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->toCollection();
+        }
+
+        /**
+         * Get modules by status.
+         *
+         * @static
+         */
+        public static function getByStatus($status)
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->getByStatus($status);
+        }
+
+        /**
+         * Determine whether the given module exist.
+         *
+         * @static
+         */
+        public static function has($name)
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->has($name);
+        }
+
+        /**
+         * Get list of enabled modules.
+         *
+         * @static
+         */
+        public static function allEnabled()
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->allEnabled();
+        }
+
+        /**
+         * Get list of disabled modules.
+         *
+         * @static
+         */
+        public static function allDisabled()
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->allDisabled();
+        }
+
+        /**
+         * Get count from all modules.
+         *
+         * @static
+         */
+        public static function count()
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->count();
+        }
+
+        /**
+         * Get all ordered modules.
+         *
+         * @static
+         */
+        public static function getOrdered($direction = 'asc')
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->getOrdered($direction);
+        }
+
+        /**
+         * {@inheritDoc}
+         *
+         * @static
+         */
+        public static function getPath()
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->getPath();
+        }
+
+        /**
+         * {@inheritDoc}
+         *
+         * @static
+         */
+        public static function register()
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->register();
+        }
+
+        /**
+         * {@inheritDoc}
+         *
+         * @static
+         */
+        public static function boot()
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->boot();
+        }
+
+        /**
+         * {@inheritDoc}
+         *
+         * @static
+         */
+        public static function find($name)
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->find($name);
+        }
+
+        /**
+         * Find a specific module, if there return that, otherwise throw exception.
+         *
+         * @throws ModuleNotFoundException
+         * @static
+         */
+        public static function findOrFail($name)
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->findOrFail($name);
+        }
+
+        /**
+         * Get all modules as laravel collection instance.
+         *
+         * @static
+         */
+        public static function collections($status = 1)
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->collections($status);
+        }
+
+        /**
+         * Get module path for a specific module.
+         *
+         * @static
+         */
+        public static function getModulePath($module)
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->getModulePath($module);
+        }
+
+        /**
+         * {@inheritDoc}
+         *
+         * @static
+         */
+        public static function assetPath($module)
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->assetPath($module);
+        }
+
+        /**
+         * {@inheritDoc}
+         *
+         * @static
+         */
+        public static function config($key, $default = null)
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->config($key, $default);
+        }
+
+        /**
+         * Get storage path for module used.
+         *
+         * @static
+         */
+        public static function getUsedStoragePath()
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->getUsedStoragePath();
+        }
+
+        /**
+         * Set module used for cli session.
+         *
+         * @throws ModuleNotFoundException
+         * @static
+         */
+        public static function setUsed($name)
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->setUsed($name);
+        }
+
+        /**
+         * Forget the module used for cli session.
+         *
+         * @static
+         */
+        public static function forgetUsed()
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->forgetUsed();
+        }
+
+        /**
+         * Get module used for cli session.
+         *
+         * @throws ModuleNotFoundException
+         * @static
+         */
+        public static function getUsedNow()
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->getUsedNow();
+        }
+
+        /**
+         * Get laravel filesystem instance.
+         *
+         * @static
+         */
+        public static function getFiles()
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->getFiles();
+        }
+
+        /**
+         * Get module assets path.
+         *
+         * @static
+         */
+        public static function getAssetsPath()
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->getAssetsPath();
+        }
+
+        /**
+         * Get asset url from a specific module.
+         *
+         * @throws InvalidAssetPath
+         * @static
+         */
+        public static function asset($asset)
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->asset($asset);
+        }
+
+        /**
+         * {@inheritDoc}
+         *
+         * @static
+         */
+        public static function isEnabled($name)
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->isEnabled($name);
+        }
+
+        /**
+         * {@inheritDoc}
+         *
+         * @static
+         */
+        public static function isDisabled($name)
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->isDisabled($name);
+        }
+
+        /**
+         * Enabling a specific module.
+         *
+         * @throws ModuleNotFoundException
+         * @static
+         */
+        public static function enable($name)
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->enable($name);
+        }
+
+        /**
+         * Disabling a specific module.
+         *
+         * @throws ModuleNotFoundException
+         * @static
+         */
+        public static function disable($name)
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->disable($name);
+        }
+
+        /**
+         * {@inheritDoc}
+         *
+         * @static
+         */
+        public static function delete($name)
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->delete($name);
+        }
+
+        /**
+         * Update dependencies for the specified module.
+         *
+         * @static
+         */
+        public static function update($module)
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->update($module);
+        }
+
+        /**
+         * Install the specified module.
+         *
+         * @static
+         */
+        public static function install($name, $version = 'dev-master', $type = 'composer', $subtree = false)
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->install($name, $version, $type, $subtree);
+        }
+
+        /**
+         * Get stub path.
+         *
+         * @static
+         */
+        public static function getStubPath()
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->getStubPath();
+        }
+
+        /**
+         * Set stub path.
+         *
+         * @static
+         */
+        public static function setStubPath($stubPath)
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->setStubPath($stubPath);
+        }
+
+        /**
+         * @static
+         */
+        public static function resetModules()
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            /** @var \Nwidart\Modules\Laravel\LaravelFileRepository $instance */
+            return $instance->resetModules();
+        }
+
+        /**
+         * Register a custom macro.
+         *
+         * @param string $name
+         * @param object|callable $macro
+         * @param-closure-this static  $macro
+         * @return void
+         * @static
+         */
+        public static function macro($name, $macro)
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            \Nwidart\Modules\Laravel\LaravelFileRepository::macro($name, $macro);
+        }
+
+        /**
+         * Mix another object into the class.
+         *
+         * @param object $mixin
+         * @param bool $replace
+         * @return void
+         * @throws \ReflectionException
+         * @static
+         */
+        public static function mixin($mixin, $replace = true)
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            \Nwidart\Modules\Laravel\LaravelFileRepository::mixin($mixin, $replace);
+        }
+
+        /**
+         * Checks if macro is registered.
+         *
+         * @param string $name
+         * @return bool
+         * @static
+         */
+        public static function hasMacro($name)
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            return \Nwidart\Modules\Laravel\LaravelFileRepository::hasMacro($name);
+        }
+
+        /**
+         * Flush the existing macros.
+         *
+         * @return void
+         * @static
+         */
+        public static function flushMacros()
+        {
+            //Method inherited from \Nwidart\Modules\FileRepository 
+            \Nwidart\Modules\Laravel\LaravelFileRepository::flushMacros();
+        }
+
+            }
+    }
+
+namespace Spatie\Health\Facades {
+    /**
+     * @mixin \Spatie\Health\Health
+     */
+    class Health {
+        /**
+         * @param array<int, Check> $checks
+         * @static
+         */
+        public static function checks($checks)
+        {
+            /** @var \Spatie\Health\Health $instance */
+            return $instance->checks($checks);
+        }
+
+        /**
+         * @static
+         */
+        public static function clearChecks()
+        {
+            /** @var \Spatie\Health\Health $instance */
+            return $instance->clearChecks();
+        }
+
+        /**
+         * @return Collection<int, Check>
+         * @static
+         */
+        public static function registeredChecks()
+        {
+            /** @var \Spatie\Health\Health $instance */
+            return $instance->registeredChecks();
+        }
+
+        /**
+         * @return Collection<int, ResultStore>
+         * @static
+         */
+        public static function resultStores()
+        {
+            /** @var \Spatie\Health\Health $instance */
+            return $instance->resultStores();
+        }
+
+        /**
+         * @static
+         */
+        public static function inlineStylesheet($stylesheet)
+        {
+            /** @var \Spatie\Health\Health $instance */
+            return $instance->inlineStylesheet($stylesheet);
+        }
+
+        /**
+         * @static
+         */
+        public static function assets()
+        {
+            /** @var \Spatie\Health\Health $instance */
+            return $instance->assets();
+        }
+
+            }
+    }
+
 namespace Spatie\SignalAwareCommand\Facades {
     /**
      * @see \Spatie\SignalAwareCommand\Signal
@@ -26880,6 +27232,20 @@ namespace Illuminate\Support {
         public static function toEmbeddings($provider = null, $dimensions = null, $model = null, $cache = null, $timeout = null)
         {
             return \Illuminate\Support\Stringable::toEmbeddings($provider, $dimensions, $model, $cache, $timeout);
+        }
+
+        /**
+         * @see \Laravel\Ai\AiServiceProvider::boot()
+         * @param \Laravel\Ai\Enums\Lab|array|string|null $provider
+         * @param string|null $voice
+         * @param string|null $instructions
+         * @param string|null $model
+         * @param int|null $timeout
+         * @static
+         */
+        public static function toAudio($provider = null, $voice = null, $instructions = null, $model = null, $timeout = null)
+        {
+            return \Illuminate\Support\Stringable::toAudio($provider, $voice, $instructions, $model, $timeout);
         }
 
             }
@@ -36014,10 +36380,10 @@ namespace  {
     class Lang extends \Illuminate\Support\Facades\Lang {}
     class Log extends \Illuminate\Support\Facades\Log {}
     class Mail extends \Illuminate\Support\Facades\Mail {}
-    class Notification extends \Illuminate\Support\Facades\Notification {}
+    class Notification extends \Native\Laravel\Facades\Notification {}
     class Number extends \Illuminate\Support\Number {}
     class Password extends \Illuminate\Support\Facades\Password {}
-    class Process extends \Illuminate\Support\Facades\Process {}
+    class Process extends \Native\Laravel\Facades\Process {}
     class Queue extends \Illuminate\Support\Facades\Queue {}
     class RateLimiter extends \Illuminate\Support\Facades\RateLimiter {}
     class Redirect extends \Illuminate\Support\Facades\Redirect {}
@@ -36041,18 +36407,26 @@ namespace  {
     class Flux extends \Flux\Flux {}
     class Livewire extends \Livewire\Livewire {}
     class Excel extends \Maatwebsite\Excel\Facades\Excel {}
+    class Dock extends \Native\Laravel\Facades\Dock {}
+    class Menu extends \Spatie\Menu\Laravel\Facades\Menu {}
+    class Shell extends \Native\Laravel\Facades\Shell {}
+    class Screen extends \SRWieZ\NativePHP\Mobile\Screen\Facades\Screen {}
+    class System extends \Native\Laravel\Facades\System {}
+    class Window extends \Native\Laravel\Facades\Window {}
+    class MenuBar extends \Native\Laravel\Facades\MenuBar {}
+    class Settings extends \Native\Laravel\Facades\Settings {}
+    class Clipboard extends \Native\Laravel\Facades\Clipboard {}
+    class ContextMenu extends \Native\Laravel\Facades\ContextMenu {}
+    class QueueWorker extends \Native\Laravel\Facades\QueueWorker {}
+    class ChildProcess extends \Native\Laravel\Facades\ChildProcess {}
+    class PowerMonitor extends \Native\Laravel\Facades\PowerMonitor {}
+    class GlobalShortcut extends \Native\Laravel\Facades\GlobalShortcut {}
     class Module extends \Nwidart\Modules\Facades\Module {}
     class Health extends \Spatie\Health\Facades\Health {}
-    class Menu extends \Spatie\Menu\Laravel\Facades\Menu {}
     class Signal extends \Spatie\SignalAwareCommand\Facades\Signal {}
 }
 
 
-namespace Facades\Livewire\Features\SupportFileUploads {
-    /**
-     * @mixin \Livewire\Features\SupportFileUploads\GenerateSignedUploadUrl     */
-    class GenerateSignedUploadUrl extends \Livewire\Features\SupportFileUploads\GenerateSignedUploadUrl {}
-}
 
 namespace {
     

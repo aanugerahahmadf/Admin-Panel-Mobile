@@ -25,8 +25,9 @@ class ChatService
             throw new \Exception('Super Admin not found.');
         }
 
-        $inbox = Inbox::whereJsonContains('user_ids', $userId)
-            ->whereJsonContains('user_ids', $admin->id)
+        $inbox = Inbox::query()
+            ->whereJsonContains('user_ids', $userId, 'and', false)
+            ->whereJsonContains('user_ids', $admin->id, 'and', false)
             ->first();
 
         if (! $inbox) {
@@ -44,7 +45,7 @@ class ChatService
     public static function sendContextMessage(Inbox $inbox, array $meta): Message
     {
         // Avoid sending duplicate context cards for the same product in a short time
-        $lastMessage = $inbox->messages()->latest()->first();
+        $lastMessage = $inbox->messages()->latest('id')->first();
         if ($lastMessage && isset($lastMessage->meta['id']) && $lastMessage->meta['id'] == $meta['id']) {
             return $lastMessage;
         }
@@ -52,7 +53,10 @@ class ChatService
         $message = Message::create([
             'inbox_id' => $inbox->id,
             'user_id' => Auth::id(),
-            'message' => __('Saya menanyakan tentang '.($meta['type'] == 'product' ? 'produk' : 'paket').' ini: ').$meta['name'],
+            'message' => __('Saya menanyakan tentang :itemType ini: :name', [
+                'itemType' => __($meta['type'] == 'product' ? 'Produk' : 'Paket'),
+                'name' => $meta['name'] ?? '',
+            ]),
             'meta' => $meta,
         ]);
 
@@ -75,7 +79,9 @@ class ChatService
         $message = Message::create([
             'inbox_id' => $inbox->id,
             'user_id' => $order->user_id,
-            'message' => __('Halo Admin, saya baru saja membuat pesanan baru dengan nomor: ').$order->order_number,
+            'message' => __('Halo Admin, saya baru saja membuat pesanan baru dengan nomor: :orderNumber', [
+                'orderNumber' => $order->order_number,
+            ]),
             'meta' => [
                 'type' => $type,
                 'id' => $item->id,

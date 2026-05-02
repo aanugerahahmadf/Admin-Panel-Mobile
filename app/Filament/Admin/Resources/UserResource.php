@@ -13,6 +13,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 
 /**
  * @mixin \Eloquent
@@ -110,9 +111,18 @@ class UserResource extends Resource
                                     ->maxLength(255),
                                 Forms\Components\TextInput::make('last_name')
                                     ->label(__('Nama Belakang'))
-                                    ->maxLength(255),
+                                    ->maxLength(255)
+                                    ->columnSpanFull(),
+                                Forms\Components\Select::make('gender')
+                                    ->label(__('Jenis Kelamin'))
+                                    ->options([
+                                        'male' => __('Laki-laki'),
+                                        'female' => __('Perempuan'),
+                                    ])
+                                    ->native(false)
+                                    ->prefixIcon('heroicon-o-variable'),
                                 Forms\Components\TextInput::make('phone')
-                                    ->label(__('Nomor Telepon'))
+                                    ->label(__('Nomor Telepon / WhatsApp'))
                                     ->tel()
                                     ->prefixIcon('heroicon-o-phone')
                                     ->maxLength(255)
@@ -143,6 +153,13 @@ class UserResource extends Resource
                                 Forms\Components\TextInput::make('password')
                                     ->label(__('Kata Sandi'))
                                     ->password()
+                                    ->rule(Password::min(8)
+                                        ->letters()
+                                        ->mixedCase()
+                                        ->numbers()
+                                        ->symbols()
+                                        ->uncompromised()
+                                    )
                                     ->dehydrateStateUsing(fn ($state) => Hash::make($state))
                                     ->dehydrated(fn ($state) => filled($state))
                                     ->required(fn (string $context): bool => $context === 'create')
@@ -213,6 +230,21 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('full_name')
                     ->searchable()
                     ->label(__('Nama Lengkap')),
+                
+                Tables\Columns\TextColumn::make('gender')
+                    ->label(__('Jenis Kelamin'))
+                    ->badge()
+                    ->color(fn (?string $state): string => match ($state) {
+                        'male' => 'info',
+                        'female' => 'danger',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'male' => __('Laki-laki'),
+                        'female' => __('Perempuan'),
+                        default => $state ?? '-',
+                    })
+                    ->alignment('center'),
 
                 Tables\Columns\TextColumn::make('first_name')
                     ->label(__('Nama Depan')),

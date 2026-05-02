@@ -214,6 +214,7 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
         'event_concept',
         'dream_venue',
         'active_status',
+        'gender',
         'social_id',
         'social_type',
     ];
@@ -277,22 +278,19 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
     {
         return Attribute::make(
             get: function ($value) {
-                // Determine the raw path (from avatar_url column or fallback to avatar column)
                 $path = $value ?: $this->avatar;
 
-                // Handle empty paths as null
                 if (! $path) {
                     return null;
                 }
 
-                // External URLs return immediately
                 if (filter_var($path, FILTER_VALIDATE_URL)) {
                     return $path;
                 }
 
-                // Use asset() helper to get a dynamic URL based on the current request host.
-                // This ensures the URL is correct for both web (127.0.0.1) and mobile emulator (10.0.2.2).
-                return Storage::disk('public')->url(ltrim($path, '/'));
+                $cleanPath = ltrim(str_replace('storage/', '', $path), '/');
+                
+                return asset('storage/' . $cleanPath);
             }
         );
     }

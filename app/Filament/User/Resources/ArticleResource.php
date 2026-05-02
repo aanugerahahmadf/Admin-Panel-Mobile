@@ -17,6 +17,7 @@ use Filament\Infolists\Infolist;
 use Filament\Resources\Resource;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\HtmlString;
@@ -74,13 +75,13 @@ class ArticleResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->description(new HtmlString('<style>.fi-ta-ctn, .fi-ta-content, .fi-ta-header-toolbar, .fi-ta-pagination { background-color: transparent !important; box-shadow: none !important; border-color: transparent !important; }</style>'))
             ->emptyStateHeading(__('Belum ada artikel'))
             ->contentGrid([
-                'sm' => 1,
-                'md' => 2,
-                'lg' => 3,
-                'xl' => 4,
+                'default' => 1,
+                'sm' => 2,
+                'md' => 4,
+                'lg' => 5,
+                'xl' => 6,
             ])
             ->columns([
                 Tables\Columns\Layout\Stack::make([
@@ -88,15 +89,16 @@ class ArticleResource extends Resource
                     Tables\Columns\Layout\Stack::make([
                         Tables\Columns\ImageColumn::make('image_url')
                             ->label('')
-                            ->height('12rem')
+                            ->height('15rem')
                             ->width('100%')
                             ->alignment('center')
                             ->getStateUsing(fn ($record) => $record->image_url)
                             ->extraAttributes([
-                                'class' => 'w-full h-full overflow-hidden bg-white/5 flex products-center justify-center rounded-t-xl shadow-inner',
+                                'class' => 'article-img-wrap w-full h-full overflow-hidden bg-white/5 flex products-center justify-center rounded-t-xl shadow-inner',
                             ])
                             ->extraImgAttributes([
                                 'class' => 'w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-110 blur-0',
+                                'style' => 'width: 100%; object-fit: cover;',
                             ]),
 
                         // Video Indicator (Premium Play Icon)
@@ -106,7 +108,8 @@ class ArticleResource extends Resource
                             ->icon('heroicon-s-play-circle')
                             ->iconColor('warning')
                             ->extraAttributes([
-                                'class' => 'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 drop-shadow-2xl scale-[2.5] opacity-70 group-hover:opacity-100 group-hover:scale-[3] transition-all duration-300',
+                                'class' => 'absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 drop-shadow-2xl scale-[2.5] opacity-70 group-hover:opacity-100 group-hover:scale-[3] transition-all duration-300 pointer-events-none',
+                                'style' => 'z-index: 1 !important;',
                             ])
                             ->visible(fn ($record) => $record && ((bool) $record->video_url || $record->hasMedia('videos'))),
                     ])
@@ -121,20 +124,20 @@ class ArticleResource extends Resource
                             ->badge()
                             ->color('info')
                             ->size('xs')
-                            ->extraAttributes(['class' => 'mb-2']),
+                            ->extraAttributes(['class' => 'mt-1 mb-2']),
 
                         Tables\Columns\TextColumn::make('title')
                             ->formatStateUsing(fn ($state) => __($state))
                             ->searchable()
                             ->weight(FontWeight::Bold)
-                            ->size('sm')
+                            ->size('xs')
                             ->lineClamp(2),
 
                         Tables\Columns\TextColumn::make('excerpt')
                             ->formatStateUsing(fn ($state) => __($state))
                             ->size('xs')
                             ->color('gray')
-                            ->lineClamp(2)
+                            ->lineClamp(1)
                             ->wrap(),
 
                         Tables\Columns\Layout\Split::make([
@@ -150,29 +153,68 @@ class ArticleResource extends Resource
                                 ->color('gray')
                                 ->icon('heroicon-o-calendar')
                                 ->alignEnd(),
-                        ])->extraAttributes(['class' => 'mt-4 pt-4 border-t border-gray-100 dark:border-gray-800']),
-                    ])->extraAttributes(['class' => 'p-4']),
+                        ])->extraAttributes(['class' => 'mt-3 pt-3 border-t border-gray-100 dark:border-gray-800']),
+                    ])->extraAttributes(['class' => 'p-3']),
                 ])->extraAttributes([
                     'class' => 'bg-white dark:bg-gray-900 rounded-xl shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-800 transition-all duration-300 group overflow-hidden cursor-pointer',
                 ]),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('category_id')
+                SelectFilter::make('category_id')
+                    ->searchable()
                     ->label(__('Kategori'))
                     ->relationship('category', 'name')
-                    ->searchable()
                     ->preload(),
-            ])
+
+                SelectFilter::make('has_video')
+                    ->searchable()
+                    ->label(__('Konten Video'))
+                    ->options([
+                        'yes' => __('Ada Video'),
+                        'no'  => __('Tanpa Video'),
+                    ])
+                    ->query(fn (Builder $query, array $data) => match ($data['value'] ?? null) {
+                        'yes' => $query->whereNotNull('video_url')->where('video_url', '!=', ''),
+                        'no'  => $query->where(fn ($q) => $q->whereNull('video_url')->orWhere('video_url', '')),
+                        default => $query,
+                    }),
+
+                SelectFilter::make('has_package')
+                    ->searchable()
+                    ->label(__('Terkait Paket'))
+                    ->options([
+                        'yes' => __('Ada Paket Terkait'),
+                        'no'  => __('Tanpa Paket'),
+                    ])
+                    ->query(fn (Builder $query, array $data) => match ($data['value'] ?? null) {
+                        'yes' => $query->whereHas('packages'),
+                        'no'  => $query->whereDoesntHave('packages'),
+                        default => $query,
+                    }),
+
+                SelectFilter::make('sort_by')
+                    ->searchable()
+                    ->label(__('Urutkan'))
+                    ->options([
+                        'latest' => __('Terbaru'),
+                        'oldest' => __('Terlama'),
+                    ])
+                    ->query(fn (Builder $query, array $data) => match ($data['value'] ?? null) {
+                        'latest' => $query->reorder('published_at', 'desc'),
+                        'oldest' => $query->reorder('published_at', 'asc'),
+                        default  => $query,
+                    }),
+            ], layout: \Filament\Tables\Enums\FiltersLayout::AboveContentCollapsible)
             ->actions([
                 Tables\Actions\ViewAction::make()
                     ->label(__('Baca Artikel'))
                     ->button()
                     ->color('warning')
-                    ->size('sm')
+                    ->size('xs')
                     ->icon('heroicon-m-book-open')
                     ->extraAttributes(['class' => 'flex-1 justify-center rounded-lg shadow-sm font-bold'])
                     ->slideOver()
-                    ->modalWidth('2xl')
+                    ->modalWidth('full')
                     ->modalHeading(__('Membaca Artikel')),
             ])
             ->actionsAlignment('center')
@@ -201,7 +243,9 @@ class ArticleResource extends Resource
                             ->hiddenLabel()
                             ->height('20rem')
                             ->width('100%')
-                            ->extraImgAttributes(['class' => 'object-contain rounded-2xl mb-4 shadow-lg mx-auto bg-gray-50/30 dark:bg-gray-800/30']),
+                            ->alignCenter()
+                            ->extraAttributes(['class' => 'w-full flex justify-center items-center overflow-hidden rounded-2xl mb-4'])
+                            ->extraImgAttributes(['class' => 'w-full h-full object-cover rounded-2xl shadow-lg mx-auto']),
 
                         Grid::make(2)
                             ->schema([
@@ -220,7 +264,7 @@ class ArticleResource extends Resource
                             ->formatStateUsing(fn ($state) => __($state))
                             ->hiddenLabel()
                             ->weight(FontWeight::Bold)
-                            ->size(TextEntrySize::Large)
+                            ->size(TextEntrySize::Medium)
                             ->extraAttributes(['class' => 'mt-4']),
 
                         TextEntry::make('published_at')

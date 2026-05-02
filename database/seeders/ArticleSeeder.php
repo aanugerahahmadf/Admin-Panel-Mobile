@@ -7,11 +7,14 @@ use App\Models\Category;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
+use File;
 
 class ArticleSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->command->info('--- Seeding Articles ---');
+        
         // MASTER CLEAR: Sapu jagat semua media artikel sebelum seeding mulai!
         Article::all()->each(function ($article) {
             $article->clearMediaCollection('images');
@@ -22,41 +25,40 @@ class ArticleSeeder extends Seeder
 
         $articles = [
             [
-                'title' => __('Cara Mempersiapkan Kulit Sebelum Hari-H Pernikahan'),
-                'excerpt' => __('Tips perawatan kulit esensial untuk calon pengantin agar tampil glowing.'),
-                'content' => __('<p>Agar dekorasi bunga pernikahan dapat tampil dengan sempurna dan memberikan hasil yang maksimal, pemilihan jenis bunga adalah kuncinya. Pastikan Anda sudah menentukan palet warna minimal 2 minggu sebelum hari H.</p><ul><li>Pilih bunga segar sesuai musim.</li><li>Hindari bunga yang mudah layu di cuaca panas.</li><li>Konsultasikan desain dengan tim kami.</p>'),
-                'category' => __('Tips Kecantikan'),
-                'image_url' => 'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?q=80&w=1000&auto=format&fit=crop',
-                'video_url' => 'https://media.w3.org/2010/05/sintel/trailer.mp4',
+                'title' => __('Tren Dekorasi Bunga Pernikahan Mewah 2026'),
+                'excerpt' => __('Inspirasi penataan bunga segar yang elegan untuk momen spesial Anda.'),
+                'content' => __("Memilih dekorasi bunga yang tepat adalah kunci utama dalam menciptakan atmosfer pernikahan yang tak terlupakan. Tahun ini, penggunaan kombinasi bunga Mawar premium, Hydrangea, dan sentuhan dedaunan hijau alami menjadi pilihan favorit para pengantin.\n\nPenataan bunga di pelaminan yang megah, aksen bunga pada sepanjang lorong pengantin, serta centerpiece meja tamu yang artistik adalah fokus utama kami.\n\nTim Dekorasi Bunga Pernikahan siap mewujudkan konsep impian Anda dengan kualitas bunga terbaik dan desain yang eksklusif."),
+                'category' => __('Dekorasi Bunga'),
+                'image_name' => 'article-1.png',
+                'video_name' => 'article-video-1.mp4',
             ],
             [
-                'title' => __('Inspirasi Dekorasi Bunga Pernikahan Modern 2026'),
-                'excerpt' => __('Tren dekorasi bunga pernikahan dengan sentuhan modern yang elegan.'),
-                'content' => __('<p>Gaya dekorasi bunga pernikahan terus berkembang. Tahun 2026 ini, tren "Floral Glass Look" sedang banyak diminati, memadukan bunga segar pilihan dengan aksen transparan yang anggun.</p><p>Konsep ini memberikan kesan mewah dan lapang, membuat momen bahagia Anda semakin berkesan bagi para tamu undangan.</p>'),
-                'category' => __('Tren Pernikahan'),
-                'image_url' => 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=1000&auto=format&fit=crop',
-                'video_url' => null,
+                'title' => __('Seni Penataan Centerpiece Meja Tamu yang Artistik'),
+                'excerpt' => __('Bagaimana menciptakan keindahan di setiap meja tamu dengan sentuhan bunga floral.'),
+                'content' => __("Centerpiece meja bukan sekadar hiasan, melainkan elemen yang membangun kehangatan suasana bagi para tamu. Dengan perpaduan vas kristal tinggi dan bunga-bunga eksotis seperti Anggrek dan Peony, meja tamu akan tampak sangat mewah dan berkelas.\n\nSetiap detail kami perhatikan untuk memberikan pengalaman visual yang memanjakan mata setiap tamu undangan Anda."),
+                'category' => __('Desain Interior'),
+                'image_name' => 'article-2.png',
+                'video_name' => 'article-video-2.mp4',
             ],
             [
-                'title' => __('Mengapa Harus Memilih Dekorasi Bunga Pernikahan sebagai Vendor Anda?'),
-                'excerpt' => __('Mengenal lebih jauh kualitas dan dedikasi tim Dekorasi Bunga Pernikahan.'),
-                'content' => __('<p>Dekorasi Bunga Pernikahan bukan sekadar penyedia bunga, melainkan mitra dalam mewujudkan pernikahan impian Anda. Dengan pengalaman lebih dari 10 tahun, kami memahami detail kerumitan acara Anda.</p><p>Tim kami telah menangani berbagai gaya mulai dari adat tradisional Nusantara hingga gaya <em>International Garden Look</em>.</p>'),
-                'category' => __('Profil Vendor'),
-                'image_url' => 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?q=80&w=1000&auto=format&fit=crop',
-                'video_url' => 'https://media.w3.org/2010/05/sintel/trailer.mp4',
+                'title' => __('Keajaiban Floral Arch di Altar Pernikahan'),
+                'excerpt' => __('Menciptakan gerbang cinta yang megah dengan balutan bunga-bunga pilihan.'),
+                'content' => __("Floral Arch atau gerbang bunga adalah pusat perhatian di setiap upacara pernikahan. Kami merancang arch yang meluap dengan keindahan bunga Lily dan Mawar Champagne untuk menciptakan latar belakang yang romantis dan puitis.\n\nSempurnakan momen janji suci Anda dengan estetika floral yang luar biasa dari tim ahli kami."),
+                'category' => __('Pelaminan'),
+                'image_name' => 'article-3.png',
+                'video_name' => 'article-video-3.mp4',
             ],
             [
-                'title' => __('Checklist Persiapan Pernikahan 6 Bulan Sebelum Acara'),
-                'excerpt' => __('Langkah-langkah strategis agar persiapan pernikahan berjalan lancar.'),
-                'content' => __('<p>Mulai dari menentukan budget hingga memilih vendor utama, checklist ini akan membantu Anda mengorganisir jadwal tanpa merasa terbebani di menit-menit terakhir.</p><ol><li>Bulan 1: Budget dan konsep</li><li>Bulan 2: Tentukan venue</li><li>Bulan 3: MUA dan Fotografer</li></ol><p>Patuhi checklist ini ya!</p>'),
-                'category' => __('Persiapan Pernikahan'),
-                'image_url' => 'https://images.unsplash.com/photo-1510076857177-7470076d4098?q=80&w=1000&auto=format&fit=crop',
-                'video_url' => null,
+                'title' => __('Makna di Balik Buket Bunga Pengantin Anda'),
+                'excerpt' => __('Mengenal filosofi dan tips memilih buket bunga pengantin yang sempurna.'),
+                'content' => __("Buket bunga pengantin adalah simbol kebahagiaan dan awal yang baru. Pemilihan bunga seperti Ranunculus dan Eucalyptus memberikan kesan modern namun tetap elegan. Pastikan buket Anda mencerminkan kepribadian dan gaya pernikahan Anda.\n\nKami menyediakan layanan konsultasi khusus untuk memastikan buket Anda adalah karya seni yang unik dan personal."),
+                'category' => __('Buket Pengantin'),
+                'image_name' => 'article-4.png',
+                'video_name' => 'article-video-4.mp4',
             ],
         ];
 
         foreach ($articles as $article) {
-            // Retrieve or create the category based on the array's category string
             $category = Category::firstOrCreate(
                 ['slug' => Str::slug($article['category'])],
                 ['name' => $article['category']]
@@ -71,36 +73,41 @@ class ArticleSeeder extends Seeder
                     'category_id' => $category->id,
                     'author_id' => $admin?->id ?? 1,
                     'wedding_organizer_id' => 1,
-                    'image_url' => $article['image_url'],
-                    'video_url' => $article['video_url'],
+                    'image_url' => asset('images/article/' . $article['image_name']),
+                    'video_url' => $article['video_name'] ? asset('videos/article/' . $article['video_name']) : null,
                     'is_published' => true,
                     'published_at' => now(),
                 ]
             );
 
-            // POWER FLUSH: Bersihkan images & videos biar gak ada logo nyangkut!
-            $articleModel->clearMediaCollection('images');
-            $articleModel->clearMediaCollection('videos');
-
-            // Seed Images
-            if ($articleModel->getMedia('images')->isEmpty()) {
+            // Seed Image
+            $imagePath = public_path('images/article/' . $article['image_name']);
+            if (File::exists($imagePath)) {
                 try {
-                    $articleModel->addMediaFromUrl($article['image_url'])
+                    $articleModel->addMedia($imagePath)
+                        ->preservingOriginal()
                         ->toMediaCollection('images');
-                } catch (\Exception $e) {
+                } catch (\Exception $e) {}
+            }
+
+            // Seed Video
+            if ($article['video_name']) {
+                $videoPath = public_path('videos/article/' . $article['video_name']);
+                if (File::exists($videoPath)) {
+                    try {
+                        $articleModel->addMedia($videoPath)
+                            ->preservingOriginal()
+                            ->toMediaCollection('videos');
+                        
+                        $this->command->line("  <info>✓</info> {$article['title']} [{$article['image_name']}] + [{$article['video_name']}]");
+                        continue;
+                    } catch (\Exception $e) {}
                 }
             }
 
-            // Seed Videos (HANYA INI YANG BIKIN PREVIEW MUNCUL!)
-            if ($articleModel->video_url && $articleModel->getMedia('videos')->isEmpty()) {
-                try {
-                    // Pakai addMediaFromUrl untuk download video asli
-                    $articleModel->addMediaFromUrl($articleModel->video_url)
-                        ->toMediaCollection('videos');
-                } catch (\Exception $e) {
-                    // Jika gagal download, tetap simpan video_url sebagai backup
-                }
-            }
+            $this->command->line("  <info>✓</info> {$article['title']} [{$article['image_name']}]");
         }
+
+        $this->command->info('--- Article Seeding Complete (' . count($articles) . ' articles) ---');
     }
 }

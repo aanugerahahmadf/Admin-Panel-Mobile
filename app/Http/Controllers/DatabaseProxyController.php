@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
  * database running on the developer's machine.
  *
  * Security:
- *   - Requires X-DB-PROXY-SECRET header matching APP_KEY
+ *   - Requires X-DB-PROXY-SECRET header matching NATIVE_DB_PROXY_SECRET
  *   - Only accepts POST requests (enforced by route definition)
  *   - Should NEVER be exposed on a production server
  *
@@ -35,8 +35,8 @@ class DatabaseProxyController extends Controller
         }
 
         // ── 2. VALIDATE INPUT ─────────────────────────────────────────────
-        $method = $request->input('method');
-        $query = $request->input('query');
+        $method   = $request->input('method');
+        $query    = $request->input('query');
         $bindings = $request->input('bindings', []);
 
         $allowedMethods = ['select', 'insert', 'update', 'delete', 'statement', 'selectOne'];
@@ -52,11 +52,11 @@ class DatabaseProxyController extends Controller
         // ── 3. EXECUTE ────────────────────────────────────────────────────
         try {
             $result = match ($method) {
-                'select' => DB::select($query, $bindings),
+                'select'    => DB::select($query, $bindings),
                 'selectOne' => DB::selectOne($query, $bindings),
-                'insert' => DB::insert($query, $bindings),
-                'update' => DB::update($query, $bindings),
-                'delete' => DB::delete($query, $bindings),
+                'insert'    => $this->runInsert($query, $bindings),
+                'update'    => DB::update($query, $bindings),
+                'delete'    => DB::delete($query, $bindings),
                 'statement' => DB::statement($query, $bindings),
             };
 
@@ -64,13 +64,26 @@ class DatabaseProxyController extends Controller
 
         } catch (\Throwable $e) {
             Log::error('[DB Proxy] Query failed: '.$e->getMessage(), [
-                'method' => $method,
-                'query' => $query,
+                'method'  => $method,
+                'query'   => $query,
             ]);
 
             return response()->json([
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Run INSERT and return last insert ID so mobile can get the new record's ID.
+     */
+    private function runInsert(string $query, array $bindings): array
+    {
+        DB::insert($query, $bindings);
+
+        return [
+            'success'        => true,
+            'last_insert_id' => (int) DB::getPdo()->lastInsertId(),
+        ];
     }
 }

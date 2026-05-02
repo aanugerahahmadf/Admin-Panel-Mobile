@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\User;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -15,6 +16,7 @@ use Filament\Notifications\Notification;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
+use Native\Mobile\Notification as NativeNotification;
 
 /**
  * @mixin Component
@@ -36,14 +38,19 @@ class PersonalInfoComponent extends Component implements HasForms
     {
         $user = Auth::user();
         if ($user) {
+            $rawAvatar = $user->getRawOriginal('avatar_url');
+            
+            $avatarValue = filter_var($rawAvatar, FILTER_VALIDATE_URL) ? null : $rawAvatar;
+
             $this->form->fill([
-                'avatar_url' => $user->avatar_url,
+                'avatar_url' => $avatarValue,
                 'full_name' => $user->full_name,
                 'first_name' => $user->first_name,
                 'mid_name' => $user->mid_name,
                 'last_name' => $user->last_name,
                 'email' => $user->email,
                 'phone' => $user->phone,
+                'gender' => $user->gender,
                 'address' => $user->address,
             ]);
         }
@@ -65,7 +72,7 @@ class PersonalInfoComponent extends Component implements HasForms
                             ->avatar()
                             ->imageEditor()
                             ->directory('avatars')
-                            ->extraAttributes(['class' => 'flex flex-col products-center justify-center'])
+                            ->extraAttributes(['class' => 'flex flex-col items-center justify-center'])
                             ->alignCenter()
                             ->columnSpanFull(),
                         TextInput::make('full_name')
@@ -101,9 +108,16 @@ class PersonalInfoComponent extends Component implements HasForms
                             ->maxLength(255)
                             ->unique(User::class, 'email', ignorable: Auth::user()),
                         TextInput::make('phone')
-                            ->label(__('Nomor Telepon'))
+                            ->label(__('Nomor Telepon / WhatsApp'))
                             ->tel()
                             ->maxLength(255),
+                        Select::make('gender')
+                            ->label(__('Jenis Kelamin'))
+                            ->options([
+                                'male' => __('Laki-laki'),
+                                'female' => __('Perempuan'),
+                            ])
+                            ->native(false),
                         Textarea::make('address')
                             ->label(__('Alamat'))
                             ->rows(3)
@@ -117,9 +131,12 @@ class PersonalInfoComponent extends Component implements HasForms
     {
         try {
             $data = $this->form->getState();
-
-            /** @var User $user */
             $user = Auth::user();
+
+            // Jika avatar_url kosong (tidak upload baru), jangan hapus foto lama (terutama foto Google)
+            if (empty($data['avatar_url'])) {
+                unset($data['avatar_url']);
+            }
 
             $user->update($data);
 
@@ -127,6 +144,14 @@ class PersonalInfoComponent extends Component implements HasForms
                 ->title(__('Profil berhasil diperbarui!'))
                 ->success()
                 ->send();
+
+            // Notifikasi Native jika di mobile
+            if (app()->environment('mobile') || \App\Providers\NativeServiceProvider::isNativeMobile()) {
+                NativeNotification::new()
+                    ->title(__('Profil Diperbarui'))
+                    ->message(__('Data pribadi Anda telah berhasil disimpan.'))
+                    ->show();
+            }
 
             $this->dispatch('profile-updated');
         } catch (\Exception $e) {

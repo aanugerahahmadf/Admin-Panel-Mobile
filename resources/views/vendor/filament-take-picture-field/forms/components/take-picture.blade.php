@@ -130,7 +130,10 @@
             },
 
             handleWebcamError(error) {
-                if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+                // NativePHP mobile runs on capacitor:// or http://localhost — allow camera without HTTPS
+                const isNativePHP = window.location.protocol === 'capacitor:' || 
+                                    (window.location.hostname === 'localhost' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+                if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent) && !isNativePHP) {
                     if (window.location.protocol !== 'https:') {
                         this.webcamError = '{{ __('Camera access requires HTTPS on mobile devices') }}';
                         return;
@@ -368,7 +371,10 @@
                 }
             }
         }" x-init="() => {
-            if (window.location.protocol !== 'https:' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+            // NativePHP mobile runs on capacitor:// or http://localhost — allow camera without HTTPS
+            const isNativePHP = window.location.protocol === 'capacitor:' || 
+                                (window.location.hostname === 'localhost' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+            if (window.location.protocol !== 'https:' && !isNativePHP && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
                 webcamError = '{{ __('Camera access requires HTTPS on mobile devices') }}';
             }
 

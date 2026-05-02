@@ -6,7 +6,13 @@ import { nativephpMobile, nativephpHotFile } from './vendor/nativephp/mobile/res
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js', './vendor/nativephp/mobile/resources/js/phpProtocolAdapter.js', 'resources/js/echo.js'],
+            input: [
+                'resources/css/app.css', 
+                'resources/css/onboarding.css',
+                'resources/js/app.js', 
+                './vendor/nativephp/mobile/resources/js/phpProtocolAdapter.js', 
+                'resources/js/echo.js'
+            ],
             refresh: true,
             hotFile: nativephpHotFile(),
         }),

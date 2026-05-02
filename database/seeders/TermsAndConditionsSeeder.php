@@ -13,6 +13,8 @@ class TermsAndConditionsSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->command->info('--- Seeding Terms & Privacy ---');
+
         // 1. Terms of Service
         TermsOfService::updateOrCreate(
             ['id' => 1],
@@ -27,6 +29,7 @@ class TermsAndConditionsSeeder extends Seeder
                 ],
             ]
         );
+        $this->command->line("  <info>✓</info> Syarat & Ketentuan created");
 
         // 2. Privacy Policy
         PrivacyPolicy::updateOrCreate(
@@ -37,10 +40,12 @@ class TermsAndConditionsSeeder extends Seeder
                     ['heading' => __('KOMITMEN PRIVASI'), 'body' => __('Dekorasi Bunga Pernikahan menangani tanggung jawab perlindungan data pribadi sesuai dengan UU Pelindungan Data Pribadi (UU PDP) dengan sangat serius. Kami berkomitmen penuh untuk melindungi kerahasiaan seluruh data dekorasi Anda.'), 'is_italic' => false],
                     ['heading' => __('PENGUMPULAN DATA'), 'body' => __('Kami mengumpulkan data pribadi riil seperti nama lengkap, alamat email, lokasi acara, dan riwayat transaksi. Data otentikasi cepat melalui Google Login hanya digunakan untuk pembuatan identitas digital unik pada portal dekorasi kami.'), 'is_italic' => true],
                     ['heading' => __('PENGGUNAAN INFORMASI'), 'body' => __('Kami menggunakan informasi Anda semata-mata untuk memproses pesanan dekorasi bunga, koordinasi internal, notifikasi jadwal, dan audit perlindungan hak hukum. Seluruh data koordinasi internal tetap berada di bawah pengawasan audit internal kami.'), 'is_italic' => false],
-                    ['heading' => __('PENARIKAN PERSETUJUAN'), 'body' => __('Anda dapat menarik persetujuan pengumpulan data atau meminta penghapusan akun mandiri. Kami akan memproses permintaan Anda dalam waktu yang wajar setelah pemberitahuan diterima, meskipun hal ini dapat berakibat pembatalan layanan aktif yang sedang berjalan.'), 'is_italic' => true],
                     ['heading' => __('KEAMANAN SISTEM'), 'body' => __('Platform kami menggunakan enkripsi SSL tingkat tinggi untuk seluruh transmisi data. Keamanan sesi login bersifat temporer guna menjamin perlindungan privasi real-time saat Anda mengakses dashboard Dekorasi Bunga Pernikahan.'), 'is_italic' => false],
                 ],
             ]
         );
+        $this->command->line("  <info>✓</info> Kebijakan Privasi created");
+
+        $this->command->info('--- Terms & Privacy Seeding Complete ---');
     }
 }

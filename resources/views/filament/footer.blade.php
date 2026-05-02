@@ -3,8 +3,9 @@
 @endphp
 
 <footer
-    class="fixed bottom-0 left-0 right-0 z-20 flex items-center justify-center h-16 bg-white border-t border-gray-200 dark:bg-gray-900 dark:border-white/10 {{ $isAuth ? 'fi-auth-footer' : '' }}">
-    <div class="px-4 text-sm font-medium text-center text-gray-500 dark:text-gray-400">
+    class="fixed bottom-0 left-0 right-0 z-10 flex items-center justify-center h-12 bg-white border-t border-gray-200 dark:bg-gray-900 dark:border-white/10 {{ $isAuth ? 'fi-auth-footer' : '' }}"
+    style="pointer-events: none;">
+    <div class="px-4 text-sm font-medium text-center text-gray-500 dark:text-gray-400" style="pointer-events: auto;">
         &copy; {{ date('Y') }} {{ __(config('app.name')) }}. {{ __('All rights reserved') }}
     </div>
 </footer>

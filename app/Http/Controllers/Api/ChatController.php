@@ -42,7 +42,7 @@ class ChatController extends Controller
             $otherUser = $otherId ? User::find($otherId, ['*']) : null;
 
             $title = $isAdmin
-                ? ($otherUser ? __('Chat dengan ').($otherUser->full_name ?: $otherUser->username ?: __('Pelanggan')) : $inbox->title ?? __('Chat Bantuan'))
+                ? ($otherUser ? __('Chat dengan :name', ['name' => $otherUser->full_name ?: $otherUser->username ?: __('Pelanggan')]) : $inbox->title ?? __('Chat Bantuan'))
                 : __('Chat dengan Admin');
             $otherPayload = [
                 'id' => $otherUser?->id ?? $adminId,
@@ -153,7 +153,7 @@ class ChatController extends Controller
             if (! $withUserId) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Pilih customer untuk memulai chat.',
+                    'message' => __('Pilih customer untuk memulai chat.'),
                 ], 400);
             }
             $withUserId = (int) $withUserId;

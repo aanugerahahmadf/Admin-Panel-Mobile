@@ -2,6 +2,7 @@
 
 namespace App\Filament\User\Widgets;
 
+use App\Models\Cart;
 use App\Models\Order;
 use App\Models\Wishlist;
 use Filament\Facades\Filament;
@@ -20,13 +21,13 @@ class StatsOverview extends BaseWidget
     public function getExtraAttributes(): array
     {
         return [
-            'class' => '[&_.fi-wi-stats-overview-stats-ctn]:grid-cols-1 [&_.fi-wi-stats-overview-stats-ctn]:md:grid-cols-2 [&_.fi-wi-stats-overview-stats-ctn]:xl:grid-cols-4',
+            'class' => '[&_.fi-wi-stats-overview-stats-ctn]:grid-cols-1 [&_.fi-wi-stats-overview-stats-ctn]:md:grid-cols-2 [&_.fi-wi-stats-overview-stats-ctn]:xl:grid-cols-5',
         ];
     }
 
     protected function getColumns(): int
     {
-        return 4;
+        return 5;
     }
 
     protected function getStats(): array
@@ -35,7 +36,7 @@ class StatsOverview extends BaseWidget
         $name = $user->full_name ?? $user->username ?? __('User');
 
         return [
-            Stat::make(new HtmlString(__('Selamat Datang,').'<style>@media (min-width: 1280px) { .fi-wi-stats-overview-stats-ctn { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; } }</style>'), $name)
+            Stat::make(__('Selamat Datang,'), $name)
                 ->description(__('Ayo buat momen spesialmu hari ini!'))
                 ->descriptionIcon('heroicon-m-sparkles')
                 ->color('primary')
@@ -43,7 +44,7 @@ class StatsOverview extends BaseWidget
                     'class' => 'h-full',
                 ]),
 
-            Stat::make(__('Pesanan Saya'), Order::where('user_id', $user->id)->count())
+            Stat::make(__('Pesanan Saya'), Order::query()->where('user_id', $user->id)->count('id'))
                 ->description(__('Lacak transaksi Anda'))
                 ->descriptionIcon('heroicon-m-shopping-bag', IconPosition::Before)
                 ->color('info')
@@ -52,7 +53,7 @@ class StatsOverview extends BaseWidget
                     'onclick' => "window.location.href='".route('filament.user.resources.orders.index')."'",
                 ]),
 
-            Stat::make(__('Favorit'), Wishlist::where('user_id', $user->id)->count())
+            Stat::make(__('Favorit'), Wishlist::query()->where('user_id', $user->id)->count('id'))
                 ->description(__('Layanan tersimpan'))
                 ->descriptionIcon('heroicon-m-heart', IconPosition::Before)
                 ->color('danger')
@@ -60,13 +61,22 @@ class StatsOverview extends BaseWidget
                     'class' => 'cursor-pointer hover:scale-105 transition-transform h-full',
                     'onclick' => "window.location.href='".route('filament.user.resources.wishlists.index')."'",
                 ]),
-            Stat::make(__('Voucher Aktif'), Filament::auth()->user()?->vouchers()->whereNull('user_vouchers.used_at')->count() ?? 0)
+            Stat::make(__('Voucher Aktif'), $user->vouchers()->whereNull('user_vouchers.used_at')->count())
                 ->description(__('Gunakan diskonmu'))
                 ->descriptionIcon('heroicon-m-ticket', IconPosition::Before)
                 ->color('warning')
                 ->extraAttributes([
                     'class' => 'cursor-pointer hover:scale-105 transition-transform h-full',
                     'onclick' => "window.location.href='".route('filament.user.resources.vouchers.index')."'",
+                ]),
+
+            Stat::make(__('Keranjang'), Cart::query()->where('user_id', $user->id)->count())
+                ->description(__('Siap untuk dipesan'))
+                ->descriptionIcon('heroicon-m-shopping-cart', IconPosition::Before)
+                ->color('success')
+                ->extraAttributes([
+                    'class' => 'cursor-pointer hover:scale-105 transition-transform h-full',
+                    'onclick' => "window.location.href='".route('filament.user.resources.carts.index')."'",
                 ]),
         ];
     }

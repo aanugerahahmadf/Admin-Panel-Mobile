@@ -3,6 +3,7 @@
 namespace App\Filament\User\Resources;
 
 use App\Filament\User\Resources\WishlistResource\Pages\ManageWishlists;
+use App\Helpers\NativeNotificationHelper;
 use App\Models\Package;
 use App\Models\Product;
 use App\Models\Wishlist;
@@ -121,7 +122,7 @@ class WishlistResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->description(new HtmlString('<style>.fi-ta-ctn, .fi-ta-content, .fi-ta-header-toolbar, .fi-ta-pagination { background-color: transparent !important; box-shadow: none !important; border-color: transparent !important; }</style>'))
+            ->poll(\App\Providers\NativeServiceProvider::isNativeMobile() ? null : '30s')
             ->emptyStateHeading(__('Belum ada favorit'))
             ->emptyStateDescription(__('Temukan produk atau layanan impian Anda dan simpan di sini.'))
             ->emptyStateIcon('heroicon-o-heart')
@@ -134,10 +135,10 @@ class WishlistResource extends Resource
                     ->size('lg'),
             ])
             ->contentGrid([
-                'sm' => 1,
-                'md' => 2,
-                'lg' => 3,
-                'xl' => 4,
+                'default' => 2,
+                'md' => 4,
+                'lg' => 5,
+                'xl' => 6,
             ])
             ->columns([
                 Tables\Columns\Layout\Stack::make([
@@ -146,7 +147,7 @@ class WishlistResource extends Resource
                         Tables\Columns\ImageColumn::make('item_image')
                             ->state(fn ($record) => $record ? ($record->product_id ? $record->product?->image_url : $record->package?->image_url) : null)
                             ->label('')
-                            ->height('10rem')
+                            ->height('170px')
                             ->width('100%')
                             ->extraAttributes(['class' => 'w-full flex justify-center items-center bg-white p-4 rounded-t-xl overflow-hidden'])
                             ->extraImgAttributes([
@@ -178,14 +179,15 @@ class WishlistResource extends Resource
                         Tables\Columns\TextColumn::make('item_category')
                             ->state(fn ($record) => $record ? ($record->product_id ? $record->product?->category?->name : $record->package?->category?->name) : null)
                             ->formatStateUsing(fn ($state) => __($state))
-                            ->badge(),
+                            ->badge()
+                            ->size('xs')
+                            ->extraAttributes(['class' => 'mt-1 mb-1']),
                         Tables\Columns\TextColumn::make('item_name')
                             ->state(fn ($record) => $record ? ($record->product_id ? $record->product?->name : $record->package?->name) : null)
                             ->formatStateUsing(fn ($state) => __($state))
                             ->weight('bold')
-                            ->size('sm')
-                            ->lineClamp(2)
-                            ->extraAttributes(['class' => 'h-[3rem] flex items-center leading-tight overflow-hidden']),
+                            ->size('xs')
+                            ->lineClamp(2),
                         // Price Row
                         Tables\Columns\Layout\Stack::make([
                             Tables\Columns\TextColumn::make('price_display')
@@ -200,7 +202,7 @@ class WishlistResource extends Resource
                                 ->formatStateUsing(fn ($state) => 'Rp '.number_format($state, 0, ',', '.'))
                                 ->weight('bold')
                                 ->color('primary')
-                                ->size('md'),
+                                ->size('xs'),
 
                             Tables\Columns\TextColumn::make('original_price')
                                 ->state(function ($record) {
@@ -251,9 +253,9 @@ class WishlistResource extends Resource
                                 ->alignEnd(),
                         ])->extraAttributes(['class' => 'pt-2 mt-auto']),
 
-                    ])->space(2)->extraAttributes(['class' => 'p-3 flex-1 flex flex-col']),
+                    ])->space(1)->extraAttributes(['class' => 'p-2.5 flex-1 flex flex-col']),
                 ])->extraAttributes([
-                    'class' => 'bg-white dark:bg-gray-900 rounded-xl shadow-sm hover:shadow-xl hover:ring-1 hover:ring-primary-500/30 transition-all duration-300 group border border-transparent dark:border-white/10 !h-[390px] flex flex-col overflow-hidden',
+                    'class' => 'bg-white dark:bg-gray-900 rounded-xl shadow-sm hover:shadow-xl hover:ring-1 hover:ring-primary-500/30 transition-all duration-300 group border border-transparent dark:border-white/10 flex flex-col overflow-hidden',
                 ]),
             ])
             ->actions([
@@ -263,7 +265,8 @@ class WishlistResource extends Resource
                     ->button()
                     ->color('danger')
                     ->size('sm')
-                    ->extraAttributes(['class' => 'flex-1 justify-center rounded-lg shadow-sm font-bold']),
+                    ->extraAttributes(['class' => 'flex-1 justify-center rounded-lg shadow-sm font-bold'])
+                    ->after(fn () => NativeNotificationHelper::info(__('Dihapus'), __('Produk berhasil dihapus dari favorit.'))),
             ])
             ->actionsAlignment('center')
             ->extraAttributes([
@@ -281,7 +284,8 @@ class WishlistResource extends Resource
                         $data['user_id'] = Filament::auth()->id();
 
                         return $data;
-                    }),
+                    })
+                    ->after(fn () => NativeNotificationHelper::success(__('Berhasil ditambahkan ke favorit.'))),
             ]);
     }
 

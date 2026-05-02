@@ -13,6 +13,8 @@ class SuperAdminSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->command->info('--- Seeding Super Admin ---');
+
         $user = User::updateOrCreate(
             ['email' => 'devimakeup.wo@gmail.com'],
             [
@@ -29,5 +31,8 @@ class SuperAdminSeeder extends Seeder
         if (! $user->hasRole('super_admin')) {
             $user->assignRole('super_admin');
         }
+
+        $this->command->line("  <info>✓</info> Super Admin Created: {$user->email}");
+        $this->command->info('--- Super Admin Seeding Complete ---');
     }
 }

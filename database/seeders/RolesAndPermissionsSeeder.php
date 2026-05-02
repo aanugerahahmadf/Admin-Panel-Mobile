@@ -13,11 +13,21 @@ class RolesAndPermissionsSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->command->info('--- Seeding Roles & Permissions ---');
+
         // Reset cached roles and permissions
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // Create roles — super_admin = Admin Devi, user = Pelanggan yang memesan
+        // Create roles
         Role::firstOrCreate(['name' => 'super_admin']);
+        $this->command->line('  <info>✓</info> Role: super_admin created');
+        
         Role::firstOrCreate(['name' => 'user']);
+        $this->command->line('  <info>✓</info> Role: user created');
+
+        Role::firstOrCreate(['name' => 'customer']);
+        $this->command->line('  <info>✓</info> Role: customer created');
+
+        $this->command->info('--- Roles & Permissions Seeding Complete ---');
     }
 }

@@ -10,25 +10,30 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Wizard;
 use Filament\Forms\Components\Wizard\Step;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
 use Filament\Forms\Set;
+use Illuminate\Validation\ValidationException;
+use Filament\Forms\Components\Hidden;
 use Filament\Pages\Auth\Register as BaseRegister;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\HtmlString;
+use Illuminate\Validation\Rules\Password;
+use Native\Mobile\Notification;
 use Spatie\Permission\Models\Role;
 
 class Register extends BaseRegister
 {
+    public function getView(): string
+    {
+        return 'filament.user.auth.register';
+    }
     public function getHeading(): string|Htmlable
     {
         return __('Daftar Akun Baru');
     }
 
-    public function getSubheading(): string|Htmlable|null
-    {
-        return __('Silakan isi formulir di bawah ini untuk bergabung dengan kami.');
-    }
 
     protected function getEmailFormComponent(): Component
     {
@@ -65,7 +70,7 @@ class Register extends BaseRegister
                                 ->directory('avatars')
                                 ->alignCenter()
                                 ->columnSpanFull()
-                                ->extraAttributes(['class' => 'flex flex-col products-center justify-center']),
+                                ->extraAttributes(['class' => 'flex flex-col items-center justify-center']),
                             TextInput::make('username')
                                 ->label(__('Username'))
                                 ->required()
@@ -75,8 +80,27 @@ class Register extends BaseRegister
                                 ->autocomplete('username')
                                 ->columnSpanFull(),
                             $this->getEmailFormComponent(),
-                            $this->getPasswordFormComponent(),
-                            $this->getPasswordConfirmationFormComponent(),
+                            TextInput::make('password')
+                                ->label(__('Kata Sandi'))
+                                ->password()
+                                ->revealable()
+                                ->required()
+                                ->rule(Password::min(8)
+                                    ->letters()
+                                    ->mixedCase()
+                                    ->numbers()
+                                    ->symbols()
+                                    ->uncompromised()
+                                )
+                                ->dehydrateStateUsing(fn ($state) => Hash::make($state))
+                                ->same('password_confirmation')
+                                ->validationAttribute(__('Kata Sandi')),
+                            TextInput::make('password_confirmation')
+                                ->label(__('Konfirmasi Kata Sandi'))
+                                ->password()
+                                ->revealable()
+                                ->required()
+                                ->dehydrated(false),
                         ]),
                     Step::make('detail_pribadi')
                         ->label(__('Detail Pribadi'))
@@ -110,9 +134,16 @@ class Register extends BaseRegister
                                 ->label(__('Nama Belakang'))
                                 ->maxLength(255),
                             TextInput::make('phone')
-                                ->label(__('Nomor Telepon'))
+                                ->label(__('Nomor Telepon / WhatsApp'))
                                 ->tel()
                                 ->maxLength(255),
+                            Select::make('gender')
+                                ->label(__('Jenis Kelamin'))
+                                ->options([
+                                    'male' => __('Laki-laki'),
+                                    'female' => __('Perempuan'),
+                                ])
+                                ->native(false),
                             Textarea::make('address')
                                 ->label(__('Alamat'))
                                 ->rows(3)
@@ -121,6 +152,8 @@ class Register extends BaseRegister
                         ]),
                 ])
                     ->submitAction(new HtmlString('<button type="submit" style="background-color: #e11d48; color: white; padding: 0.5rem 1.5rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; border: none; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor=\'#be123c\'" onmouseout="this.style.backgroundColor=\'#e11d48\'">'.__('Daftar').'</button>')),
+                Hidden::make('agreement'),
+                Hidden::make('remember'),
             ])
             ->statePath('data');
     }
@@ -132,6 +165,19 @@ class Register extends BaseRegister
 
     protected function handleRegistration(array $data): User
     {
+        // Enforce mandatory checkboxes (Agreement & Remember)
+        if (! ($data['agreement'] ?? false)) {
+            throw ValidationException::withMessages([
+                'data.agreement' => __('Anda harus menyetujui syarat dan ketentuan untuk melanjutkan.'),
+            ]);
+        }
+
+        if (! ($data['remember'] ?? false)) {
+            throw ValidationException::withMessages([
+                'data.remember' => __('Anda harus mencentang Ingat Saya untuk melanjutkan.'),
+            ]);
+        }
+
         $user = User::create([
             'avatar_url' => $data['avatar_url'] ?? null,
             'full_name' => $data['full_name'],
@@ -142,6 +188,7 @@ class Register extends BaseRegister
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
             'phone' => $data['phone'] ?? null,
+            'gender' => $data['gender'] ?? null,
             'address' => $data['address'] ?? null,
         ]);
 
@@ -151,12 +198,21 @@ class Register extends BaseRegister
             $user->assignRole($customerRole);
         }
 
+        // Notifikasi Native jika di mobile
+        if (app()->environment('mobile') || \App\Providers\NativeServiceProvider::isNativeMobile()) {
+            Notification::new()
+                ->title(__('Pendaftaran Berhasil!'))
+                ->message(__('Halo :name, akun Anda sudah aktif dan siap digunakan.', ['name' => $user->first_name]))
+                ->show();
+        }
+
         return $user;
     }
 
     public function loginAction(): Action
     {
-        return parent::loginAction()
-            ->label(__('Sudah punya akun? Masuk'));
+        return Action::make('login')
+            ->label('')
+            ->hidden();
     }
 }

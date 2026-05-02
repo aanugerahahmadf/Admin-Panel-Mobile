@@ -60,7 +60,7 @@ class Product extends Model implements HasMedia
 
     public function getImageUrlAttribute()
     {
-        $fallback = asset('images/placeholders/image-placeholder.png');
+        $fallback = \App\Providers\NativeServiceProvider::normalizeUrl(asset('images/placeholders/image-placeholder.png'));
         $url = $this->getFirstMediaUrl('product_image') ?: null;
 
         return $this->normalizeImageUrl($url, $fallback);
@@ -73,14 +73,14 @@ class Product extends Model implements HasMedia
         }
 
         if (Str::startsWith($url, ['http://', 'https://', 'data:image'])) {
-            return $url;
+            return \App\Providers\NativeServiceProvider::normalizeUrl($url);
         }
 
         if (Str::startsWith($url, '/')) {
             return $url;
         }
 
-        return asset('storage/'.ltrim($url, '/'));
+        return \App\Providers\NativeServiceProvider::normalizeUrl(asset('storage/'.ltrim($url, '/')));
     }
 
     public function getFinalPriceAttribute()
@@ -96,14 +96,21 @@ class Product extends Model implements HasMedia
 
     public function getIsWishlistedAttribute(): bool
     {
-        // Try Filament (Web/Native)
-        if (class_exists(Filament::class) && Filament::auth()->check()) {
-            return $this->wishlists()->where('user_id', Filament::auth()->id())->exists();
+        // Prioritas: Sanctum (mobile API) dulu, baru Filament (web)
+        try {
+            if (auth('sanctum')->check()) {
+                return $this->wishlists()->where('user_id', auth('sanctum')->id())->exists();
+            }
+        } catch (\Throwable $e) {
+            // Silently fail
         }
 
-        // Try Sanctum (Mobile API)
-        if (auth('sanctum')->check()) {
-            return $this->wishlists()->where('user_id', auth('sanctum')->id())->exists();
+        try {
+            if (class_exists(\Filament\Facades\Filament::class) && \Filament\Facades\Filament::auth()->check()) {
+                return $this->wishlists()->where('user_id', \Filament\Facades\Filament::auth()->id())->exists();
+            }
+        } catch (\Throwable $e) {
+            // Silently fail
         }
 
         return false;

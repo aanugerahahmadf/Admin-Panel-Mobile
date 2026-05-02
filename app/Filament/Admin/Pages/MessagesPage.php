@@ -47,9 +47,9 @@ class MessagesPage extends Page
             "admin_{$userId}_unread_messages_count",
             now()->addMinutes(1),
             function () use ($userId) {
-                return Inbox::whereJsonContains('user_ids', $userId)
+                return Inbox::query()->whereJsonContains('user_ids', $userId, 'and', false)
                     ->whereHas('messages', function (Builder $query) use ($userId) {
-                        $query->whereJsonDoesntContain('read_by', $userId);
+                        $query->whereJsonDoesntContain('read_by', $userId, 'and', false);
                     })
                     ->count();
             }

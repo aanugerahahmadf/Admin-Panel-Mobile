@@ -23,6 +23,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
@@ -54,6 +55,10 @@ class Messages extends Component implements HasForms
 
     public string $panelId = 'admin';
 
+    public bool $otherUserIsTyping = false;
+
+    public string $typingUserName = '';
+
     public function mount(): void
     {
         $this->panelId = filament()->getCurrentPanel()?->getId() ?? 'admin';
@@ -77,7 +82,7 @@ class Messages extends Component implements HasForms
         /** @var Builder $query */
         $query = $this->selectedConversation->messages();
 
-        $polledMessages = $query->where('id', '>', $latestId ?? 0)->latest()->get(['*']);
+        $polledMessages = $query->where('id', '>', $latestId ?? 0)->latest('id')->get(['*']);
         if ($polledMessages->isNotEmpty()) {
             $this->conversationMessages = collect([
                 ...$polledMessages,
@@ -88,18 +93,14 @@ class Messages extends Component implements HasForms
             $this->markAsRead();
         }
 
-        // Optional: Check if the status of the sender's last unread message has changed to 'read'
-        // Since we are polling, we need to refresh the messages to see the 'Dilihat' status
-        // if the other person has read it in the meantime.
+        // Re-fetch outgoing messages to get updated read_by status
         $unreadOutgoingExists = $this->conversationMessages
             ->where('user_id', auth()->id())
             ->filter(fn ($msg) => empty($msg->read_by) || count(array_filter($msg->read_by, fn ($id) => $id !== auth()->id())) === 0)
             ->isNotEmpty();
 
         if ($unreadOutgoingExists) {
-            // Re-fetch the message objects to get updated read_by status
             $this->conversationMessages = $this->conversationMessages->map(function ($msg) {
-                // Only re-fetch if it was previously unread by others
                 $wasUnread = empty($msg->read_by) || count(array_filter($msg->read_by, fn ($id) => $id !== auth()->id())) === 0;
                 if ($wasUnread && $msg->user_id === auth()->id()) {
                     return Message::find($msg->id);
@@ -108,6 +109,41 @@ class Messages extends Component implements HasForms
                 return $msg;
             });
         }
+
+        // Check if any OTHER participant in this conversation is currently typing
+        $inboxId = $this->selectedConversation->id;
+        $myId = auth()->id();
+        $otherUserIds = collect($this->selectedConversation->user_ids)
+            ->reject(fn ($id) => $id === $myId)
+            ->values();
+
+        $this->otherUserIsTyping = false;
+        $this->typingUserName = '';
+        foreach ($otherUserIds as $uid) {
+            if (Cache::has("typing_{$inboxId}_{$uid}")) {
+                $this->otherUserIsTyping = true;
+                $typingUser = $this->selectedConversation->other_users->firstWhere('id', $uid);
+                $this->typingUserName = $typingUser?->name ?? '';
+                break;
+            }
+        }
+    }
+
+    /**
+     * Called each time the message text input changes (via live).
+     * Stores a short-lived cache entry so the other side can show "Sedang mengetik...".
+     */
+    public function setTyping(): void
+    {
+        if (! $this->selectedConversation) {
+            return;
+        }
+
+        $inboxId = $this->selectedConversation->id;
+        $userId  = auth()->id();
+
+        // Keep the key alive for 5 seconds; the poll interval will pick it up
+        Cache::put("typing_{$inboxId}_{$userId}", true, now()->addSeconds(5));
     }
 
     public function loadMessages(): void
@@ -150,6 +186,7 @@ class Messages extends Component implements HasForms
                         ->live()
                         ->hiddenLabel()
                         ->placeholder(__('Write a message...'))
+                        ->afterStateUpdated(fn () => $this->setTyping())
                         ->suffixAction(EmojiPickerAction::make('emoji-message')),
                 ])->verticallyAlignEnd(),
                 TakePicture::make('camera_image')
@@ -222,7 +259,7 @@ class Messages extends Component implements HasForms
         /** @var Builder $query */
         $query = $this->selectedConversation->messages();
 
-        return $query->latest()->paginate(10, ['*'], 'page', $this->currentPage);
+        return $query->latest('id')->paginate(10, ['*'], 'page', $this->currentPage);
     }
 
     public function downloadAttachment(int $mediaId)

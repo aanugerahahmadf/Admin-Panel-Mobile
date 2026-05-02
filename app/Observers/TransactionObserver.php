@@ -30,12 +30,16 @@ class TransactionObserver
                 if ($user) {
                     $user->increment('balance', $transaction->amount);
 
-                    Notification::make()
-                        ->title(__('Topup Berhasil'))
-                        ->body(__('Saldo sebesar Rp ').number_format($transaction->amount, 0, ',', '.').__(' telah masuk ke akun Anda.'))
-                        ->success()
-                        ->icon('heroicon-o-banknotes')
-                        ->sendToDatabase($user);
+                    try {
+                        Notification::make()
+                            ->title(__('Topup Berhasil'))
+                            ->body(__('Saldo sebesar Rp ').number_format($transaction->amount, 0, ',', '.').__(' telah masuk ke akun Anda.'))
+                            ->success()
+                            ->icon('heroicon-o-banknotes')
+                            ->sendToDatabase($user);
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning('[TransactionObserver] Notification failed: '.$e->getMessage());
+                    }
                 }
             }
         }

@@ -4,6 +4,7 @@ namespace App\Filament\User\Resources;
 
 use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
+use App\Helpers\NativeNotificationHelper;
 use App\Filament\User\Resources\OrderResource\Pages\ManageOrders;
 use App\Models\Order;
 use App\Models\Transaction;
@@ -16,6 +17,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\HtmlString;
@@ -91,25 +93,31 @@ class OrderResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->description(new HtmlString('<style>.fi-ta-ctn, .fi-ta-content, .fi-ta-header-toolbar, .fi-ta-pagination { background-color: transparent !important; box-shadow: none !important; border-color: transparent !important; }</style>'))
-            ->poll('5s')
+            ->poll(\App\Providers\NativeServiceProvider::isNativeMobile() ? null : '30s')
             ->emptyStateHeading(__('Belum ada pesanan'))
             ->emptyStateDescription(__('Wujudkan acara impianmu dengan paket terbaik dari kami. Mulai pesan sekarang!'))
             ->emptyStateIcon('heroicon-o-shopping-bag')
             ->emptyStateActions([
-                Tables\Actions\Action::make('start_shopping')
-                    ->label(__('Pesan Sekarang'))
+                Tables\Actions\Action::make('shop_products')
+                    ->label(__('Belanja Bunga'))
+                    ->url(ProductResource::getUrl())
+                    ->button()
+                    ->color('info')
+                    ->size('lg')
+                    ->icon('ri-flower-line'),
+                Tables\Actions\Action::make('book_package')
+                    ->label(__('Pesan Paket Dekorasi'))
                     ->url(PackageResource::getUrl())
                     ->button()
                     ->color('primary')
                     ->size('lg')
-                    ->icon('heroicon-m-sparkles'),
+                    ->icon('ri-gift-line'),
             ])
             ->contentGrid([
-                'sm' => 1,
-                'md' => 2,
-                'lg' => 3,
-                'xl' => 4,
+                'default' => 2,
+                'md' => 3,
+                'lg' => 4,
+                'xl' => 5,
             ])
             ->columns([
                 Tables\Columns\Layout\Stack::make([
@@ -117,12 +125,12 @@ class OrderResource extends Resource
                     Tables\Columns\Layout\Stack::make([
                         Tables\Columns\ImageColumn::make('package.image_url')
                             ->label('')
-                            ->height('200px')
+                            ->height('140px')
                             ->width('100%')
                             ->extraAttributes(['class' => 'w-full flex justify-center products-center bg-gray-50 dark:bg-gray-800 rounded-t-2xl overflow-hidden'])
                             ->extraImgAttributes([
-                                'class' => 'aspect-square object-contain transition-all duration-500 group-hover:scale-110 !mx-auto',
-                                'style' => 'height: 200px; width: 100%;',
+                                'class' => 'aspect-video object-cover transition-all duration-500 group-hover:scale-110 !mx-auto',
+                                'style' => 'height: 140px; width: 100%;',
                             ]),
 
                     ])->extraAttributes(['class' => 'relative overflow-hidden group/img-overlay']),
@@ -134,7 +142,8 @@ class OrderResource extends Resource
                             ->badge()
                             ->color('warning')
                             ->size('xs')
-                            ->alignCenter(),
+                            ->alignCenter()
+                            ->extraAttributes(['class' => 'mt-1 mb-1']),
 
                         // Store Info
                         Tables\Columns\TextColumn::make('package.weddingOrganizer.name')
@@ -147,7 +156,7 @@ class OrderResource extends Resource
                         Tables\Columns\TextColumn::make('package.name')
                             ->formatStateUsing(fn ($state) => __($state))
                             ->weight('bold')
-                            ->size('sm')
+                            ->size('xs')
                             ->lineClamp(1)
                             ->color('info')
                             ->alignCenter()
@@ -177,10 +186,10 @@ class OrderResource extends Resource
                             Tables\Columns\TextColumn::make('total_price')
                                 ->formatStateUsing(fn ($state) => 'Rp '.number_format($state, 2, ',', '.'))
                                 ->weight('black')
-                                ->size('md')
+                                ->size('xs')
                                 ->color('primary')
                                 ->alignCenter(),
-                        ])->space(3)->extraAttributes(['class' => 'mt-4']),
+                        ])->space(2)->extraAttributes(['class' => 'mt-3']),
 
                         // Rating Stats
                         Tables\Columns\TextColumn::make('avg_rating')
@@ -192,9 +201,9 @@ class OrderResource extends Resource
                             ->weight('bold')
                             ->alignCenter()
                             ->extraAttributes(['class' => 'pt-3 mt-auto']),
-                    ])->space(2)->extraAttributes(['class' => 'p-3 flex-1 flex flex-col']),
+                    ])->space(1)->extraAttributes(['class' => 'p-2.5 flex-1 flex flex-col']),
                 ])->extraAttributes([
-                    'class' => 'bg-white dark:bg-gray-900 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group border border-transparent dark:border-white/10 h-full flex flex-col',
+                    'class' => 'bg-white dark:bg-gray-900 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 overflow-hidden group border border-transparent dark:border-white/10 flex flex-col',
                 ]),
             ])
 
@@ -210,7 +219,7 @@ class OrderResource extends Resource
                     ])
                     ->query(fn (Builder $query, array $data) => $query->when($data['value'], fn ($q, $id) => $q->where('id', $id)))
                     ->hidden(),
-            ])
+            ], layout: \Filament\Tables\Enums\FiltersLayout::AboveContentCollapsible)
             ->actions([
                 Tables\Actions\ViewAction::make()
                     ->hiddenLabel()
@@ -235,7 +244,8 @@ class OrderResource extends Resource
                         OrderStatus::PENDING,
                         OrderStatus::CONFIRMED,
                         OrderStatus::COMPLETED,
-                    ])),
+                    ]))
+                    ->after(fn () => NativeNotificationHelper::success(__('Pesanan berhasil diperbarui.'))),
 
                 Tables\Actions\DeleteAction::make()
                     ->hiddenLabel()
@@ -323,6 +333,73 @@ class OrderResource extends Resource
                             Notification::make()->title(__('Gagal Sinkronisasi'))->body($e->getMessage())->danger()->send();
                         }
                     }),
+            ])
+            ->actionsAlignment('center')
+            ->headerActions([
+                Tables\Actions\Action::make('clear_history')
+                    ->label(__('Bersihkan Riwayat'))
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->button()
+                    ->size('sm')
+                    ->requiresConfirmation()
+                    ->modalHeading(__('Bersihkan Riwayat Pesanan'))
+                    ->modalDescription(__('Pilih jenis pesanan yang ingin Anda hapus secara permanen dari riwayat.'))
+                    ->form([
+                        Forms\Components\Tabs::make('Delete Options')
+                            ->tabs([
+                                Forms\Components\Tabs\Tab::make(__('Berdasarkan Status'))
+                                    ->icon('heroicon-o-tag')
+                                    ->schema([
+                                        Forms\Components\Select::make('type')
+                                            ->label(__('Hapus Pesanan Berdasarkan Status'))
+                                            ->options([
+                                                'all' => __('Semua Pesanan'),
+                                                'cancelled' => __('Hanya Pesanan Dibatalkan'),
+                                                'completed' => __('Hanya Pesanan Selesai'),
+                                            ])
+                                            ->default('all')
+                                            ->native(false),
+                                    ]),
+                                Forms\Components\Tabs\Tab::make(__('Pilih Pesanan Spesifik'))
+                                    ->icon('heroicon-o-list-bullet')
+                                    ->schema([
+                                        Forms\Components\CheckboxList::make('order_ids')
+                                            ->label(__('Pilih Nomor Pesanan'))
+                                            ->options(fn () => Order::where('user_id', auth()->id())
+                                                ->latest()
+                                                ->get()
+                                                ->mapWithKeys(fn ($order) => [
+                                                    $order->id => "#{$order->order_number} - ".($order->package?->name ?? __('Layanan')),
+                                                ]))
+                                            ->bulkToggleable()
+                                            ->searchable()
+                                            ->columns(1),
+                                    ]),
+                            ])->columnSpanFull(),
+                    ])
+                    ->action(function (array $data) {
+                        $query = Order::query()->where('user_id', auth()->id());
+                        
+                        if (! empty($data['order_ids'])) {
+                            // Jika ada yang dipilih spesifik, hapus yang dipilih saja
+                            $query->whereIn('id', $data['order_ids']);
+                        } else {
+                            // Jika tidak ada yang dipilih spesifik, gunakan pilihan status
+                            if ($data['type'] === 'cancelled') {
+                                $query->where('status', \App\Enums\OrderStatus::CANCELLED);
+                            } elseif ($data['type'] === 'completed') {
+                                $query->where('status', \App\Enums\OrderStatus::COMPLETED);
+                            }
+                        }
+
+                        $query->delete();
+                        \Filament\Notifications\Notification::make()
+                            ->title(__('Riwayat Berhasil Dibersihkan'))
+                            ->success()
+                            ->send();
+                    })
+                    ->visible(fn () => Order::query()->where('user_id', auth()->id())->exists()),
             ])
             ->actionsAlignment('center')
             ->extraAttributes([

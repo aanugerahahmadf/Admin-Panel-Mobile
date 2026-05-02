@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Resources\PackageResource\Pages;
 
+use Filament\Actions;
+
 use App\Filament\Admin\Resources\PackageResource;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\CreateRecord;
@@ -16,5 +18,16 @@ class CreatePackage extends CreateRecord
             ->success()
             ->title(__('Paket Ditambahkan'))
             ->body(__('Paket baru telah berhasil ditambahkan.'));
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\Action::make('back')
+                ->label(__('Kembali'))
+                ->url(fn() => static::getResource()::getUrl('index'))
+                ->color('gray')->button()
+                ->icon('heroicon-o-arrow-left'),
+        ];
     }
 }

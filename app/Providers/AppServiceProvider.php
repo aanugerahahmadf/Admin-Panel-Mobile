@@ -142,6 +142,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $isMobile = \App\Providers\NativeServiceProvider::isNativeMobile();
+
         // 🚀 Force HTTPS for Ngrok/Production Assets
         if (str_contains(config('app.url'), 'https://')) {
             URL::forceScheme('https');
@@ -171,10 +173,10 @@ class AppServiceProvider extends ServiceProvider
         // ═══════════════════════════════════════════════════════════
         // PERSISTENT SESSION CONFIGURATION (WEB & MOBILE)
         // ═══════════════════════════════════════════════════════════
-        // Pastikan session tidak pernah expired selama server hidup
         config([
             'session.expire_on_close' => false,
-            'session.lottery' => [0, 100], // Matikan Garbage Collection (0% chance)
+            'session.lottery'         => [0, 100],
+            'session.lifetime'        => 525600,
         ]);
 
         // Grant all permissions to super_admin role
@@ -182,7 +184,7 @@ class AppServiceProvider extends ServiceProvider
             return $user->hasRole('super_admin') ? true : null;
         });
 
-        // Automatically activate user on login (Filament/Web/API)
+        // Automatically activate user on login
         Event::listen(
             LoginEvent::class,
             function ($event): void {
@@ -193,9 +195,12 @@ class AppServiceProvider extends ServiceProvider
             }
         );
 
+        // Observers — MediaObserver sudah skip CBIR di mobile
         Media::observe(MediaObserver::class);
         Order::observe(OrderObserver::class);
         Transaction::observe(TransactionObserver::class);
+
+        // Livewire components
         Livewire::component('edit_password_form', EditPasswordComponent::class);
         Livewire::component('delete_account_form', DeleteAccountComponent::class);
         Livewire::component('browser_sessions_form', BrowserSessionsComponent::class);
@@ -204,15 +209,13 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component('fm-search', Search::class);
         Livewire::component('username-component', UsernameComponent::class);
 
-        // 🔐 ADMIN PANEL — AUTH COMPONENTS
+        // Auth components
         Livewire::component('app.filament.admin.auth.login', AdminLogin::class);
         Livewire::component('app.filament.admin.auth.register', AdminRegister::class);
         Livewire::component('app.filament.admin.auth.otp-request-password-reset', AdminOtpRequestPasswordReset::class);
         Livewire::component('app.filament.admin.auth.otp-reset-password', AdminOtpResetPassword::class);
         Livewire::component('app.filament.admin.auth.verify-otp', AdminVerifyOtp::class);
         Livewire::component('app.filament.admin.auth.otp-email-verification-prompt', AdminOtpEmailVerificationPrompt::class);
-
-        // 🔐 USER PANEL — AUTH COMPONENTS
         Livewire::component('app.filament.user.auth.login', UserLogin::class);
         Livewire::component('app.filament.user.auth.register', UserRegister::class);
         Livewire::component('app.filament.user.auth.otp-request-password-reset', UserOtpRequestPasswordReset::class);
@@ -224,33 +227,31 @@ class AppServiceProvider extends ServiceProvider
             $table->searchable();
         });
 
-        // 🎯 GLOBAL ALIGNMENT CENTER UNTUK SEMUA TABLE & EXPORTER
+        // Global column config
         Column::configureUsing(function (Column $column): void {
             $column->alignCenter()
                 ->label(fn () => __($column->getName()));
         });
 
-        // 🎯 GLOBAL AUTO-TRANSLATE UNTUK SEMUA "ISI TABLE" (ROW DATA) PADA WEBDAN NATIVEPHP
-        TextColumn::configureUsing(function (TextColumn $column): void {
-            $column->formatStateUsing(function ($state, $record, TextColumn $column) {
-                // Jangan paksa terjemahan untuk password, token, url, atau email
-                if (is_string($state) && ! filter_var($state, FILTER_VALIDATE_EMAIL) && ! str_contains($state, 'http')) {
-                    // Deteksi jika hanya angka dan titik/koma (seperti harga/telepon), dilewati.
-                    if (! preg_match('/^[0-9.,\-+() ]+$/', $state)) {
-                        return __($state);
+        // Auto-translate TextColumn — skip di mobile untuk performa
+        if (! $isMobile) {
+            TextColumn::configureUsing(function (TextColumn $column): void {
+                $column->formatStateUsing(function ($state, $record, TextColumn $column) {
+                    if (is_string($state) && ! filter_var($state, FILTER_VALIDATE_EMAIL) && ! str_contains($state, 'http')) {
+                        if (! preg_match('/^[0-9.,\-+() ]+$/', $state)) {
+                            return __($state);
+                        }
                     }
-                }
-
-                return $state;
+                    return $state;
+                });
             });
-        });
+        }
 
-        // 🌐 AUTO TRANSLATE ALL FORM FIELDS & FILTERS (safe: ensures string return)
+        // Auto-translate form fields
         Field::configureUsing(function (Field $field): void {
             $field->label(function () use ($field): string {
                 $original = $field->getName();
                 $translated = __($original);
-
                 return is_string($translated) ? $translated : $original;
             });
         });
@@ -263,35 +264,30 @@ class AppServiceProvider extends ServiceProvider
             $entry->label(function () use ($entry): string {
                 $original = $entry->getName();
                 $translated = __($original);
-
                 return is_string($translated) ? $translated : $original;
             });
         });
 
-        ExportColumn::configureUsing(function (ExportColumn $column): void {
-            $column->formatStateUsing(function ($state) {
-                if (is_string($state) && ! filter_var($state, FILTER_VALIDATE_EMAIL) && ! str_contains($state, 'http')) {
-                    if (! preg_match('/^[0-9.,\-+() ]+$/', $state)) {
-                        $state = __($state);
+        // ExportColumn — skip di mobile (tidak ada fitur export di mobile)
+        if (! $isMobile) {
+            ExportColumn::configureUsing(function (ExportColumn $column): void {
+                $column->formatStateUsing(function ($state) {
+                    if (is_string($state) && ! filter_var($state, FILTER_VALIDATE_EMAIL) && ! str_contains($state, 'http')) {
+                        if (! preg_match('/^[0-9.,\-+() ]+$/', $state)) {
+                            $state = __($state);
+                        }
                     }
-                }
-                if ($state instanceof \UnitEnum) {
-                    $state = $state instanceof \BackedEnum ? $state->value : $state->name;
-                }
-
-                // Ensure the return value is a string or null for Exporter compatibility
-                return $state !== null ? (string) $state : null;
+                    if ($state instanceof \UnitEnum) {
+                        $state = $state instanceof \BackedEnum ? $state->value : $state->name;
+                    }
+                    return $state !== null ? (string) $state : null;
+                });
             });
-        });
+        }
 
-        // FilamentAsset::register([
-        //     Css::make('app-stylesheet', Vite::asset('resources/css/app.css')),
-        //     // Fallback: register mobile-cards CSS directly in case the vendor package's
-        //     // service provider failed to register it due to the macro compatibility issue.
-        //     // Css::make('mobile-cards-styles', base_path('vendor/slym758/filament-mobile-table/resources/css/mobile-cards.css')),
-        // ]);
+        // 🔐 CSP handled via App\Support\Csp\MidtransPreset and Spatie\Csp\AddCspHeaders middleware
 
-        // 💳 MIDTRANS SNAP MODAL INTEGRATION
+        // 💳 MIDTRANS SNAP MODAL — Enabled for both Web & Native Mobile for compatibility
         FilamentView::registerRenderHook(
             PanelsRenderHook::BODY_END,
             fn (): string => Blade::render('
@@ -300,6 +296,33 @@ class AppServiceProvider extends ServiceProvider
             '),
         );
 
-        // Singletons are now registered in NativeServiceProvider
+        // 📱 MOBILE PAGINATION NAV
+        FilamentView::registerRenderHook(
+            PanelsRenderHook::BODY_END,
+            function () use ($isMobile): string {
+                $isMobileCheck = $isMobile;
+                if (! $isMobileCheck) {
+                    $userAgent = request()->userAgent() ?? '';
+                    $isMobileCheck = (bool) preg_match(
+                        '/android|iphone|ipad|ipod|mobile|blackberry|windows phone|nativephp/i',
+                        $userAgent
+                    );
+                }
+
+                if ($isMobileCheck) {
+                    return Blade::render('
+                        <style>
+                            .fi-ta-pagination { display: none !important; }
+                            .fi-ta-filters-above-content-ctn { border-top: none !important; border-bottom: none !important; }
+                            .fi-ta-filters-above-content-ctn > div { border-top: none !important; }
+                        </style>
+                        @include("filament.user.components.mobile-pagination")
+                    ');
+                }
+
+                return '';
+            },
+            scopes: \App\Providers\Filament\UserPanelProvider::class,
+        );
     }
 }

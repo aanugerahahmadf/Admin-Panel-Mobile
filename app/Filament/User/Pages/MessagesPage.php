@@ -48,10 +48,10 @@ class MessagesPage extends Page
             "user_{$userId}_unread_messages_count",
             now()->addMinutes(1),
             function () use ($userId) {
-                $query = Inbox::whereJsonContains('user_ids', $userId);
+                $query = Inbox::query()->whereJsonContains('user_ids', $userId, 'and', false);
 
                 // User panel should only count messages that include an admin
-                $adminIds = User::whereHas('roles', function ($q) {
+                $adminIds = User::query()->whereHas('roles', function ($q) {
                     $q->where('name', 'super_admin');
                 })->pluck('id')->toArray();
                 $query->where(function ($q) use ($adminIds) {
@@ -61,7 +61,7 @@ class MessagesPage extends Page
                 });
 
                 return $query->whereHas('messages', function (Builder $query) use ($userId) {
-                    $query->whereJsonDoesntContain('read_by', $userId);
+                    $query->whereJsonDoesntContain('read_by', $userId, 'and', false);
                 })
                     ->count();
             }
@@ -86,20 +86,20 @@ class MessagesPage extends Page
     public function mount(?int $id = null): void
     {
         if ($id) {
-            $this->selectedConversation = Inbox::findOrFail($id, ['*']);
+            $this->selectedConversation = Inbox::query()->findOrFail($id, ['*']);
 
             return;
         }
 
         // If no ID is provided, find or create conversation with Super Admin
         $userId = Auth::id();
-        $admin = User::whereHas('roles', function ($q) {
+        $admin = User::query()->whereHas('roles', function ($q) {
             $q->where('name', 'super_admin');
         })->first();
 
         if ($admin) {
-            $inbox = Inbox::whereJsonContains('user_ids', $userId)
-                ->whereJsonContains('user_ids', $admin->id)
+            $inbox = Inbox::query()->whereJsonContains('user_ids', $userId, 'and', false)
+                ->whereJsonContains('user_ids', $admin->id, 'and', false)
                 ->first();
 
             if (! $inbox) {

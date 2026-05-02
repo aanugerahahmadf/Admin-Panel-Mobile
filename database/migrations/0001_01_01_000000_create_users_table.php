@@ -26,6 +26,7 @@ return new class extends Migration
             $table->string('social_type')->nullable();
             $table->string('avatar')->default('avatar.png');
             $table->string('avatar_url')->nullable();
+            $table->string('gender')->nullable();
             $table->string('phone')->nullable();
             $table->text('address')->nullable();
             $table->decimal('latitude', 10, 8)->nullable();

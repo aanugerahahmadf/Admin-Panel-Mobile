@@ -15,6 +15,8 @@ class OrdersChart extends ChartWidget
 
     protected static ?int $sort = 3;
 
+    protected int | string | array $columnSpan = 1;
+
     public function getHeading(): string|Htmlable
     {
         return __('Jumlah Pesanan');
@@ -63,6 +65,21 @@ class OrdersChart extends ChartWidget
                 'labels' => $labels,
             ];
         });
+    }
+
+    protected function getOptions(): array
+    {
+        return [
+            'scales' => [
+                'y' => [
+                    'suggestedMin' => 0,
+                    'suggestedMax' => 10,
+                    'ticks' => [
+                        'precision' => 0,
+                    ],
+                ],
+            ],
+        ];
     }
 
     protected function getType(): string

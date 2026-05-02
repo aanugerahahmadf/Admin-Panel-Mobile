@@ -78,7 +78,7 @@ return [
     |
     */
 
-    'start_url' => env('NATIVEPHP_START_URL', '/'),
+    'start_url' => env('NATIVEPHP_START_URL', '/user/login'),
 
     /*
     |--------------------------------------------------------------------------

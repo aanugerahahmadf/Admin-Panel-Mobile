@@ -135,12 +135,17 @@ class ProductSeeder extends Seeder
             $imagePath = public_path('images/product/'.$data['image']);
             if (file_exists($imagePath)) {
                 $product->clearMediaCollection('product_image');
-                $product->addMedia($imagePath)
-                    ->preservingOriginal()
-                    ->toMediaCollection('product_image');
-                $this->command->info("  ✓ {$data['name']} [{$data['image']}]");
+                try {
+                    $product->addMedia($imagePath)
+                        ->preservingOriginal()
+                        ->toMediaCollection('product_image');
+                    
+                    $this->command->line("  <info>✓</info> {$data['name']} [{$data['image']}]");
+                } catch (\Exception $e) {
+                    $this->command->error("  ✗ Gagal memuat gambar untuk: {$data['name']}");
+                }
             } else {
-                $this->command->warn("  ⚠ {$data['name']} — image not found: images/product/{$data['image']}");
+                $this->command->line("  <info>✓</info> {$data['name']} (Tanpa Gambar)");
             }
         }
 

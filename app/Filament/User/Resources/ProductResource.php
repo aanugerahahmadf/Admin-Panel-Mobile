@@ -27,6 +27,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Support\Enums\ActionSize;
 use Filament\Tables;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -80,15 +81,15 @@ class ProductResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->description(new HtmlString('<style>.fi-ta-ctn, .fi-ta-content, .fi-ta-header-toolbar, .fi-ta-pagination { background-color: transparent !important; box-shadow: none !important; border-color: transparent !important; }</style>'))
-            ->poll('5s')
+            ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
+            ->poll(\App\Providers\NativeServiceProvider::isNativeMobile() ? null : '30s')
             ->headerActions([
                 Tables\Actions\Action::make('visual_search')
-                    ->label(__('Pencarian Produk (AI)'))
-                    ->icon('heroicon-o-sparkles')
+                    ->label(__('Pencarian Bunga Cerdas'))
+                    ->icon('heroicon-o-camera')
                     ->color('primary')
                     ->slideOver()
-                    ->modalWidth('xl')
+                    ->modalWidth('full')
                     ->modalHeading(__('Pencarian Visual Cerdas'))
                     ->modalDescription(__('Temukan dekorasi impian Anda dengan mudah. Unggah foto atau ambil gambar langsung untuk melihat koleksi terbaik dari Weeding Flower Decoration.'))
                     ->action(fn () => null)
@@ -96,15 +97,60 @@ class ProductResource extends Resource
                     ->modalCancelActionLabel(__('Tutup'))
                     ->extraModalWindowAttributes(['class' => 'bg-gray-50/50 backdrop-blur-3xl'])
                     ->form([
-                        Forms\Components\Section::make()
+                        Forms\Components\Section::make('')
                             ->compact()
                             ->schema([
                                 Forms\Components\TextInput::make('search')
                                     ->label(__('Cari Visual'))
-                                    ->placeholder(__('Ambil foto atau pilih dari galeri...'))
+                                    ->placeholder(__('Ketik, ambil foto, atau galeri...'))
                                     ->prefixIcon('heroicon-m-magnifying-glass')
                                     ->prefixIconColor('gray')
-                                    ->live()
+                                    ->live(debounce: 500)
+                                    ->afterStateUpdated(function (Component $livewire, $state, Forms\Set $set) {
+                                        if (empty($state)) {
+                                            session()->forget(['cbir_mixed_results', 'cbir_product_results_ids', 'cbir_search_time', 'cbir_context']);
+                                            $set('status_message', null);
+                                            $livewire->dispatch('refresh_items');
+                                            $livewire->dispatch('refresh_catalog');
+                                            return;
+                                        }
+
+                                        $products = Product::query()
+                                            ->where('name', 'like', "%{$state}%")
+                                            ->orWhere('description', 'like', "%{$state}%")
+                                            ->orWhereHas('category', fn ($q) => $q->where('name', 'like', "%{$state}%"))
+                                            ->with(['weddingOrganizer', 'category'])
+                                            ->limit(20)
+                                            ->get();
+
+                                        if ($products->isEmpty()) {
+                                            session()->forget(['cbir_mixed_results', 'cbir_product_results_ids', 'cbir_search_time', 'cbir_context']);
+                                            $set('status_message', __('Tidak ada produk yang cocok untuk pencarian teks.'));
+                                            $livewire->dispatch('refresh_items');
+                                            $livewire->dispatch('refresh_catalog');
+                                            return;
+                                        }
+
+                                        $mixedResults = $products->map(function ($model) {
+                                            return [
+                                                'type' => 'product',
+                                                'similarity' => 100,
+                                                'data' => array_merge($model->toArray(), [
+                                                    'image_url' => $model->image_url,
+                                                    'wedding_organizer' => $model->weddingOrganizer?->toArray(),
+                                                ]),
+                                            ];
+                                        })->all();
+
+                                        session()->put('cbir_mixed_results', $mixedResults);
+                                        session()->put('cbir_product_results_ids', collect($mixedResults)->pluck('data.id')->all());
+                                        session()->put('cbir_search_time', 0);
+                                        session()->put('cbir_context', 'product');
+
+                                        $set('status_message', __('Berhasil menemukan :count hasil teks!', ['count' => count($mixedResults)]));
+                                        $livewire->dispatch('refresh_items');
+                                        $livewire->dispatch('refresh_catalog');
+                                    })
                                     ->suffixActions([
                                         Forms\Components\Actions\Action::make('toggle_camera_search')
                                             ->icon('heroicon-o-camera')
@@ -152,13 +198,14 @@ class ProductResource extends Resource
                                             session()->put('cbir_mixed_results', $mixedResults);
                                             session()->put('cbir_product_results_ids', collect($mixedResults)->where('type', 'product')->pluck('data.id')->all());
                                             session()->put('cbir_search_time', $searchTime);
+                                            session()->put('cbir_context', 'product');
 
                                             $topScore = number_format(($mixedResults[0]['similarity'] ?? 0), 1);
                                             $set('status_message', __('Berhasil menemukan :count hasil! Akurasi: :score%', ['count' => count($mixedResults), 'score' => $topScore]));
                                             $livewire->dispatch('refresh_items');
                                             $livewire->dispatch('refresh_catalog');
                                         } else {
-                                            session()->forget(['cbir_mixed_results', 'cbir_product_results_ids', 'cbir_search_time']);
+                                            session()->forget(['cbir_mixed_results', 'cbir_product_results_ids', 'cbir_search_time', 'cbir_context']);
                                             $set('status_message', __('Tidak ada product yang cocok.'));
                                             $livewire->dispatch('refresh_items');
                                             $livewire->dispatch('refresh_catalog');
@@ -202,13 +249,14 @@ class ProductResource extends Resource
                                             session()->put('cbir_mixed_results', $mixedResults);
                                             session()->put('cbir_product_results_ids', collect($mixedResults)->where('type', 'product')->pluck('data.id')->all());
                                             session()->put('cbir_search_time', $searchTime);
+                                            session()->put('cbir_context', 'product');
 
                                             $topScore = number_format(($mixedResults[0]['similarity'] ?? 0), 1);
                                             $set('status_message', __('Berhasil menemukan :count hasil! Akurasi: :score%', ['count' => count($mixedResults), 'score' => $topScore]));
                                             $livewire->dispatch('refresh_items');
                                             $livewire->dispatch('refresh_catalog');
                                         } else {
-                                            session()->forget(['cbir_mixed_results', 'cbir_product_results_ids', 'cbir_search_time']);
+                                            session()->forget(['cbir_mixed_results', 'cbir_product_results_ids', 'cbir_search_time', 'cbir_context']);
                                             $set('status_message', __('Product tidak ditemukan.'));
                                             $livewire->dispatch('refresh_items');
                                             $livewire->dispatch('refresh_catalog');
@@ -233,7 +281,7 @@ class ProductResource extends Resource
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
                     ->action(function (Component $livewire) {
-                        session()->forget(['cbir_mixed_results', 'cbir_product_results_ids', 'cbir_search_time']);
+                        session()->forget(['cbir_mixed_results', 'cbir_product_results_ids', 'cbir_search_time', 'cbir_context']);
                         $livewire->dispatch('refresh_items');
                     })
                     ->visible(fn () => session()->has('cbir_mixed_results')),
@@ -250,7 +298,7 @@ class ProductResource extends Resource
                 Tables\Actions\Action::make('reset_search')
                     ->label(__('Tampilkan Semua'))
                     ->action(function (Component $livewire) {
-                        session()->forget(['cbir_mixed_results', 'cbir_product_results_ids', 'cbir_search_time']);
+                        session()->forget(['cbir_mixed_results', 'cbir_product_results_ids', 'cbir_search_time', 'cbir_context']);
                         $livewire->dispatch('refresh_items');
                     })
                     ->visible(fn () => session()->has('cbir_product_results_ids')),
@@ -260,17 +308,18 @@ class ProductResource extends Resource
                     Tables\Columns\Layout\Stack::make([
                         Tables\Columns\ImageColumn::make('image_url')
                             ->label('')
-                            ->height('200px')
+                            ->height('220px')
                             ->width('100%')
+                            ->extraAttributes(['class' => 'w-full flex justify-center products-center bg-gray-50 dark:bg-gray-800 rounded-t-2xl overflow-hidden fi-card-img-wrap'])
                             ->extraImgAttributes([
-                                'class' => 'aspect-square object-cover rounded-t-2xl transition-all duration-500 group-hover:scale-110',
-                                'style' => 'height: 200px !important; width: 100%;',
+                                'class' => 'object-cover transition-all duration-500 group-hover:scale-110 !mx-auto fi-card-img',
+                                'style' => 'width: 100%; object-fit: cover;',
                             ]),
 
                         Tables\Columns\TextColumn::make('discount_pct')
                             ->state(fn ($record) => $record?->discount_price > 0 ? '-'.round((($record->price - $record->discount_price) / $record->price) * 100).'%' : null)
                             ->extraAttributes([
-                                'class' => 'absolute top-2 right-2 font-black px-2 py-1 rounded shadow-lg z-10 transform scale-100 group-hover/img-overlay:scale-110 transition-transform duration-300',
+                                'class' => 'absolute top-2 right-2 font-black px-2 py-1 rounded shadow-lg transform scale-100 group-hover/img-overlay:scale-110 transition-transform duration-300',
                                 'style' => 'background-color: #dc2626 !important; color: #ffffff !important; width: fit-content; font-size: 0.8rem; line-height: 1; pointer-events: none; visibility: visible !important;',
                             ])
                             ->visible(fn ($record) => $record?->discount_price > 0),
@@ -279,17 +328,18 @@ class ProductResource extends Resource
                         Tables\Columns\TextColumn::make('category.name')
                             ->badge()
                             ->color('info')
-                            ->size('xs'),
+                            ->size('xs')
+                            ->extraAttributes(['class' => 'mt-1 mb-1']),
                         Tables\Columns\TextColumn::make('name')
                             ->weight('bold')
-                            ->size('lg')
+                            ->size('xs')
                             ->lineClamp(2),
                         Tables\Columns\Layout\Stack::make([
                             Tables\Columns\TextColumn::make('final_price')
                                 ->formatStateUsing(fn ($state) => 'Rp '.number_format($state, 2, ',', '.'))
                                 ->weight('black')
                                 ->color('primary')
-                                ->size('md'),
+                                ->size('xs'),
                             Tables\Columns\TextColumn::make('price')
                                 ->formatStateUsing(fn ($state, $record) => $record?->discount_price > 0 ? 'Rp '.number_format($state, 2, ',', '.') : '')
                                 ->size('xs')
@@ -301,102 +351,124 @@ class ProductResource extends Resource
                             ->formatStateUsing(fn ($state) => $state > 0 ? $state.' '.__('Tersedia') : __('Habis'))
                             ->size('xs')
                             ->color(fn ($state) => $state <= 0 ? 'danger' : ($state <= 3 ? 'warning' : 'gray')),
-                    ])->space(2)->extraAttributes(['class' => 'p-4 flex-1 flex flex-col']),
+                    ])->space(1)->extraAttributes(['class' => 'p-2.5 flex-1 flex flex-col']),
                 ])->extraAttributes([
-                    'class' => 'bg-white dark:bg-gray-900 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-transparent dark:border-white/10 overflow-hidden h-full',
+                    'class' => 'bg-white dark:bg-gray-900 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-transparent dark:border-white/10 overflow-hidden',
                 ]),
             ])
             ->contentGrid([
-                'md' => 2,
-                'xl' => 3,
+                'default' => 2,
+                'md' => 4,
+                'lg' => 5,
+                'xl' => 6,
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('category')
-                    ->relationship('category', 'name'),
-                Tables\Filters\Filter::make('sort_by')
-                    ->form([
-                        Forms\Components\Select::make('sort_by')
-                            ->label(__('Urutkan'))
-                            ->options([
-                                'latest' => __('Terbaru'),
-                                'price_asc' => __('Harga: Terendah'),
-                                'price_desc' => __('Harga: Tertinggi'),
-                            ])
-                            ->searchable()
-                            ->native(false),
+                SelectFilter::make('category')
+                    ->searchable()
+                    ->label(__('Kategori'))
+                    ->relationship('category', 'name')
+                    ->preload(),
+
+                SelectFilter::make('has_discount')
+                    ->searchable()
+                    ->label(__('Diskon'))
+                    ->options([
+                        'yes' => __('Ada Diskon'),
+                        'no'  => __('Tanpa Diskon'),
                     ])
-                    ->query(function (Builder $query, array $data) {
-                        if (! ($data['sort_by'] ?? null)) {
-                            return $query;
-                        }
-
-                        return match ($data['sort_by']) {
-                            'price_asc' => $query->reorder('price', 'asc'),
-                            'price_desc' => $query->reorder('price', 'desc'),
-                            'latest' => $query->reorder('created_at', 'desc'),
-                            default => $query,
-                        };
-                    }),
-            ])
-            ->actions([
-                Tables\Actions\Action::make('view_detail')
-                    ->label(__('Lihat Detail'))
-                    ->icon('heroicon-m-eye')
-                    ->color('warning')
-                    ->button()
-                    ->size('sm')
-                    ->extraAttributes(['class' => 'flex-1 justify-center rounded-lg shadow-sm font-bold'])
-                    ->url(fn ($record) => static::getUrl('view', ['record' => $record])),
-
-                Tables\Actions\Action::make('buy_now')
-                    ->label(__('Beli'))
-                    ->button()
-                    ->color('success')
-                    ->icon('heroicon-m-bolt')
-                    ->size('sm')
-                    ->extraAttributes(['class' => 'flex-1 justify-center rounded-lg shadow-sm font-bold'])
-                    ->disabled(fn (Product $record) => $record->stock <= 0)
-                    ->slideOver()
-                    ->modalWidth('2xl')
-                    ->modalHeading(__('Checkout Produk'))
-                    ->steps(fn (Product $record) => static::getCheckoutWizardSteps($record))
-                    ->action(function (Product $record, array $data, Component $livewire) {
-                        return static::handleCheckout($record, $data, $livewire);
+                    ->query(fn (Builder $query, array $data) => match ($data['value'] ?? null) {
+                        'yes' => $query->where('discount_price', '>', 0),
+                        'no'  => $query->where(fn ($q) => $q->whereNull('discount_price')->orWhere('discount_price', 0)),
+                        default => $query,
                     }),
 
-                Tables\Actions\Action::make('add_to_cart')
-                    ->label('')
-                    ->button()
-                    ->size('sm')
-                    ->icon('heroicon-o-shopping-cart')
-                    ->color('warning')
-                    ->extraAttributes(['class' => 'justify-center rounded-lg shadow-sm'])
-                    ->action(function ($record) {
-                        Cart::updateOrCreate([
-                            'user_id' => auth()->id(),
-                            'product_id' => $record->id,
-                        ], [
-                            'quantity' => DB::raw('quantity + 1'),
-                        ]);
+                SelectFilter::make('in_stock')
+                    ->searchable()
+                    ->label(__('Ketersediaan'))
+                    ->options([
+                        'yes' => __('Tersedia'),
+                        'no'  => __('Habis'),
+                    ])
+                    ->query(fn (Builder $query, array $data) => match ($data['value'] ?? null) {
+                        'yes' => $query->where('stock', '>', 0),
+                        'no'  => $query->where('stock', '<=', 0),
+                        default => $query,
+                    }),
 
-                        Notification::make()
-                            ->title(__('Berhasil masuk keranjang'))
-                            ->success()
-                            ->icon('heroicon-o-shopping-cart')
-                            ->send();
-                    })
-                    ->tooltip(__('Masukkan ke Keranjang')),
+                SelectFilter::make('sort_by')
+                    ->searchable()
+                    ->label(__('Urutkan'))
+                    ->options([
+                        'latest'       => __('Terbaru'),
+                        'price_asc'    => __('Harga: Terendah'),
+                        'price_desc'   => __('Harga: Tertinggi'),
+                        'most_ordered' => __('Paling Banyak Dipesan'),
+                    ])
+                    ->query(fn (Builder $query, array $data) => match ($data['value'] ?? null) {
+                        'price_asc'    => $query->reorder('price', 'asc'),
+                        'price_desc'   => $query->reorder('price', 'desc'),
+                        'latest'       => $query->reorder('created_at', 'desc'),
+                        'most_ordered' => $query->withCount('orders')->reorder('orders_count', 'desc'),
+                        default        => $query,
+                    }),
+            ], layout: \Filament\Tables\Enums\FiltersLayout::AboveContentCollapsible)
+            // ->actions([
+            //     Tables\Actions\Action::make('view_detail')
+            //         ->label(__('Lihat Detail'))
+            //         ->color('warning')
+            //         ->button()
+            //         ->size('sm')
+            //         ->url(fn ($record) => static::getUrl('view', ['record' => $record])),
 
-                Tables\Actions\Action::make('toggle_wishlist')
-                    ->label('')
-                    ->button()
-                    ->size('sm')
-                    ->icon(fn ($record) => $record->is_wishlisted ? 'heroicon-s-heart' : 'heroicon-o-heart')
-                    ->color(fn ($record) => $record->is_wishlisted ? 'danger' : 'gray')
-                    ->extraAttributes(['class' => 'justify-center rounded-lg shadow-sm'])
-                    ->action(fn ($record, Component $livewire) => $livewire->dispatch('toggle_wishlist', id: $record->id))
-                    ->tooltip(__('Simpan Favorit')),
-            ])
+            //     Tables\Actions\Action::make('buy_now')
+            //         ->label(__('Beli'))
+            //         ->button()
+            //         ->color('success')
+            //         ->icon('heroicon-m-bolt')
+            //         ->size('sm')
+            //         ->extraAttributes(['class' => 'flex-1 justify-center rounded-lg shadow-sm font-bold'])
+            //         ->disabled(fn (Product $record) => $record->stock <= 0)
+            //         ->slideOver()
+            //         ->modalWidth('2xl')
+            //         ->modalHeading(__('Checkout Produk'))
+            //         ->steps(fn (Product $record) => static::getCheckoutWizardSteps($record))
+            //         ->action(function (Product $record, array $data, Component $livewire) {
+            //             return static::handleCheckout($record, $data, $livewire);
+            //         }),
+
+            //     Tables\Actions\Action::make('add_to_cart')
+            //         ->label('')
+            //         ->button()
+            //         ->size('sm')
+            //         ->icon('heroicon-o-shopping-cart')
+            //         ->color('warning')
+            //         ->extraAttributes(['class' => 'justify-center rounded-lg shadow-sm'])
+            //         ->action(function ($record) {
+            //             Cart::updateOrCreate([
+            //                 'user_id' => auth()->id(),
+            //                 'product_id' => $record->id,
+            //             ], [
+            //                 'quantity' => DB::raw('quantity + 1'),
+            //             ]);
+
+            //             Notification::make()
+            //                 ->title(__('Berhasil masuk keranjang'))
+            //                 ->success()
+            //                 ->icon('heroicon-o-shopping-cart')
+            //                 ->send();
+            //         })
+            //         ->tooltip(__('Masukkan ke Keranjang')),
+
+            //     Tables\Actions\Action::make('toggle_wishlist')
+            //         ->label('')
+            //         ->button()
+            //         ->size('sm')
+            //         ->icon(fn ($record) => $record->is_wishlisted ? 'heroicon-s-heart' : 'heroicon-o-heart')
+            //         ->color(fn ($record) => $record->is_wishlisted ? 'danger' : 'gray')
+            //         ->extraAttributes(['class' => 'justify-center rounded-lg shadow-sm'])
+            //         ->action(fn ($record, Component $livewire) => $livewire->dispatch('toggle_wishlist', id: $record->id))
+            //         ->tooltip(__('Simpan Favorit')),
+            // ])
             ->actionsAlignment('center')
             ->extraAttributes([
                 'class' => 'filament-table-actions-container !flex !flex-row !gap-1 !p-3 !bg-gray-50/50 dark:!bg-white/5 !border-0',
@@ -417,7 +489,7 @@ class ProductResource extends Resource
                                         ->label('')
                                         ->hiddenLabel()
                                         ->alignCenter()
-                                        ->height('22rem')
+                                        ->height('18rem')
                                         ->extraAttributes(['class' => 'flex products-center justify-center bg-white/5 rounded-3xl overflow-hidden border border-white/10 shadow-inner'])
                                         ->extraImgAttributes([
                                             'class' => 'max-w-full max-h-full object-contain mx-auto transition-transform hover:scale-105 duration-500 p-2',
@@ -444,7 +516,7 @@ class ProductResource extends Resource
                                         ->label('')
                                         ->hiddenLabel()
                                         ->weight('black')
-                                        ->size('4xl')
+                                        ->size('2xl')
                                         ->extraAttributes(['class' => 'tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-primary-400 mb-4 uppercase leading-tight']),
 
                                     // PRICE DISPLAY
@@ -452,7 +524,7 @@ class ProductResource extends Resource
                                         Infolists\Components\TextEntry::make('final_price')
                                             ->label('')
                                             ->formatStateUsing(fn ($state) => 'Rp '.number_format($state, 2, ',', '.'))
-                                            ->size('4xl')
+                                            ->size('2xl')
                                             ->weight('black')
                                             ->color('success')
                                             ->extraAttributes(['class' => 'drop-shadow-sm']),
@@ -460,7 +532,7 @@ class ProductResource extends Resource
                                         Infolists\Components\TextEntry::make('price')
                                             ->label('')
                                             ->formatStateUsing(fn ($record) => $record?->discount_price > 0 ? 'Rp '.number_format($record->price, 2, ',', '.') : '')
-                                            ->size('lg')
+                                            ->size('sm')
                                             ->color('gray')
                                             ->extraAttributes(['class' => 'line-through opacity-50 ml-4'])
                                             ->visible(fn ($record) => $record?->discount_price > 0),
@@ -475,21 +547,22 @@ class ProductResource extends Resource
                                                 ->label('')
                                                 ->html()
                                                 ->prose()
-                                                ->extraAttributes(['class' => 'text-gray-600 dark:text-gray-300 leading-relaxed text-lg']),
+                                                ->extraAttributes(['class' => 'text-gray-600 dark:text-gray-300 leading-relaxed text-sm']),
                                         ])->icon('heroicon-o-document-text')->iconColor('primary'),
 
                                     // PRIMARY CTA: BUY & CART
                                     Actions::make([
                                         Action::make('buy_now_detail')
                                             ->label(fn ($record) => $record->stock > 0 ? __('Pesan Sekarang') : __('Stok Habis'))
-                                            ->icon(fn ($record) => $record->stock > 0 ? 'heroicon-m-bolt' : 'heroicon-m-x-circle')
+                                            ->icon(fn ($record) => $record->stock > 0 ? 'gmdi-shopping-cart-checkout-o' : 'heroicon-m-x-circle')
                                             ->button()
                                             ->color(fn ($record) => $record->stock > 0 ? 'success' : 'danger')
+                                            ->outlined(fn ($record) => $record->stock > 0)
                                             ->disabled(fn ($record) => $record->stock <= 0)
                                             ->size(ActionSize::Large)
-                                            ->extraAttributes(['class' => 'w-full py-3 text-lg rounded-xl shadow-sm transition-all'])
+                                            ->extraAttributes(['class' => 'w-full py-2 text-sm rounded-xl shadow-sm transition-all'])
                                             ->slideOver()
-                                            ->modalWidth('2xl')
+                                            ->modalWidth('full')
                                             ->modalHeading(__('Checkout Product'))
                                             ->steps(fn ($record) => static::getCheckoutWizardSteps($record))
                                             ->action(function ($record, array $data, Component $livewire) {
@@ -503,7 +576,7 @@ class ProductResource extends Resource
                                             ->color('warning')
                                             ->outlined()
                                             ->size(ActionSize::Large)
-                                            ->extraAttributes(['class' => 'w-full py-3 text-lg rounded-xl shadow-sm transition-all'])
+                                            ->extraAttributes(['class' => 'w-full py-2 text-sm rounded-xl shadow-sm transition-all'])
                                             ->action(function ($record) {
                                                 Cart::updateOrCreate([
                                                     'user_id' => auth()->id(),
@@ -530,7 +603,7 @@ class ProductResource extends Resource
                                             ->color('info')
                                             ->outlined()
                                             ->size(ActionSize::Large)
-                                            ->extraAttributes(['class' => 'w-full flex-1 rounded-xl py-3 text-lg shadow-sm transition-all'])
+                                            ->extraAttributes(['class' => 'w-full flex-1 rounded-xl py-2 text-sm shadow-sm transition-all'])
                                             ->action(function ($record) {
                                                 $inbox = ChatService::getOrCreateInboxWithAdmin(auth()->id());
                                                 ChatService::sendContextMessage($inbox, [
@@ -552,15 +625,14 @@ class ProductResource extends Resource
                                             ->color(fn ($record) => $record->is_wishlisted ? 'danger' : 'gray')
                                             ->outlined(fn ($record) => ! $record->is_wishlisted)
                                             ->size(ActionSize::Large)
-                                            ->extraAttributes(['class' => 'w-full flex-1 rounded-xl py-3 text-lg shadow-sm transition-all duration-300'])
+                                            ->extraAttributes(['class' => 'w-full flex-1 rounded-xl py-2 text-sm shadow-sm transition-all duration-300'])
                                             ->action(function ($record) {
                                                 $userId = Filament::auth()->id();
-                                                $wishlist = Wishlist::where('user_id', $userId)
+                                                $deleted = Wishlist::query()->where('user_id', $userId)
                                                     ->where('product_id', $record->id)
-                                                    ->first();
+                                                    ->delete();
 
-                                                if ($wishlist) {
-                                                    $wishlist->delete();
+                                                if ($deleted) {
                                                     Notification::make()
                                                         ->title(__('Dihapus dari Favorit'))
                                                         ->warning()
@@ -623,7 +695,7 @@ class ProductResource extends Resource
         }
 
         // Decrease Stock
-        $product->decrement('stock');
+        $product->decrement('stock', 1);
 
         $finalPrice = (float) $product->final_price;
 
@@ -725,7 +797,7 @@ class ProductResource extends Resource
                             Forms\Components\TextInput::make('customer_name')
                                 ->label(__('Nama Lengkap'))
                                 ->default(auth()->user()?->name)
-                                ->disabled(),
+                                ->required(),
                             Forms\Components\TextInput::make('phone')
                                 ->label(__('Nomor WhatsApp'))
                                 ->default(auth()->user()?->phone)
@@ -750,7 +822,7 @@ class ProductResource extends Resource
                                         return [];
                                     }
 
-                                    return Voucher::where('is_active', true)
+                                    return Voucher::query()->where('is_active', true)
                                         ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
                                         ->where(function ($q) use ($user) {
                                             $q->where('is_global', true)

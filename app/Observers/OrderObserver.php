@@ -55,11 +55,15 @@ class OrderObserver
                     ]);
 
                     // 🔔 Notify User: Refund
-                    Notification::make()
-                        ->title(__('Refund Berhasil'))
-                        ->body(__('Dana sebesar Rp ').number_format($order->total_price, 2, ',', '.').__(' telah dikembalikan ke saldo Anda karena pembatalan Order #').$order->order_number)
-                        ->success()
-                        ->sendToDatabase($user);
+                    try {
+                        Notification::make()
+                            ->title(__('Refund Berhasil'))
+                            ->body(__('Dana sebesar Rp ').number_format($order->total_price, 2, ',', '.').__(' telah dikembalikan ke saldo Anda karena pembatalan Order #').$order->order_number)
+                            ->success()
+                            ->sendToDatabase($user);
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning('[OrderObserver] Notification failed: '.$e->getMessage());
+                    }
                 }
             }
         }
@@ -68,7 +72,6 @@ class OrderObserver
         if ($order->isDirty('status')) {
             $user = $order->user;
             if ($user) {
-                // Pastikan status adalah Enum object sebelum panggil getLabel()
                 $statusLabel = $order->status instanceof OrderStatus
                     ? $order->status->getLabel()
                     : (is_string($order->status) ? $order->status : __('Tidak Diketahui'));
@@ -77,12 +80,16 @@ class OrderObserver
                     ? $order->status->getIcon()
                     : 'heroicon-o-information-circle';
 
-                Notification::make()
-                    ->title(__('Update Pesanan #').$order->order_number)
-                    ->body(__('Status pesanan Anda kini: ').$statusLabel)
-                    ->info()
-                    ->icon($statusIcon)
-                    ->sendToDatabase($user);
+                try {
+                    Notification::make()
+                        ->title(__('Update Pesanan #').$order->order_number)
+                        ->body(__('Status pesanan Anda kini: ').$statusLabel)
+                        ->info()
+                        ->icon($statusIcon)
+                        ->sendToDatabase($user);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('[OrderObserver] Status notification failed: '.$e->getMessage());
+                }
             }
         }
 

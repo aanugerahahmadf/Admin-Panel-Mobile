@@ -108,7 +108,7 @@ class ProductResource extends Resource
                         Forms\Components\RichEditor::make('description')
                             ->label(__('Deskripsi'))
                             ->columnSpanFull(),
-                        Forms\Components\SpatieMediaLibraryFileUpload::make('product_image')
+                        Forms\Components\SpatieMediaLibraryFileUpload::make('image')
                             ->label(__('Foto Product'))
                             ->collection('product_image')
                             ->image()

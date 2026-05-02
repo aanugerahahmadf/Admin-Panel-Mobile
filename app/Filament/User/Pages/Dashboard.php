@@ -21,7 +21,7 @@ class Dashboard extends BaseDashboard
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) WeddingOrganizer::count();
+        return (string) WeddingOrganizer::query()->count('*');
     }
 
     public static function getNavigationBadgeTooltip(): ?string

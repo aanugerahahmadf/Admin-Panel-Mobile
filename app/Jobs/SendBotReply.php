@@ -45,9 +45,10 @@ class SendBotReply implements ShouldQueue
 
         $inbox = $userMessage->inbox;
 
-        // Don't reply if the message is from an admin
         $sender = User::find($userMessage->user_id);
-        if ($sender && $sender->hasRole('super_admin')) {
+
+        // Don't reply if the message was sent by the bot itself to prevent infinite loops
+        if ($userMessage->meta && isset($userMessage->meta['is_bot']) && $userMessage->meta['is_bot']) {
             return;
         }
 
@@ -120,8 +121,10 @@ class SendBotReply implements ShouldQueue
 
                 // F. Intent: Location & Logistics
             case preg_match('/(lokasi|alamat|dimana|where|tempat|kantor|area|luar kota)/', $text):
-                $wo = WeddingOrganizer::first();
-                $officeAddress = $wo ? $wo->address : 'Rajasinga, Kec. Terisi, Kabupaten Indramayu, Jawa Barat';
+                $wo = WeddingOrganizer::getBrand();
+                $fallbackAddress = __('Rajasinga, Kec. Terisi, Kabupaten Indramayu, Jawa Barat');
+                $officeAddress = ($wo && $wo->address) ? $wo->address : $fallbackAddress;
+                
                 $reply = __('Tentu :userName! Kantor utama kami berlokasi di **:address**. Kami melayani dekorasi untuk area lokal maupun luar kota. Jika :userName ingin berkunjung untuk konsultasi tatap muka, admin kami akan segera memberikan titik koordinatnya. 📍', [
                     'userName' => $userName,
                     'address' => $officeAddress,

@@ -9,6 +9,8 @@ class BannerSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->command->info('--- Seeding Banners ---');
+
         $banners = [
             [
                 'title' => __('Nikmati Hari Spesial Anda Bersama Kami'),
@@ -29,6 +31,9 @@ class BannerSeeder extends Seeder
                 ['title' => $banner['title']],
                 $banner
             );
+            $this->command->line("  <info>✓</info> Banner: {$banner['title']}");
         }
+
+        $this->command->info('--- Banner Seeding Complete (' . count($banners) . ' banners) ---');
     }
 }

@@ -126,7 +126,6 @@ class PackageResource extends Resource
                                     ->label(__('Artikel Terkait'))
                                     ->relationship('article', 'title')
                                     ->preload()
-
                                     ->prefixIcon('heroicon-o-document-text')
                                     ->columnSpanFull()
                                     ->helperText(__('Pilih artikel panduan atau tips yang relevan dengan paket ini.')),
@@ -165,7 +164,7 @@ class PackageResource extends Resource
                             ->description(__('Upload foto utama dan video presentasi dari paket ini.'))
                             ->icon('heroicon-o-photo')
                             ->schema([
-                                Forms\Components\SpatieMediaLibraryFileUpload::make('package_image')
+                                Forms\Components\SpatieMediaLibraryFileUpload::make('image')
                                     ->label(__('Foto Utama Paket'))
                                     ->collection('package_image')
                                     ->image()

@@ -1,5 +1,12 @@
 @php
-    $results = session('cbir_mixed_results', []);
+    $allResults = session('cbir_mixed_results', []);
+    $context    = session('cbir_context'); // 'package', 'product', or null
+
+    // Filter to only show the relevant type when context is set
+    $results = $context
+        ? collect($allResults)->filter(fn ($r) => ($r['type'] ?? '') === $context)->values()->all()
+        : $allResults;
+
     $topMatch = collect($results)->first();
     $topScore = $topMatch['similarity'] ?? 0;
 @endphp
@@ -41,7 +48,7 @@
     @endif
 
     {{-- Mixed Result Cards --}}
-    <div class="space-y-4">
+    <div class="space-y-3">
         @foreach($results as $res)
         @php
             $type = $res['type'] ?? 'product';
@@ -49,125 +56,93 @@
             $score = $res['similarity'] ?? 0;
             $pct = number_format($score, 1);
             $badgeColor = $score >= 85 ? 'success' : ($score >= 65 ? 'warning' : 'gray');
-            
-            $url = $type === 'package' 
-                ? route('filament.user.resources.packages.index', ['cbir_id' => $data['id'] ?? 0])
-                : route('filament.user.resources.products.index', ['cbir_id' => $data['id'] ?? 0]);
+
+            $url = $type === 'package'
+                ? route('filament.user.resources.packages.view', ['record' => $data['id'] ?? 0])
+                : route('filament.user.resources.products.view', ['record' => $data['id'] ?? 0]);
         @endphp
 
-        <x-filament::section compact class="relative overflow-hidden group hover:ring-2 hover:ring-primary-500/50 transition-all duration-300">
-            {{-- Accuracy Badge --}}
-            <div class="absolute top-0 right-0 p-3 flex flex-col items-end gap-1 z-10">
-                <x-filament::badge color="{{ $badgeColor }}" size="sm" class="font-bold">
-                    {{ $pct }}%
-                </x-filament::badge>
-                <x-filament::badge color="{{ $type === 'package' ? 'info' : 'gray' }}" size="xs" class="text-[10px] font-bold">
-                    {{ ucfirst(__($type)) }}
-                </x-filament::badge>
-            </div>
+        {{-- Card: fully in-flow, no absolute badge --}}
+        <div class="relative group rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 shadow-sm hover:shadow-md hover:ring-2 hover:ring-primary-500/40 transition-all duration-300 overflow-hidden">
 
-            <div class="flex gap-4">
-                {{-- Result Image --}}
-                <div class="relative w-24 h-24 shrink-0 rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800 shadow-inner">
+            {{-- Clickable overlay --}}
+            <a href="{{ $url }}" class="absolute inset-0 z-10" aria-label="{{ $data['name'] ?? '' }}"></a>
+
+            <div class="flex gap-3 p-3">
+
+                {{-- Thumbnail --}}
+                <div class="relative w-20 h-20 shrink-0 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 shadow-inner self-center">
                     <img
                         src="{{ str_starts_with($data['image_url'] ?? '', 'http') ? $data['image_url'] : asset('storage/' . ($data['image_url'] ?? '')) }}"
                         alt="{{ $data['name'] ?? '' }}"
                         class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                         onerror="this.src='{{ asset('images/placeholders/image-placeholder.svg') }}'"
+                        loading="lazy"
                     />
-                    
-                    {{-- Image only now --}}
-
-                    {{-- Small Progress Bar --}}
-                    <div class="absolute bottom-0 left-0 right-0 h-1.5 bg-gray-200/30 backdrop-blur-sm">
-                        <div class="h-full bg-linear-to-r from-amber-500 to-primary-500 transition-all duration-1000 ease-out" style="width: {{ $pct }}%"></div>
+                    {{-- Score bar at bottom of image --}}
+                    <div class="absolute bottom-0 left-0 right-0 h-1 bg-gray-200/30">
+                        <div class="h-full bg-gradient-to-r from-amber-500 to-primary-500 transition-all duration-1000 ease-out" style="width: {{ $pct }}%"></div>
                     </div>
                 </div>
 
-                {{-- Info --}}
-                <div class="flex-1 min-w-0 pr-12 flex flex-col justify-between">
-                    <div>
+                {{-- Info column --}}
+                <div class="flex-1 min-w-0 flex flex-col justify-between gap-1">
+
+                    {{-- Top row: badges inline, never overlapping --}}
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none
+                            @if($score >= 85) bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400
+                            @elseif($score >= 65) bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400
+                            @else bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400
+                            @endif">
+                            {{ $pct }}%
+                        </span>
                         @if($data['category'] ?? null)
-                            <p class="text-[9px] font-black text-primary-600 dark:text-primary-400 uppercase tracking-widest mb-1">{{ is_array($data['category']) ? ($data['category']['name'] ?? '') : $data['category'] }}</p>
+                            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium leading-none bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400 truncate max-w-[80px]">
+                                {{ is_array($data['category']) ? ($data['category']['name'] ?? '') : $data['category'] }}
+                            </span>
                         @endif
-
-                        <h4 class="text-base font-bold text-gray-900 dark:text-white leading-tight truncate">
-                            {{ $data['name'] ?? '' }}
-                        </h4>
-
-                        <div class="flex items-center gap-1.5 mt-1.5">
-                            <x-filament::icon icon="heroicon-s-building-storefront" class="w-3.5 h-3.5 text-gray-400 group-hover:text-primary-500 transition-colors" />
-                            <p class="text-xs text-gray-500 dark:text-gray-400 truncate">
-                                {{ $data['wedding_organizer']['name'] ?? '' }}
-                            </p>
-                        </div>
                     </div>
 
-                    <div class="mt-2 flex items-baseline gap-2">
+                    {{-- Name --}}
+                    <h4 class="text-sm font-bold text-gray-900 dark:text-white leading-snug line-clamp-2">
+                        {{ $data['name'] ?? '' }}
+                    </h4>
+
+                    {{-- Organizer --}}
+                    @if($data['wedding_organizer']['name'] ?? null)
+                    <div class="flex items-center gap-1">
+                        <x-filament::icon icon="heroicon-s-building-storefront" class="w-3 h-3 text-gray-400 shrink-0" />
+                        <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                            {{ $data['wedding_organizer']['name'] }}
+                        </p>
+                    </div>
+                    @endif
+
+                    {{-- Price --}}
+                    <div class="flex items-baseline gap-1.5 flex-wrap">
                         @if(($data['discount_price'] ?? 0) > 0)
-                            <span class="text-lg font-black text-primary-600 dark:text-primary-400">
+                            <span class="text-sm font-black text-primary-600 dark:text-primary-400">
                                 Rp {{ number_format($data['discount_price'], 0, ',', '.') }}
                             </span>
-                            <span class="text-xs text-gray-400 line-through decoration-red-500/50">
+                            <span class="text-[11px] text-gray-400 line-through">
                                 Rp {{ number_format($data['price'] ?? 0, 0, ',', '.') }}
                             </span>
                         @else
-                            <span class="text-lg font-black text-primary-600 dark:text-primary-400">
+                            <span class="text-sm font-black text-primary-600 dark:text-primary-400">
                                 Rp {{ number_format($data['price'] ?? 0, 0, ',', '.') }}
                             </span>
                         @endif
                     </div>
+
                 </div>
             </div>
-
-            {{-- Actions Row --}}
-            <div class="mt-4 flex items-center gap-2">
-                <x-filament::icon-button
-                    icon="{{ ($data['is_wishlisted'] ?? false) ? 'heroicon-s-heart' : 'heroicon-o-heart' }}"
-                    color="{{ ($data['is_wishlisted'] ?? false) ? 'danger' : 'gray' }}"
-                    size="md"
-                    tooltip="{{ __('Wishlist') }}"
-                    wire:click="toggleWishlist({{ $data['id'] ?? 0 }})"
-                    class="bg-gray-100 dark:bg-gray-800 rounded-xl"
-                />
-
-                <x-filament::icon-button
-                    icon="heroicon-o-shopping-cart"
-                    color="primary"
-                    size="md"
-                    tooltip="{{ __('Masukkan ke Keranjang') }}"
-                    wire:click="addToCart({{ $data['id'] ?? 0 }})"
-                    class="bg-gray-100 dark:bg-gray-800 rounded-xl"
-                />
-
-                <x-filament::button
-                    href="{{ $url }}"
-                    tag="a"
-                    color="gray"
-                    icon="heroicon-m-eye"
-                    size="sm"
-                    outlined
-                    class="rounded-xl flex-1"
-                >
-                    {{ __('Detail') }}
-                </x-filament::button>
-
-                <x-filament::button
-                    wire:click="bookNow({{ $data['id'] ?? 0 }})"
-                    color="success"
-                    icon="heroicon-m-bolt"
-                    size="sm"
-                    class="rounded-xl flex-1 shadow-lg shadow-success-500/20 font-bold"
-                >
-                    {{ __('Pesan') }}
-                </x-filament::button>
-            </div>
-        </x-filament::section>
+        </div>
         @endforeach
     </div>
 
     {{-- Reset Button --}}
-    <div class="mt-6">
+    <div class="mt-5">
         <x-filament::button
             wire:click="clearVisualSearch"
             color="gray"
@@ -181,4 +156,3 @@
 
 </div>
 @endif
-

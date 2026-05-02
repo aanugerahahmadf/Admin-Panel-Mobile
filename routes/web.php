@@ -10,6 +10,15 @@ use Native\Mobile\Facades\System;
 // No standalone routes needed, now using modals in social-buttons.blade.php
 
 Route::get('/', function () {
+    // NativePHP mobile: tampilkan onboarding sebagai home
+    if (\App\Providers\NativeServiceProvider::isNativeMobile()) {
+        if (auth()->check()) {
+            return redirect('/user');
+        }
+        return view('onboarding');
+    }
+
+    // Web biasa: tampilkan halaman welcome
     return view('welcome');
 });
 
@@ -25,6 +34,22 @@ Route::get('/auth/{provider}/redirect', [SocialiteController::class, 'redirect']
     ->name('auth.redirect');
 Route::get('/auth/{provider}/callback', [SocialiteController::class, 'callback'])
     ->name('auth.callback');
+// Mobile OAuth: callback dari Google → simpan token → redirect ke deep link
+Route::get('/auth/{provider}/callback/mobile', [SocialiteController::class, 'callbackMobile'])
+    ->name('auth.callback.mobile');
+// Mobile OAuth: deep link handler → verifikasi token → login user
+Route::get('/auth/mobile/verify', [SocialiteController::class, 'verifyMobileToken'])
+    ->name('auth.mobile.verify');
+
+// NativePHP Deep Link Handler — weddingapp://auth/google/success?token=xxx
+// NativePHP intercepts the deep link and loads this URL in the WebView
+Route::get('/auth/deeplink/google/success', [SocialiteController::class, 'verifyMobileToken'])
+    ->name('auth.deeplink.success');
+
+// NativePHP juga bisa load path langsung dari deep link
+// weddingapp://auth/google/success → /auth/google/success di WebView
+Route::get('/auth/google/success', [SocialiteController::class, 'verifyMobileToken'])
+    ->name('auth.google.success');
 Route::get('/media/{path}', function (string $path) {
     if (str_contains($path, '../')) {
         abort(403);

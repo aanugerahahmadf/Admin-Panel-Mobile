@@ -76,13 +76,17 @@ class Inbox extends Model
                     return $this->title;
                 }
 
-                $authId = Auth::id();
-                $userIds = collect($this->user_ids);
+                // Support both web (Auth::id) dan mobile (sanctum)
+                $authId = Auth::id() ?? auth('sanctum')->id();
+                if (! $authId) {
+                    return 'Unknown';
+                }
 
+                $userIds = collect($this->user_ids);
                 $otherParticipants = $userIds->filter(fn ($id) => $id != $authId);
 
                 if ($otherParticipants->isEmpty()) {
-                    return Auth::user()?->full_name ?? 'Diri Sendiri';
+                    return Auth::user()?->full_name ?? auth('sanctum')->user()?->full_name ?? 'Diri Sendiri';
                 }
 
                 return $otherParticipants->map(function ($userId) {
@@ -105,7 +109,15 @@ class Inbox extends Model
     public function otherUsers(): Attribute
     {
         return Attribute::make(
-            get: fn () => User::whereIn('id', $this->user_ids, 'and', false)->where('id', '!=', Auth::id(), 'and')->get(['*'])
+            get: function () {
+                $authId = Auth::id() ?? auth('sanctum')->id();
+                if (! $authId || empty($this->user_ids)) {
+                    return collect();
+                }
+                return User::whereIn('id', $this->user_ids)
+                    ->where('id', '!=', $authId)
+                    ->get(['*']);
+            }
         );
     }
 

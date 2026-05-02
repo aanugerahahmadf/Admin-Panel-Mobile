@@ -1,0 +1,39 @@
+/* ============================================================
+   FILAMENT UI FIXES - Filter Badge & Toolbar Layout
+   ============================================================ */
+
+/* Fix filter badge (angka) agar menempel di pojok kanan atas icon funnel */
+.fi-icon-btn-badge-ctn {
+    position: absolute !important;
+    inset-inline-start: auto !important;
+    left: auto !important;
+    right: 2px !important;
+    top: 2px !important;
+    transform: translate(50%, -50%) !important;
+    z-index: 9999 !important;
+    pointer-events: none !important;
+}
+
+.fi-btn-badge-ctn {
+    position: absolute !important;
+    inset-inline-start: auto !important;
+    left: auto !important;
+    right: 2px !important;
+    top: 2px !important;
+    transform: translate(50%, -50%) !important;
+    z-index: 9999 !important;
+    pointer-events: none !important;
+}
+
+/* Pastikan icon-button tidak clip badge */
+.fi-icon-btn {
+    overflow: visible !important;
+    position: relative !important;
+}
+
+/* Pastikan semua parent container tidak clip badge */
+.fi-ta-header-ctn,
+.fi-ta-header-toolbar,
+.fi-ta-header-toolbar > div {
+    overflow: visible !important;
+}

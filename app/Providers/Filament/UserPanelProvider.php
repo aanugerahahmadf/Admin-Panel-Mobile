@@ -10,6 +10,7 @@ use App\Filament\User\Auth\Register;
 use App\Filament\User\Auth\VerifyOtp;
 use App\Filament\User\Pages\Dashboard;
 use App\Filament\User\Pages\EditProfilePage;
+use App\Http\Middleware\MidtransCspMiddleware;
 use App\Http\Middleware\SetLocale;
 use Filament\Enums\ThemeMode;
 use Filament\Http\Middleware\Authenticate;
@@ -37,7 +38,9 @@ class UserPanelProvider extends PanelProvider
 {
     public function panel(Panel $panel): Panel
     {
-        return $panel
+        $isMobile = \App\Providers\NativeServiceProvider::isNativeMobile();
+
+        $panel = $panel
             ->id('user')
             ->path('user')
             ->login(Login::class)
@@ -47,11 +50,9 @@ class UserPanelProvider extends PanelProvider
                 OtpResetPassword::class
             )
             ->emailVerification(OtpEmailVerificationPrompt::class)
-            // ->sidebarFullyCollapsibleOnDesktop()
             ->brandName(fn () => __('Dekorasi Bunga Pernikahan'))
-            ->brandLogo(asset('images/logo.png'))
+            ->brandLogo(fn () => \App\Providers\NativeServiceProvider::normalizeUrl(asset('images/logo.png')))
             ->brandLogoHeight('3rem')
-            // ->simplePageMaxContentWidth(MaxWidth::Small)
             ->colors([
                 'danger' => Color::Rose,
                 'gray' => Color::Gray,
@@ -65,19 +66,18 @@ class UserPanelProvider extends PanelProvider
             ->topNavigation()
             ->maxContentWidth(MaxWidth::Full)
             ->spa()
-            ->databaseNotifications()
-
-            ->renderHook(
+            ->globalSearch()
+             ->renderHook(
                 'panels::global-search.after',
-                fn (): View => view('filament.filament-language-switcher.language-switcher')
+                fn (): ?View => (! \App\Providers\NativeServiceProvider::isNativeMobile() && ! preg_match('/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i', request()->userAgent())) 
+                    ? view('filament.filament-language-switcher.language-switcher')
+                    : null
             )
             ->renderHook(
                 'panels::auth.form.before',
-                fn (): View => view('filament.filament-language-switcher.language-switcher')
-            )
-            ->renderHook(
-                'panels::head.end',
-                fn () => view('filament.snap-script'),
+                fn (): ?View => (! \App\Providers\NativeServiceProvider::isNativeMobile() && ! preg_match('/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i', request()->userAgent()))
+                    ? view('filament.filament-language-switcher.language-switcher')
+                    : null
             )
             ->renderHook(
                 'panels::styles.after',
@@ -87,19 +87,13 @@ class UserPanelProvider extends PanelProvider
                 'panels::footer',
                 fn (): ?View => ! str_contains(request()->route()?->getName() ?? '', 'auth') ? view('filament.footer') : null
             )
-            ->renderHook(
-                'panels::auth.login.form.after',
-                fn (): View => view('filament.footer')
-            )
             ->discoverResources(in: app_path('Filament/User/Resources'), for: 'App\\Filament\\User\\Resources')
             ->discoverPages(in: app_path('Filament/User/Pages'), for: 'App\\Filament\\User\\Pages')
             ->pages([
                 Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/User/Widgets'), for: 'App\\Filament\\User\\Widgets')
-            ->widgets([
-                // Widgets are auto-discovered from the Widgets directory
-            ])
+            ->widgets([])
             ->navigationGroups([
                 NavigationGroup::make()->label(fn () => __('Beranda')),
                 NavigationGroup::make()->label(fn () => __('Belanja & Jelajahi')),
@@ -114,6 +108,7 @@ class UserPanelProvider extends PanelProvider
                     ->visible(fn (): bool => Auth::check()),
             ])
             ->middleware([
+                MidtransCspMiddleware::class,
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
@@ -131,5 +126,14 @@ class UserPanelProvider extends PanelProvider
             ->routes(function (Panel $panel): void {
                 VerifyOtp::registerRoutes($panel);
             });
+
+        // Database notifications — aktif di web, nonaktif di mobile (hemat polling)
+        if (! $isMobile) {
+            $panel->databaseNotifications();
+        }
+
+        // snap-script — Handled globally in AppServiceProvider for both Admin and User panels
+
+        return $panel;
     }
 }

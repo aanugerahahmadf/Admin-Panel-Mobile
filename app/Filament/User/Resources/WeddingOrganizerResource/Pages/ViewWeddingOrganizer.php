@@ -2,6 +2,8 @@
 
 namespace App\Filament\User\Resources\WeddingOrganizerResource\Pages;
 
+use Filament\Actions;
+
 use App\Filament\User\Resources\WeddingOrganizerResource;
 use App\Filament\User\Widgets\StatsOverview;
 use App\Filament\User\Widgets\UnifiedHistoryWidget;
@@ -16,7 +18,7 @@ class ViewWeddingOrganizer extends ViewRecord
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) static::getResource()::getModel()::count();
+        return (string) static::getResource()::getModel()::query()->count();
     }
 
     public static function getNavigationBadgeTooltip(): ?string
@@ -65,7 +67,18 @@ class ViewWeddingOrganizer extends ViewRecord
     protected function getFooterWidgets(): array
     {
         return [
-            UnifiedHistoryWidget::class,
+            // UnifiedHistoryWidget::class,
+        ];
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\Action::make('back')
+                ->label(__('Kembali'))
+                ->url(fn() => static::getResource()::getUrl('index'))
+                ->color('gray')->button()
+                ->icon('heroicon-o-arrow-left'),
         ];
     }
 }

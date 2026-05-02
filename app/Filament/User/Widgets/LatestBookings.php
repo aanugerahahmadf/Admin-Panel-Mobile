@@ -25,10 +25,10 @@ class LatestBookings extends BaseWidget
     {
         return $table
             ->query(
-                Order::where('user_id', Auth::id())->latest()->limit(6)
+                Order::query()->where('user_id', Auth::id())->latest()->limit(6)
             )
             ->contentGrid([
-                'md' => 2,
+                'default' => 2,
                 'xl' => 3,
             ])
             ->columns([

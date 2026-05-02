@@ -15,6 +15,8 @@ class RevenueChart extends ChartWidget
 
     protected static ?int $sort = 2;
 
+    protected int | string | array $columnSpan = 1;
+
     public function getHeading(): string|Htmlable
     {
         return __('Tren Pendapatan');
@@ -64,6 +66,21 @@ class RevenueChart extends ChartWidget
                 'labels' => $labels,
             ];
         });
+    }
+
+    protected function getOptions(): array
+    {
+        return [
+            'scales' => [
+                'y' => [
+                    'suggestedMin' => 0,
+                    'suggestedMax' => 10,
+                    'ticks' => [
+                        'precision' => 0,
+                    ],
+                ],
+            ],
+        ];
     }
 
     protected function getType(): string

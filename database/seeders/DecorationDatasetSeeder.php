@@ -14,16 +14,16 @@ class DecorationDatasetSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->command->info('--- Initializing Wedding Decoration Dataset Seeder ---');
+        $this->command->info('--- Seeding Decoration Dataset ---');
 
         // 1. Ensure Wedding Organizer exists (Using the first existing profile)
         $wo = WeddingOrganizer::first();
 
         if (! $wo) {
             $wo = WeddingOrganizer::create([
-                'name' => 'Ayra Wedding Organizer',
-                'address' => 'AI Core Street No. 1',
-                'description' => 'Premium AI-driven wedding services',
+                'name' => 'Dekorasi Bunga Pernikahan',
+                'address' => 'Rajasinga, Kec. Terisi, Kabupaten Indramayu, Jawa Barat',
+                'description' => 'Premium wedding services',
             ]);
         }
 
@@ -117,7 +117,7 @@ class DecorationDatasetSeeder extends Seeder
                 $product->addMedia($productImage)
                     ->preservingOriginal()
                     ->toMediaCollection('product_image');
-                $this->command->info("Seeded Product Detail: {$data['name']}");
+                $this->command->line("  <info>✓</info> Product Detail: {$data['name']}");
             }
 
             // Add to Package (Overall/Full)
@@ -126,10 +126,10 @@ class DecorationDatasetSeeder extends Seeder
                 $package->addMedia($packageImage)
                     ->preservingOriginal()
                     ->toMediaCollection('package_image');
-                $this->command->info("Seeded Package Overall: {$data['name']} Package");
+                $this->command->line("  <info>✓</info> Package Overall: {$data['name']} Package");
             }
         }
 
-        $this->command->info('--- Wedding Decoration Dataset Seeding Complete ---');
+        $this->command->info('--- Decoration Dataset Seeding Complete (' . count($products) . ' items) ---');
     }
 }

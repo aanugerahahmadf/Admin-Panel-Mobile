@@ -2,6 +2,7 @@
 
 namespace App\Filament\User\Resources\ProductResource\Pages;
 
+use App\Filament\User\Concerns\HasMobilePagination;
 use App\Filament\User\Resources\ProductResource;
 use App\Models\Cart;
 use App\Models\Product;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 
 class ManageProducts extends ManageRecords
 {
+    use HasMobilePagination;
     protected static string $resource = ProductResource::class;
 
     public function getTabs(): array
@@ -70,12 +72,11 @@ class ManageProducts extends ManageRecords
     public function toggleWishlist($id)
     {
         $user = Filament::auth()->user();
-        $wishlist = Wishlist::where('user_id', $user->id)
+        $deleted = Wishlist::query()->where('user_id', $user->id)
             ->where('product_id', $id)
-            ->first();
+            ->delete();
 
-        if ($wishlist) {
-            $wishlist->delete();
+        if ($deleted) {
             $msg = __('Dihapus dari Favorit');
             Notification::make()->title($msg)->warning()->send();
         } else {
@@ -91,7 +92,7 @@ class ManageProducts extends ManageRecords
         $results = session('cbir_mixed_results', []);
         foreach ($results as &$res) {
             if (($res['type'] ?? '') === 'product' && ($res['data']['id'] ?? 0) == $id) {
-                $res['data']['is_wishlisted'] = ! $wishlist;
+                $res['data']['is_wishlisted'] = ! $deleted;
             }
         }
         session()->put('cbir_mixed_results', $results);

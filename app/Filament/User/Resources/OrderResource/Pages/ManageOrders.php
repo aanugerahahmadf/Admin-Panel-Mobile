@@ -3,6 +3,7 @@
 namespace App\Filament\User\Resources\OrderResource\Pages;
 
 use App\Enums\OrderStatus;
+use App\Filament\User\Concerns\HasMobilePagination;
 use App\Filament\User\Resources\OrderResource;
 use App\Models\Order;
 use Filament\Facades\Filament;
@@ -11,6 +12,8 @@ use Filament\Resources\Pages\ManageRecords;
 
 class ManageOrders extends ManageRecords
 {
+    use HasMobilePagination;
+
     protected static string $resource = OrderResource::class;
 
     public function getTabs(): array

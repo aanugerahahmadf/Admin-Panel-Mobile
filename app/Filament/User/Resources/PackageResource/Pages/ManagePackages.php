@@ -3,6 +3,7 @@
 namespace App\Filament\User\Resources\PackageResource\Pages;
 
 use App\Enums\OrderStatus;
+use App\Filament\User\Concerns\HasMobilePagination;
 use App\Filament\User\Resources\PackageResource;
 use App\Models\Cart;
 use App\Models\Package;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 
 class ManagePackages extends ManageRecords
 {
+    use HasMobilePagination;
     protected static string $resource = PackageResource::class;
 
     public function getTabs(): array
@@ -25,26 +27,26 @@ class ManagePackages extends ManageRecords
         return [
             'all' => Tab::make(__('Semua Layanan'))
                 ->icon('heroicon-m-squares-2x2')
-                ->badge(fn () => $cbirCount ?? Package::count())
+                ->badge(fn () => $cbirCount ?? Package::query()->count('id'))
                 ->badgeColor($cbirCount ? 'primary' : 'gray'),
             'wishlist' => Tab::make(__('Favorit Saya'))
                 ->icon('heroicon-m-heart')
-                ->badge(fn () => Package::whereHas('wishlists', fn ($q) => $q->where('user_id', Filament::auth()->id()))->count())
+                ->badge(fn () => Package::query()->whereHas('wishlists', fn ($q) => $q->where('user_id', Filament::auth()->id()))->count('id'))
                 ->badgeColor('danger')
                 ->modifyQueryUsing(fn (Builder $query) => $query->whereHas('wishlists', fn ($q) => $q->where('user_id', Filament::auth()->id()))),
             'orders' => Tab::make(__('Pesanan Saya'))
                 ->icon('heroicon-m-shopping-bag')
-                ->badge(fn () => Package::whereHas('orders', fn ($q) => $q->where('user_id', Filament::auth()->id()))->count())
+                ->badge(fn () => Package::query()->whereHas('orders', fn ($q) => $q->where('user_id', Filament::auth()->id()))->count('id'))
                 ->badgeColor('info')
                 ->modifyQueryUsing(fn (Builder $query) => $query->whereHas('orders', fn ($q) => $q->where('user_id', Filament::auth()->id()))),
             'payments' => Tab::make(__('Konfirmasi Bayar'))
                 ->icon('heroicon-m-credit-card')
-                ->badge(fn () => Package::whereHas('orders', fn ($q) => $q->where('user_id', Filament::auth()->id())->whereIn('status', [OrderStatus::PENDING]))->count())
+                ->badge(fn () => Package::query()->whereHas('orders', fn ($q) => $q->where('user_id', Filament::auth()->id())->whereIn('status', [OrderStatus::PENDING]))->count('id'))
                 ->badgeColor('warning')
                 ->modifyQueryUsing(fn (Builder $query) => $query->whereHas('orders', fn ($q) => $q->where('user_id', Filament::auth()->id())->whereIn('status', [OrderStatus::PENDING]))),
             'history' => Tab::make(__('Riwayat'))
                 ->icon('heroicon-m-clock')
-                ->badge(fn () => Package::whereHas('orders', fn ($q) => $q->where('user_id', Filament::auth()->id())->whereIn('status', [OrderStatus::COMPLETED, OrderStatus::CANCELLED]))->count())
+                ->badge(fn () => Package::query()->whereHas('orders', fn ($q) => $q->where('user_id', Filament::auth()->id())->whereIn('status', [OrderStatus::COMPLETED, OrderStatus::CANCELLED]))->count('id'))
                 ->badgeColor('gray')
                 ->modifyQueryUsing(fn (Builder $query) => $query->whereHas('orders', fn ($q) => $q->where('user_id', Filament::auth()->id())->whereIn('status', [OrderStatus::COMPLETED, OrderStatus::CANCELLED]))),
         ];
@@ -81,12 +83,11 @@ class ManagePackages extends ManageRecords
     public function toggleWishlist($id)
     {
         $user = Filament::auth()->user();
-        $wishlist = Wishlist::where('user_id', $user->id)
+        $deleted = Wishlist::query()->where('user_id', $user->id)
             ->where('package_id', $id)
-            ->first();
+            ->delete();
 
-        if ($wishlist) {
-            $wishlist->delete();
+        if ($deleted) {
             $msg = __('Dihapus dari Favorit');
             Notification::make()->title($msg)->warning()->send();
         } else {
@@ -102,7 +103,7 @@ class ManagePackages extends ManageRecords
         $results = session('cbir_mixed_results', []);
         foreach ($results as &$res) {
             if (($res['type'] ?? '') === 'package' && ($res['data']['id'] ?? 0) == $id) {
-                $res['data']['is_wishlisted'] = ! $wishlist;
+                $res['data']['is_wishlisted'] = ! $deleted;
             }
         }
         session()->put('cbir_mixed_results', $results);

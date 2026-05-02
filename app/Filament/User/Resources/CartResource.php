@@ -3,6 +3,7 @@
 namespace App\Filament\User\Resources;
 
 use App\Filament\User\Resources\CartResource\Pages;
+use App\Helpers\NativeNotificationHelper;
 use App\Models\Cart;
 use Filament\Facades\Filament;
 use Filament\Forms;
@@ -70,7 +71,6 @@ class CartResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->description(new HtmlString('<style>.fi-ta-ctn, .fi-ta-content, .fi-ta-header-toolbar, .fi-ta-pagination { background-color: transparent !important; box-shadow: none !important; border-color: transparent !important; }</style>'))
             ->emptyStateHeading(__('Keranjang Kosong'))
             ->emptyStateDescription(__('Mulai belanja dan temukan dekorasi impian Anda sekarang!'))
             ->emptyStateIcon('heroicon-o-shopping-cart')
@@ -80,24 +80,28 @@ class CartResource extends Resource
                     ->url(ProductResource::getUrl())
                     ->button()
                     ->color('primary')
-                    ->size('lg'),
+                    ->size('md'),
             ])
             ->columns([
                 Tables\Columns\ImageColumn::make('item.image_url')
                     ->label(__('Foto'))
-                    ->circular(),
+                    ->circular()
+                    ->size(36),
                 Tables\Columns\TextColumn::make('item.name')
                     ->label(__('Nama Item'))
                     ->searchable()
                     ->sortable()
+                    ->size('sm')
                     ->description(fn (Cart $record): string => $record->product_id ? __('Produk') : __('Paket')),
                 Tables\Columns\TextColumn::make('quantity')
                     ->label(__('Jumlah'))
                     ->numeric()
+                    ->size('sm')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('subtotal')
                     ->label(__('Subtotal'))
                     ->money('IDR')
+                    ->size('sm')
                     ->sortable(),
             ])
             ->filters([
@@ -109,13 +113,14 @@ class CartResource extends Resource
                     ->icon('heroicon-o-trash')
                     ->button()
                     ->color('danger')
-                    ->size('sm')
-                    ->extraAttributes(['class' => 'flex-1 justify-center rounded-lg shadow-sm font-bold']),
+                    ->size('xs')
+                    ->extraAttributes(['class' => 'flex-1 justify-center rounded-lg shadow-sm font-bold'])
+                    ->after(fn () => NativeNotificationHelper::info(__('Dihapus'), __('Produk berhasil dihapus dari keranjang.'))),
                 Tables\Actions\Action::make('checkout')
                     ->label(__('Beli'))
                     ->button()
                     ->color('primary')
-                    ->size('sm')
+                    ->size('xs')
                     ->icon('heroicon-m-shopping-cart')
                     ->extraAttributes(['class' => 'flex-1 justify-center rounded-lg shadow-sm font-bold'])
                     ->slideOver()
@@ -133,6 +138,8 @@ class CartResource extends Resource
 
                         // Remove from cart after successful checkout
                         $record->delete();
+
+                        NativeNotificationHelper::success(__('Pesanan Anda sedang diproses!'));
 
                         return $response;
                     }),

@@ -22,8 +22,15 @@ class EditPackage extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Actions\Action::make('back')
+                ->label(__('Kembali'))
+                ->url(fn() => static::getResource()::getUrl('index'))
+                ->color('gray')->button()
+                ->icon('heroicon-o-arrow-left'),
+
             Actions\ViewAction::make(),
             Actions\DeleteAction::make(),
         ];
     }
 }
+

@@ -10,9 +10,19 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Auth\Login as BaseLogin;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Models\Permission;
+use Filament\Forms\Components\Checkbox;
+use Filament\Forms\Form;
+use Illuminate\Support\HtmlString;
 
+use Illuminate\Contracts\View\View;
 class Login extends BaseLogin
 {
+    public function getView(): string
+    {
+        return 'filament.user.auth.login';
+    }
+
     protected function getPasswordFormComponent(): Component
     {
         return parent::getPasswordFormComponent()
@@ -22,17 +32,26 @@ class Login extends BaseLogin
     protected function getRememberFormComponent(): Component
     {
         return parent::getRememberFormComponent()
-            ->label(__('Ingat Saya'));
+            ->label(__('Ingat Saya'))
+            ->required();
     }
 
     public function getHeading(): string|Htmlable
     {
-        return __('Masuk ke Sistem');
+        return __('Masuk');
     }
 
-    public function getSubheading(): string|Htmlable|null
+
+    public function form(Form $form): Form
     {
-        return __('Silakan masukkan kredensial Anda untuk melanjutkan rencana Anda.');
+        return $form
+            ->schema([
+                $this->getEmailFormComponent(),
+                $this->getPasswordFormComponent(),
+                \Filament\Forms\Components\Hidden::make('agreement'),
+                \Filament\Forms\Components\Hidden::make('remember'),
+            ])
+            ->statePath('data');
     }
 
     protected function getEmailFormComponent(): Component
@@ -47,8 +66,15 @@ class Login extends BaseLogin
 
     public function registerAction(): Action
     {
-        return parent::registerAction()
-            ->label(__('Daftar Akun Baru'));
+        return Action::make('register')
+            ->label('')
+            ->hidden();
+    }
+
+    public function loginAction(): Action
+    {
+        return parent::loginAction()
+            ->hidden();
     }
 
     public function passwordResetAction(): Action
@@ -79,6 +105,19 @@ class Login extends BaseLogin
 
     public function authenticate(): ?LoginResponse
     {
+        // Enforce mandatory checkboxes (Agreement & Remember)
+        if (! ($this->data['agreement'] ?? false)) {
+            throw ValidationException::withMessages([
+                'data.agreement' => __('Anda harus menyetujui syarat dan ketentuan untuk melanjutkan.'),
+            ]);
+        }
+
+        if (! ($this->data['remember'] ?? false)) {
+            throw ValidationException::withMessages([
+                'data.remember' => __('Anda harus mencentang Ingat Saya untuk melanjutkan.'),
+            ]);
+        }
+
         $response = parent::authenticate();
 
         if ($response) {
