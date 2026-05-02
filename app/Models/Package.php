@@ -7,6 +7,7 @@ use App\Traits\BelongsToBrand;
 use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -96,6 +97,7 @@ use Spatie\MediaLibrary\MediaCollections\Models\Media;
  */
 class Package extends Model implements HasMedia
 {
+    use HasFactory;
     use BelongsToBrand;
     use InteractsWithMedia;
 

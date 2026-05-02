@@ -20,7 +20,6 @@
     @endif
     
     <nav class="flex items-center {{ $isMobile ? 'gap-2' : 'gap-3 lg:gap-6' }}">
-        @if(!isset($hideAuth) || !$hideAuth)
             @auth
                 <a href="{{ route('filament.user.resources.home.index', ['record' => 1]) }}"
                     class="flex items-center justify-center {{ $isMobile ? 'px-3 h-8 text-xs' : 'px-5 h-10 text-sm' }} min-w-10 dark:text-[#EDEDEC] text-[#1b1b18] ring-1 ring-gray-950/10 dark:ring-white/20 hover:bg-gray-50 dark:hover:bg-white/5 rounded-md font-medium transition-all active:scale-95 whitespace-nowrap">
@@ -36,7 +35,6 @@
                     {{ __('Register') }}
                 </a>
             @endauth
-        @endif
 
         {{-- Theme Switcher (Single Button) --}}
         <button x-data="{ theme: null }" x-init="

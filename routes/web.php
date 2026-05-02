@@ -11,16 +11,10 @@ use Native\Mobile\Facades\System;
 // No standalone routes needed, now using modals in social-buttons.blade.php
 
 Route::get('/', function () {
-    // NativePHP mobile: tampilkan onboarding sebagai home
-    if (NativeServiceProvider::isNativeMobile()) {
-        if (auth()->check()) {
-            return redirect('/user');
-        }
-
-        return view('onboarding');
+    if (auth()->check()) {
+        return redirect('/user');
     }
-
-    // Web biasa: tampilkan halaman welcome
+    
     return view('welcome');
 });
 

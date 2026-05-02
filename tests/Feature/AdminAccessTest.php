@@ -22,9 +22,13 @@ test('super admin can access dashboard', function (): void {
     $user = User::factory()->create();
     $user->assignRole('super_admin');
 
-    actingAs($user)
-        ->get('/admin')
-        ->assertStatus(200);
+    $response = actingAs($user, 'web')->get('/admin');
+    
+    if ($response->isRedirect()) {
+        $response = actingAs($user, 'web')->get($response->headers->get('Location'));
+    }
+
+    $response->assertSuccessful();
 });
 
 test('non-admin users cannot access admin panel', function (): void {

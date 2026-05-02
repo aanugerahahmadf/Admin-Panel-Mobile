@@ -7,8 +7,7 @@ export default defineConfig({
     plugins: [
         laravel({
             input: [
-                'resources/css/app.css', 
-                'resources/css/onboarding.css',
+                'resources/css/app.css',
                 'resources/js/app.js', 
                 './vendor/nativephp/mobile/resources/js/phpProtocolAdapter.js', 
                 'resources/js/echo.js'
