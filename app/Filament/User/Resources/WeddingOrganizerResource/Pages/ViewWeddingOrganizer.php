@@ -8,7 +8,6 @@ use App\Filament\User\Widgets\UnifiedHistoryWidget;
 use App\Filament\User\Widgets\UserOrdersChart;
 use App\Filament\User\Widgets\UserSpendingChart;
 use App\Models\WeddingOrganizer;
-use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
 
 class ViewWeddingOrganizer extends ViewRecord

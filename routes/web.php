@@ -10,10 +10,6 @@ use Native\Mobile\Facades\System;
 // No standalone routes needed, now using modals in social-buttons.blade.php
 
 Route::get('/', function () {
-    if (auth()->check()) {
-        return redirect('/user');
-    }
-
     return view('welcome');
 });
 
