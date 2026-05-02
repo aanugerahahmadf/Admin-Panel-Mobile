@@ -35,6 +35,11 @@ class NativeServiceProvider extends ServiceProvider
             return $result;
         }
 
+        // 0. Guard: Never treat as mobile during CI or Unit Testing
+        if (env('GITHUB_ACTIONS') || app()->runningUnitTests() || env('APP_ENV') === 'testing') {
+            return $result = false;
+        }
+
         // 1. Explicit NativePHP constant (most reliable — set by NativePHP bootstrapper)
         if (defined('NATIVEPHP_RUNNING') && constant('NATIVEPHP_RUNNING')) {
             return $result = true;
@@ -51,7 +56,11 @@ class NativeServiceProvider extends ServiceProvider
         if ($dbDefault === 'nativephp' || $dbDefault === 'sqlite') {
             // Only treat as mobile if also running on Linux/Darwin (device OS)
             if (PHP_OS_FAMILY === 'Linux' || PHP_OS_FAMILY === 'Darwin') {
-                return $result = true;
+                // Ensure we are not on a desktop Linux/Darwin (like CI or Dev Mac)
+                // Device detection usually has no REMOTE_ADDR and no SHELL_VERBOSITY
+                if (! isset($_SERVER['REMOTE_ADDR']) && ! env('SHELL_VERBOSITY')) {
+                    return $result = true;
+                }
             }
         }
 
