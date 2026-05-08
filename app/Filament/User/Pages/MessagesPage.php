@@ -10,6 +10,7 @@ use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class MessagesPage extends Page
 {
@@ -61,11 +62,15 @@ class MessagesPage extends Page
                     })
                     ->whereHas('messages', function (Builder $query) use ($userId) {
                         // Pesan yang read_by-nya tidak mengandung userId ini
-                        $query->whereRaw(
-                            'JSON_SEARCH(read_by, "one", ?) IS NULL',
-                            [(string) $userId]
-                        )
-                            ->where('user_id', '!=', $userId); // hanya pesan dari orang lain
+                        if (DB::getDriverName() === 'sqlite') {
+                            $query->whereRaw('read_by NOT LIKE ?', ["%\"{$userId}\"%"]);
+                        } else {
+                            $query->whereRaw(
+                                'JSON_SEARCH(read_by, "one", ?) IS NULL',
+                                [(string) $userId]
+                            );
+                        }
+                        $query->where('user_id', '!=', $userId); // hanya pesan dari orang lain
                     })
                     ->count();
             }
