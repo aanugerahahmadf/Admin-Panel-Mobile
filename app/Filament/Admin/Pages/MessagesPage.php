@@ -54,7 +54,7 @@ class MessagesPage extends Page
                             'JSON_SEARCH(read_by, "one", ?) IS NULL',
                             [(string) $userId]
                         )
-                        ->where('user_id', '!=', $userId);
+                            ->where('user_id', '!=', $userId);
                     })
                     ->count();
             }

@@ -21,6 +21,8 @@ use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class ArticleResource extends Resource
 {
@@ -53,21 +55,21 @@ class ArticleResource extends Resource
         return ['title', 'content', 'excerpt', 'category.name', 'weddingOrganizer.name', 'slug'];
     }
 
-    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
+    public static function getGlobalSearchResultTitle(Model $record): string
     {
         return __($record->title);
     }
 
-    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    public static function getGlobalSearchResultDetails(Model $record): array
     {
         return [
             __('Kategori') => __($record->category?->name ?? '-'),
-            __('Kutipan')  => \Illuminate\Support\Str::limit(__($record->excerpt ?? '-'), 50),
-            __('Isi')      => \Illuminate\Support\Str::limit(strip_tags(__($record->content)), 100),
+            __('Kutipan') => Str::limit(__($record->excerpt ?? '-'), 50),
+            __('Isi') => Str::limit(strip_tags(__($record->content)), 100),
         ];
     }
 
-    public static function getGlobalSearchResultUrl(\Illuminate\Database\Eloquent\Model $record): ?string
+    public static function getGlobalSearchResultUrl(Model $record): ?string
     {
         return static::getUrl('view', ['record' => $record]);
     }
@@ -377,7 +379,7 @@ class ArticleResource extends Resource
     {
         return [
             'index' => Pages\ManageArticles::route('/'),
-            'view'  => Pages\ViewArticle::route('/{record}'),
+            'view' => Pages\ViewArticle::route('/{record}'),
         ];
     }
 }

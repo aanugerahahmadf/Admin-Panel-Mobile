@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Native\Mobile\Network;
+use Native\Mobile\Providers\CameraServiceProvider;
 use Native\Mobile\Providers\DeviceServiceProvider;
 use Native\Mobile\Providers\NetworkServiceProvider;
 use Native\Mobile\Providers\SystemServiceProvider;
@@ -25,6 +26,7 @@ class NativeServiceProvider extends ServiceProvider
     public static function isAnyMobile(): bool
     {
         $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+
         return self::isNativeMobile() || preg_match('/Mobile|Android|iPhone|iPad|iPod/i', $userAgent);
     }
 
@@ -359,8 +361,8 @@ class NativeServiceProvider extends ServiceProvider
             SystemServiceProvider::class,
             DeviceServiceProvider::class,
             NetworkServiceProvider::class,
-            \Native\Mobile\Providers\CameraServiceProvider::class,
-        
+            CameraServiceProvider::class,
+
         ];
     }
 }

@@ -6,6 +6,7 @@ use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
 use App\Models\History;
 use App\Models\Order;
+use App\Services\PaymentNotificationService;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 
@@ -74,7 +75,7 @@ class OrderObserver
             if ($user) {
                 // 📣 Notifikasi Pembatalan: Inbox + Bell + Email + WhatsApp
                 if ($order->status === OrderStatus::CANCELLED) {
-                    app(\App\Services\PaymentNotificationService::class)
+                    app(PaymentNotificationService::class)
                         ->sendCancellationNotification($order, $user);
                 }
 
@@ -103,7 +104,7 @@ class OrderObserver
         if ($order->isDirty('payment_status')) {
             $user = $order->user;
             if ($user) {
-                app(\App\Services\PaymentNotificationService::class)
+                app(PaymentNotificationService::class)
                     ->sendPaymentNotification($order, $user);
             }
         }

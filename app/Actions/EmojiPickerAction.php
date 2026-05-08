@@ -8,11 +8,13 @@ use Filament\Forms\Components\Actions\Action;
 class EmojiPickerAction extends Action
 {
     protected string|Closure|null $popupPlacement = 'top-end';
+
     protected array|Closure|null $popupOffset = [7, 4];
 
     public function popupPlacement(string|Closure $value): static
     {
         $this->popupPlacement = $value;
+
         return $this;
     }
 
@@ -24,6 +26,7 @@ class EmojiPickerAction extends Action
     public function popupOffset(array|Closure $value): static
     {
         $this->popupOffset = $value;
+
         return $this;
     }
 
@@ -40,7 +43,7 @@ class EmojiPickerAction extends Action
         $this->icon('heroicon-o-face-smile');
         $this->extraAttributes(function () {
             return [
-                'class'      => 'emoji-picker-button',
+                'class' => 'emoji-picker-button',
                 'x-on:click' => 'toggle()',
             ];
         });
@@ -56,7 +59,7 @@ class EmojiPickerAction extends Action
         $popupOffset = $this->getPopupOffset();
 
         $this->viewData([
-            'childView'    => parent::getView(),
+            'childView' => parent::getView(),
             'popupOffsetX' => $popupOffset[0],
             'popupOffsetY' => $popupOffset[1],
         ]);

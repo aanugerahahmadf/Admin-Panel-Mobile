@@ -2,6 +2,8 @@
 
 namespace App\Filament\User\Pages;
 
+use App\Models\Package;
+use App\Models\Product;
 use App\Providers\NativeServiceProvider;
 use App\Services\CBIRService;
 use emmanpbarrameda\FilamentTakePictureField\Forms\Components\TakePicture;
@@ -23,6 +25,7 @@ class CbirSearchPage extends Page implements HasForms
     use InteractsWithForms;
 
     protected static string $view = 'filament.user.pages.cbir-search';
+
     protected static bool $shouldRegisterNavigation = false;
 
     public static function getSlug(): string
@@ -31,8 +34,11 @@ class CbirSearchPage extends Page implements HasForms
     }
 
     public ?string $mode = null;
+
     public ?array $data = [];
+
     public ?string $statusMessage = null;
+
     public bool $isProcessing = false;
 
     public function mount(): void
@@ -63,11 +69,12 @@ class CbirSearchPage extends Page implements HasForms
     /**
      * Listen for PhotoTaken event from NativePHP native camera
      */
-    #[On('native:' . PhotoTaken::class)]
+    #[On('native:'.PhotoTaken::class)]
     public function onPhotoTaken(string $path, string $mimeType = 'image/jpeg'): void
     {
         if (! file_exists($path)) {
             $this->statusMessage = __('Gagal membaca foto. Silakan coba lagi.');
+
             return;
         }
 
@@ -81,8 +88,8 @@ class CbirSearchPage extends Page implements HasForms
 
     public function form(Form $form): Form
     {
-        $isNative  = NativeServiceProvider::isNativeMobile();
-        $isMobile  = $this->isMobileDevice();
+        $isNative = NativeServiceProvider::isNativeMobile();
+        $isMobile = $this->isMobileDevice();
 
         if ($isNative) {
             // NativePHP: button triggers native camera via Camera::getPhoto()
@@ -91,13 +98,13 @@ class CbirSearchPage extends Page implements HasForms
                 ->visible(fn () => $this->mode === 'camera')
                 ->content(new HtmlString(
                     '<div class="flex flex-col items-center justify-center gap-4 py-8">'
-                    . '<div class="w-20 h-20 rounded-full bg-primary-500/10 flex items-center justify-center">'
-                    . '<svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-primary-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" /></svg>'
-                    . '</div>'
-                    . '<button wire:click="openNativeCamera" type="button" class="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl shadow-lg transition-all text-base">'
-                    . __('Buka Kamera') . '</button>'
-                    . '<p class="text-sm text-gray-400 text-center">' . __('Kamera native akan terbuka untuk mengambil foto') . '</p>'
-                    . '</div>'
+                    .'<div class="w-20 h-20 rounded-full bg-primary-500/10 flex items-center justify-center">'
+                    .'<svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-primary-500" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" /><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" /></svg>'
+                    .'</div>'
+                    .'<button wire:click="openNativeCamera" type="button" class="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white font-bold rounded-xl shadow-lg transition-all text-base">'
+                    .__('Buka Kamera').'</button>'
+                    .'<p class="text-sm text-gray-400 text-center">'.__('Kamera native akan terbuka untuk mengambil foto').'</p>'
+                    .'</div>'
                 ));
         } elseif ($isMobile) {
             // Mobile browser: native file input with capture="environment"
@@ -109,12 +116,16 @@ class CbirSearchPage extends Page implements HasForms
                 ->live()
                 ->extraAttributes(['capture' => 'environment', 'accept' => 'image/*'])
                 ->afterStateUpdated(function ($state, Forms\Set $set, CBIRService $cbirService) {
-                    if (! $state) return;
-                    $fileObj  = is_array($state) ? reset($state) : $state;
+                    if (! $state) {
+                        return;
+                    }
+                    $fileObj = is_array($state) ? reset($state) : $state;
                     $filePath = $fileObj instanceof TemporaryUploadedFile
                         ? $fileObj->getRealPath()
-                        : storage_path('app/public/' . $fileObj);
-                    if (! file_exists($filePath)) return;
+                        : storage_path('app/public/'.$fileObj);
+                    if (! file_exists($filePath)) {
+                        return;
+                    }
                     $this->runCbirSearch(new File($filePath), $cbirService);
                     $set('status_message', $this->statusMessage);
                 });
@@ -132,8 +143,10 @@ class CbirSearchPage extends Page implements HasForms
                         ->icon('heroicon-m-arrow-up-tray')
                         ->color('primary')
                         ->action(function ($state, Forms\Set $set, CBIRService $cbirService) {
-                            if (! $state) return;
-                            
+                            if (! $state) {
+                                return;
+                            }
+
                             $this->clearVisualSearch();
                             $this->statusMessage = __('Mengunggah & Mencari...');
                             $set('status_message', $this->statusMessage);
@@ -141,33 +154,36 @@ class CbirSearchPage extends Page implements HasForms
                             // Handle Base64 from TakePicture
                             if (str_starts_with($state, 'data:image/')) {
                                 $base64Data = preg_replace('#^data:image/\w+;base64,#i', '', $state);
-                                $filename = 'cbir-temp-' . time() . '.jpg';
+                                $filename = 'cbir-temp-'.time().'.jpg';
                                 $dir = 'cbir-camera';
-                                if (!is_dir(storage_path('app/public/' . $dir))) {
-                                    mkdir(storage_path('app/public/' . $dir), 0755, true);
+                                if (! is_dir(storage_path('app/public/'.$dir))) {
+                                    mkdir(storage_path('app/public/'.$dir), 0755, true);
                                 }
-                                $filePath = storage_path('app/public/' . $dir . '/' . $filename);
+                                $filePath = storage_path('app/public/'.$dir.'/'.$filename);
                                 file_put_contents($filePath, base64_decode($base64Data));
                             } else {
-                                $filePath = storage_path('app/public/' . $state);
+                                $filePath = storage_path('app/public/'.$state);
                             }
 
                             if (! file_exists($filePath)) {
                                 $this->statusMessage = __('Gagal memproses gambar.');
+
                                 return;
                             }
 
                             $this->runCbirSearch(new File($filePath), $cbirService);
                             $set('status_message', $this->statusMessage);
-                        })
+                        }),
                 ])
                 ->afterStateUpdated(function ($state, Forms\Set $set, CBIRService $cbirService) {
-                    if (! $state) return;
+                    if (! $state) {
+                        return;
+                    }
 
-                    // Manual search button is preferred for better UX/Upload feedback, 
+                    // Manual search button is preferred for better UX/Upload feedback,
                     // but we can also auto-trigger if it's already a path
                     if (! str_starts_with($state, 'data:image/')) {
-                        $filePath = storage_path('app/public/' . $state);
+                        $filePath = storage_path('app/public/'.$state);
                         if (file_exists($filePath)) {
                             $this->runCbirSearch(new File($filePath), $cbirService);
                             $set('status_message', $this->statusMessage);
@@ -192,14 +208,17 @@ class CbirSearchPage extends Page implements HasForms
                             ->directory('cbir-queries')
                             ->live()
                             ->afterStateUpdated(function ($state, Forms\Set $set, CBIRService $cbirService) {
-                                if (! $state) return;
-                                $fileObj  = is_array($state) ? reset($state) : $state;
+                                if (! $state) {
+                                    return;
+                                }
+                                $fileObj = is_array($state) ? reset($state) : $state;
                                 $filePath = $fileObj instanceof TemporaryUploadedFile
                                     ? $fileObj->getRealPath()
-                                    : storage_path('app/public/' . $fileObj);
-                                
+                                    : storage_path('app/public/'.$fileObj);
+
                                 if (! file_exists($filePath)) {
                                     $set('status_message', __('Gagal membaca file.'));
+
                                     return;
                                 }
 
@@ -214,7 +233,7 @@ class CbirSearchPage extends Page implements HasForms
                         Forms\Components\Placeholder::make('status_message')
                             ->label('')
                             ->content(fn (Forms\Get $get) => new HtmlString(
-                                '<div class="text-sm text-center">' . e($get('status_message') ?? $this->statusMessage ?? '') . '</div>'
+                                '<div class="text-sm text-center">'.e($get('status_message') ?? $this->statusMessage ?? '').'</div>'
                             ))
                             ->visible(fn (Forms\Get $get) => (bool) ($get('status_message') ?? $this->statusMessage))
                             ->extraAttributes(['class' => 'p-3 bg-gray-900/80 dark:bg-gray-800 rounded-xl text-white font-medium shadow-md']),
@@ -229,13 +248,14 @@ class CbirSearchPage extends Page implements HasForms
     private function runCbirSearch(File $file, CBIRService $cbirService): void
     {
         $this->statusMessage = __('Mencari dekorasi...');
-        Log::info('CBIR Search: Starting search for file: ' . $file->getFilename());
-        
+        Log::info('CBIR Search: Starting search for file: '.$file->getFilename());
+
         $response = $cbirService->searchByImage($file, 20);
 
         if (isset($response['error']) || ! ($response['success'] ?? false)) {
             $this->statusMessage = $response['message'] ?? __('Server AI Offline.');
             Log::error('CBIR Search Error:', ['message' => $this->statusMessage]);
+
             return;
         }
 
@@ -245,11 +265,12 @@ class CbirSearchPage extends Page implements HasForms
         if (! empty($results)) {
             $mixedResults = $this->buildCbirMixedResults($results);
             Log::info('CBIR Search mixed results after mapping:', ['count' => count($mixedResults)]);
-            
+
             if (empty($mixedResults)) {
                 $this->statusMessage = __('Hasil ditemukan oleh AI, tapi tidak ada di database kita.');
                 Log::warning('CBIR Search: Results from AI Core did not match any database records.');
                 session()->forget(['cbir_mixed_results', 'cbir_package_results_ids', 'cbir_search_time', 'cbir_context']);
+
                 return;
             }
 
@@ -257,7 +278,7 @@ class CbirSearchPage extends Page implements HasForms
             session()->put('cbir_package_results_ids', collect($mixedResults)->where('type', 'package')->pluck('data.id')->all());
             session()->put('cbir_search_time', $response['query_time_seconds'] ?? 0);
             session()->put('cbir_context', 'package');
-            
+
             $topScore = number_format(($mixedResults[0]['similarity'] ?? 0), 1);
             $this->statusMessage = __('Berhasil menemukan :count hasil!', [
                 'count' => count($mixedResults),
@@ -272,44 +293,53 @@ class CbirSearchPage extends Page implements HasForms
     private function buildCbirMixedResults(array $results): array
     {
         $mixed = [];
-        $seen  = []; // Tracking seen items to prevent duplicates
+        $seen = []; // Tracking seen items to prevent duplicates
 
         foreach ($results as $r) {
-            $type  = $r['type'] ?? 'package';
-            $id    = $r['owner_id'] ?? $r['id'] ?? null;
-            
-            if (! $id) continue;
-            
+            $type = $r['type'] ?? 'package';
+            $id = $r['owner_id'] ?? $r['id'] ?? null;
+
+            if (! $id) {
+                continue;
+            }
+
             // Skip results with 0% similarity (non-matches)
-            if (($r['similarity'] ?? 0) <= 0) continue;
+            if (($r['similarity'] ?? 0) <= 0) {
+                continue;
+            }
 
             // Create a unique key for this item type and ID
             $key = "{$type}_{$id}";
 
             // If we've already seen this item with a higher or equal similarity, skip it
-            if (isset($seen[$key])) continue;
+            if (isset($seen[$key])) {
+                continue;
+            }
 
             $model = $type === 'package'
-                ? \App\Models\Package::with(['weddingOrganizer', 'category'])->find($id)
-                : \App\Models\Product::with(['weddingOrganizer', 'category'])->find($id);
-                
-            if (! $model) continue;
-            
+                ? Package::with(['weddingOrganizer', 'category'])->find($id)
+                : Product::with(['weddingOrganizer', 'category'])->find($id);
+
+            if (! $model) {
+                continue;
+            }
+
             $mixed[] = [
-                'type'       => $type,
+                'type' => $type,
                 'similarity' => $r['similarity'] ?? (($r['score'] ?? 0) * 100),
-                'data'       => array_merge($model->toArray(), [
-                    'image_url'         => $model->image_url,
+                'data' => array_merge($model->toArray(), [
+                    'image_url' => $model->image_url,
                     'wedding_organizer' => $model->weddingOrganizer?->toArray(),
-                    'category'          => $model->category?->toArray(),
-                    'rating'            => number_format($model->reviews()->avg('rating') ?: 0, 1),
-                    'stock'             => $model->stock ?? 0,
+                    'category' => $model->category?->toArray(),
+                    'rating' => number_format($model->reviews()->avg('rating') ?: 0, 1),
+                    'stock' => $model->stock ?? 0,
                 ]),
             ];
 
             $seen[$key] = true;
         }
         usort($mixed, fn ($a, $b) => ($b['similarity'] ?? 0) <=> ($a['similarity'] ?? 0));
+
         return $mixed;
     }
 

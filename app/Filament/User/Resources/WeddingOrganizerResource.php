@@ -24,6 +24,8 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class WeddingOrganizerResource extends Resource
 {
@@ -78,21 +80,21 @@ class WeddingOrganizerResource extends Resource
         return ['name', 'description', 'email', 'phone', 'address'];
     }
 
-    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
+    public static function getGlobalSearchResultTitle(Model $record): string
     {
-        return __($record->name) . ' (' . __('Profil Studio') . ')';
+        return __($record->name).' ('.__('Profil Studio').')';
     }
 
-    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    public static function getGlobalSearchResultDetails(Model $record): array
     {
         return [
-            __('Lokasi')  => __($record->city) . ', ' . __($record->address),
-            __('Kontak')  => $record->phone . ' / ' . $record->email,
-            __('Tentang') => \Illuminate\Support\Str::limit(__($record->description), 100),
+            __('Lokasi') => __($record->city).', '.__($record->address),
+            __('Kontak') => $record->phone.' / '.$record->email,
+            __('Tentang') => Str::limit(__($record->description), 100),
         ];
     }
 
-    public static function getGlobalSearchResultUrl(\Illuminate\Database\Eloquent\Model $record): ?string
+    public static function getGlobalSearchResultUrl(Model $record): ?string
     {
         return static::getUrl('index', ['record' => $record]);
     }

@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Filament\User\Resources\OrderResource;
 use App\Filament\User\Resources\PackageResource;
 use App\Filament\User\Resources\ProductResource;
 use App\Jobs\SendBotReply;

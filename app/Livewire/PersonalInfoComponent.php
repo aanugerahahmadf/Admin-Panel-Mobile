@@ -45,15 +45,15 @@ class PersonalInfoComponent extends Component implements HasForms
 
             $this->form->fill([
                 'avatar_url' => $avatarValue,
-                'full_name'  => $user->full_name,
+                'full_name' => $user->full_name,
                 'first_name' => $user->first_name,
-                'mid_name'   => $user->mid_name,
-                'last_name'  => $user->last_name,
-                'email'      => $user->email,
-                'phone'      => $user->phone,
-                'whatsapp'   => $user->whatsapp,
-                'gender'     => $user->gender,
-                'address'    => $user->address,
+                'mid_name' => $user->mid_name,
+                'last_name' => $user->last_name,
+                'email' => $user->email,
+                'phone' => $user->phone,
+                'whatsapp' => $user->whatsapp,
+                'gender' => $user->gender,
+                'address' => $user->address,
             ]);
         }
     }

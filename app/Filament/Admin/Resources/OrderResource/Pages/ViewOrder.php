@@ -34,16 +34,16 @@ class ViewOrder extends ViewRecord
     protected function getHeaderActions(): array
     {
         $fromMessages = request()->query('from') === 'messages';
-        $inboxId      = request()->query('inbox');
+        $inboxId = request()->query('inbox');
 
         if ($fromMessages && $inboxId) {
-            $backUrl   = MessagesPage::getUrl() . '/' . $inboxId;
+            $backUrl = MessagesPage::getUrl().'/'.$inboxId;
             $backLabel = __('Kembali ke Pesan');
         } elseif ($fromMessages) {
-            $backUrl   = MessagesPage::getUrl();
+            $backUrl = MessagesPage::getUrl();
             $backLabel = __('Kembali ke Pesan');
         } else {
-            $backUrl   = OrderResource::getUrl('index');
+            $backUrl = OrderResource::getUrl('index');
             $backLabel = __('Kembali ke Pesanan');
         }
 

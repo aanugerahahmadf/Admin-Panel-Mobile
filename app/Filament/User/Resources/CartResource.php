@@ -13,6 +13,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Livewire\Component;
 
 class CartResource extends Resource
@@ -41,20 +42,20 @@ class CartResource extends Resource
         return ['product.name', 'package.name', 'product.category.name', 'package.category.name'];
     }
 
-    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
+    public static function getGlobalSearchResultTitle(Model $record): string
     {
         return $record->package?->name ?? $record->product?->name ?? __('Item Keranjang');
     }
 
-    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    public static function getGlobalSearchResultDetails(Model $record): array
     {
         return [
-            __('Jenis')    => $record->package_id ? __('Paket') : __('Produk'),
-            __('Jumlah')   => $record->quantity ?? 1,
+            __('Jenis') => $record->package_id ? __('Paket') : __('Produk'),
+            __('Jumlah') => $record->quantity ?? 1,
         ];
     }
 
-    public static function getGlobalSearchResultUrl(\Illuminate\Database\Eloquent\Model $record): ?string
+    public static function getGlobalSearchResultUrl(Model $record): ?string
     {
         return static::getUrl('index');
     }
@@ -206,6 +207,7 @@ class CartResource extends Resource
                             }
                             $record->delete();
                             NativeNotificationHelper::success(__('Pesanan Anda sedang diproses!'));
+
                             return $response;
                         }),
 
@@ -219,10 +221,10 @@ class CartResource extends Resource
                         ->extraAttributes(['class' => 'flex-1 !rounded-xl font-bold'])
                         ->after(fn () => NativeNotificationHelper::info(__('Dihapus'), __('Produk berhasil dihapus dari keranjang.'))),
                 ])
-                ->dropdown(false)
-                ->extraAttributes([
-                    'class' => 'flex gap-2 p-3 bg-gray-50 dark:bg-white/5 border-t border-gray-100 dark:border-white/5',
-                ]),
+                    ->dropdown(false)
+                    ->extraAttributes([
+                        'class' => 'flex gap-2 p-3 bg-gray-50 dark:bg-white/5 border-t border-gray-100 dark:border-white/5',
+                    ]),
             ])
             ->headerActions([
                 Tables\Actions\Action::make('checkout_all')

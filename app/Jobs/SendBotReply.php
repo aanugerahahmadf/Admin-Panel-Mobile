@@ -2,8 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Filament\User\Resources\PackageResource;
-use App\Filament\User\Resources\VoucherResource;
 use App\Models\Message;
 use App\Models\User;
 use App\Models\WeddingOrganizer;

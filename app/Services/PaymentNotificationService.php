@@ -3,11 +3,14 @@
 namespace App\Services;
 
 use App\Enums\OrderPaymentStatus;
+use App\Filament\User\Resources\OrderResource;
 use App\Mail\OrderPaymentNotification;
 use App\Models\Message;
 use App\Models\Order;
 use App\Models\User;
+use Filament\Notifications\Actions\Action;
 use Filament\Notifications\Notification;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -21,19 +24,20 @@ class PaymentNotificationService
     public function sendCancellationNotification(Order $order, User $user): void
     {
         $lockKey = "cancel_notif_{$order->id}";
-        if (\Illuminate\Support\Facades\Cache::has($lockKey)) {
+        if (Cache::has($lockKey)) {
             Log::info("[CancellationNotification] Skipped duplicate for order #{$order->order_number}");
+
             return;
         }
-        \Illuminate\Support\Facades\Cache::put($lockKey, true, now()->addSeconds(60));
+        Cache::put($lockKey, true, now()->addSeconds(60));
 
-        $item      = $order->package ?? $order->product;
-        $itemType  = $order->package_id ? 'Package' : 'Product';
-        $itemName  = $item?->name ?? 'Item';
-        $itemCat   = $item?->category?->name ?? 'Umum';
+        $item = $order->package ?? $order->product;
+        $itemType = $order->package_id ? 'Package' : 'Product';
+        $itemName = $item?->name ?? 'Item';
+        $itemCat = $item?->category?->name ?? 'Umum';
         $itemImage = $item?->image_url ?? '';
-        $name      = $user->full_name ?? $user->username ?? 'Pelanggan';
-        $amount    = 'Rp ' . number_format((float) $order->total_price, 0, ',', '.');
+        $name = $user->full_name ?? $user->username ?? 'Pelanggan';
+        $amount = 'Rp '.number_format((float) $order->total_price, 0, ',', '.');
 
         $isRefunded = in_array(
             $order->payment_status instanceof \BackedEnum ? $order->payment_status->value : (string) $order->payment_status,
@@ -41,15 +45,15 @@ class PaymentNotificationService
         );
 
         $message = "❌ Halo Kak {$name},\n\n"
-            . "Pesanan Anda telah *dibatalkan*.\n\n"
-            . "📦 *{$itemType}:* {$itemName}\n"
-            . "🏷️ *Kategori:* {$itemCat}\n"
-            . "🔖 *No. Order:* {$order->order_number}\n"
-            . "💰 *Total:* {$amount}\n"
-            . ($isRefunded
+            ."Pesanan Anda telah *dibatalkan*.\n\n"
+            ."📦 *{$itemType}:* {$itemName}\n"
+            ."🏷️ *Kategori:* {$itemCat}\n"
+            ."🔖 *No. Order:* {$order->order_number}\n"
+            ."💰 *Total:* {$amount}\n"
+            .($isRefunded
                 ? "\n💸 Dana Anda akan dikembalikan ke saldo akun.\n"
                 : '')
-            . "\nHubungi kami jika ada pertanyaan. 💬";
+            ."\nHubungi kami jika ada pertanyaan. 💬";
 
         // 1. Inbox
         $this->sendCancellationToInbox($order, $user, $itemName, $itemImage, $message, $isRefunded);
@@ -57,20 +61,20 @@ class PaymentNotificationService
         // 2. Bell
         try {
             Notification::make()
-                ->title('Pesanan #' . $order->order_number . ' Dibatalkan')
-                ->body("Pesanan {$itemName} telah dibatalkan." . ($isRefunded ? ' Dana dikembalikan ke saldo.' : ''))
+                ->title('Pesanan #'.$order->order_number.' Dibatalkan')
+                ->body("Pesanan {$itemName} telah dibatalkan.".($isRefunded ? ' Dana dikembalikan ke saldo.' : ''))
                 ->icon('heroicon-o-x-circle')
                 ->danger()
                 ->actions([
-                    \Filament\Notifications\Actions\Action::make('view_order')
+                    Action::make('view_order')
                         ->label('Lihat Pesanan')
                         ->icon('heroicon-o-eye')
-                        ->url(\App\Filament\User\Resources\OrderResource::getUrl('view', ['record' => $order->id]))
+                        ->url(OrderResource::getUrl('view', ['record' => $order->id]))
                         ->button(),
                 ])
                 ->sendToDatabase($user);
         } catch (\Throwable $e) {
-            Log::warning('[CancellationNotification] Bell failed: ' . $e->getMessage());
+            Log::warning('[CancellationNotification] Bell failed: '.$e->getMessage());
         }
 
         // 3. Email
@@ -84,7 +88,7 @@ class PaymentNotificationService
                 Mail::to($admin->email)->send(new OrderPaymentNotification($order, $user));
             }
         } catch (\Throwable $e) {
-            Log::warning('[CancellationNotification] Email failed: ' . $e->getMessage());
+            Log::warning('[CancellationNotification] Email failed: '.$e->getMessage());
         }
 
         // 4. WhatsApp
@@ -105,24 +109,24 @@ class PaymentNotificationService
 
             Message::create([
                 'inbox_id' => $inbox->id,
-                'user_id'  => $admin?->id ?? $user->id,
-                'message'  => $message,
-                'meta'     => [
-                    'type'              => $order->package_id ? 'package' : 'product',
-                    'name'              => $itemName,
-                    'price'             => $order->total_price,
-                    'image'             => $itemImage,
-                    'is_cancellation'   => true,
-                    'is_refunded'       => $isRefunded,
-                    'order_number'      => $order->order_number,
-                    'order_id'          => $order->id,
-                    'payment_status'    => $order->payment_status instanceof OrderPaymentStatus
+                'user_id' => $admin?->id ?? $user->id,
+                'message' => $message,
+                'meta' => [
+                    'type' => $order->package_id ? 'package' : 'product',
+                    'name' => $itemName,
+                    'price' => $order->total_price,
+                    'image' => $itemImage,
+                    'is_cancellation' => true,
+                    'is_refunded' => $isRefunded,
+                    'order_number' => $order->order_number,
+                    'order_id' => $order->id,
+                    'payment_status' => $order->payment_status instanceof OrderPaymentStatus
                         ? $order->payment_status->getLabel()
                         : (string) $order->payment_status,
                 ],
             ]);
         } catch (\Throwable $e) {
-            Log::warning('[CancellationNotification] Inbox failed: ' . $e->getMessage());
+            Log::warning('[CancellationNotification] Inbox failed: '.$e->getMessage());
         }
     }
 
@@ -137,11 +141,12 @@ class PaymentNotificationService
             ? $order->payment_status->value
             : (string) $order->payment_status;
         $lockKey = "payment_notif_{$order->id}_{$psValue}";
-        if (\Illuminate\Support\Facades\Cache::has($lockKey)) {
+        if (Cache::has($lockKey)) {
             Log::info("[PaymentNotification] Skipped duplicate for order #{$order->order_number}");
+
             return;
         }
-        \Illuminate\Support\Facades\Cache::put($lockKey, true, now()->addSeconds(60));
+        Cache::put($lockKey, true, now()->addSeconds(60));
         $paymentStatus = $order->payment_status instanceof OrderPaymentStatus
             ? $order->payment_status
             : OrderPaymentStatus::tryFrom((string) $order->payment_status);
@@ -154,10 +159,10 @@ class PaymentNotificationService
         $paymentLabel = $paymentStatus?->getLabel() ?? (string) $order->payment_status;
 
         // Deteksi item (package atau product)
-        $item      = $order->package ?? $order->product;
-        $itemType  = $order->package_id ? 'Package' : 'Product';
-        $itemName  = $item?->name ?? 'Item';
-        $itemCat   = $item?->category?->name ?? 'Umum';
+        $item = $order->package ?? $order->product;
+        $itemType = $order->package_id ? 'Package' : 'Product';
+        $itemName = $item?->name ?? 'Item';
+        $itemCat = $item?->category?->name ?? 'Umum';
         $itemImage = $item?->image_url ?? '';
 
         // Pesan teks utama
@@ -181,28 +186,28 @@ class PaymentNotificationService
         string $itemCat,
         string $paymentLabel
     ): string {
-        $name   = $user->full_name ?? $user->username ?? 'Pelanggan';
-        $amount = 'Rp ' . number_format((float) $order->total_price, 0, ',', '.');
+        $name = $user->full_name ?? $user->username ?? 'Pelanggan';
+        $amount = 'Rp '.number_format((float) $order->total_price, 0, ',', '.');
 
         if ($isPaid) {
             return "✅ Terima kasih Kak {$name}!\n\n"
-                . "Pembayaran Anda telah *berhasil* dikonfirmasi.\n\n"
-                . "📦 *{$itemType}:* {$itemName}\n"
-                . "🏷️ *Kategori:* {$itemCat}\n"
-                . "🔖 *No. Order:* {$order->order_number}\n"
-                . "💰 *Total:* {$amount}\n"
-                . "📊 *Status:* {$paymentLabel}\n\n"
-                . "Tim kami akan segera memproses pesanan Anda. 🎊";
+                ."Pembayaran Anda telah *berhasil* dikonfirmasi.\n\n"
+                ."📦 *{$itemType}:* {$itemName}\n"
+                ."🏷️ *Kategori:* {$itemCat}\n"
+                ."🔖 *No. Order:* {$order->order_number}\n"
+                ."💰 *Total:* {$amount}\n"
+                ."📊 *Status:* {$paymentLabel}\n\n"
+                .'Tim kami akan segera memproses pesanan Anda. 🎊';
         }
 
         return "⚠️ Halo Kak {$name},\n\n"
-            . "Pesanan Anda *belum dibayar*. Segera lakukan pembayaran agar pesanan diproses.\n\n"
-            . "📦 *{$itemType}:* {$itemName}\n"
-            . "🏷️ *Kategori:* {$itemCat}\n"
-            . "🔖 *No. Order:* {$order->order_number}\n"
-            . "💰 *Total:* {$amount}\n"
-            . "📊 *Status:* {$paymentLabel}\n\n"
-            . "Hubungi kami jika butuh bantuan. 💬";
+            ."Pesanan Anda *belum dibayar*. Segera lakukan pembayaran agar pesanan diproses.\n\n"
+            ."📦 *{$itemType}:* {$itemName}\n"
+            ."🏷️ *Kategori:* {$itemCat}\n"
+            ."🔖 *No. Order:* {$order->order_number}\n"
+            ."💰 *Total:* {$amount}\n"
+            ."📊 *Status:* {$paymentLabel}\n\n"
+            .'Hubungi kami jika butuh bantuan. 💬';
     }
 
     // ── 1. Inbox (Messages Panel) ─────────────────────────────────────────────
@@ -222,22 +227,22 @@ class PaymentNotificationService
 
             Message::create([
                 'inbox_id' => $inbox->id,
-                'user_id'  => $admin?->id ?? $user->id,
-                'message'  => $message,
-                'meta'     => [
-                    'type'              => $order->package_id ? 'package' : 'product',
-                    'name'              => $itemName,
-                    'price'             => $order->total_price,
-                    'image'             => $itemImage,
+                'user_id' => $admin?->id ?? $user->id,
+                'message' => $message,
+                'meta' => [
+                    'type' => $order->package_id ? 'package' : 'product',
+                    'name' => $itemName,
+                    'price' => $order->total_price,
+                    'image' => $itemImage,
                     'is_payment_update' => true,
-                    'order_number'      => $order->order_number,
-                    'payment_status'    => $order->payment_status instanceof OrderPaymentStatus
+                    'order_number' => $order->order_number,
+                    'payment_status' => $order->payment_status instanceof OrderPaymentStatus
                         ? $order->payment_status->getLabel()
                         : (string) $order->payment_status,
                 ],
             ]);
         } catch (\Throwable $e) {
-            Log::warning('[PaymentNotification] Inbox failed: ' . $e->getMessage());
+            Log::warning('[PaymentNotification] Inbox failed: '.$e->getMessage());
         }
     }
 
@@ -252,19 +257,19 @@ class PaymentNotificationService
     ): void {
         try {
             Notification::make()
-                ->title('Update Pembayaran #' . $order->order_number)
+                ->title('Update Pembayaran #'.$order->order_number)
                 ->body("Status pembayaran {$itemName}: {$paymentLabel}")
                 ->icon($isPaid ? 'heroicon-o-check-circle' : 'heroicon-o-exclamation-circle')
                 ->color($isPaid ? 'success' : 'warning')
                 ->when($isPaid, fn ($n) => $n->success())
                 ->when(! $isPaid, fn ($n) => $n->warning())
                 ->actions([
-                    \Filament\Notifications\Actions\Action::make('view_order')
+                    Action::make('view_order')
                         ->label('Lihat Pesanan')
                         ->icon('heroicon-o-eye')
-                        ->url(\App\Filament\User\Resources\OrderResource::getUrl('view', ['record' => $order->id]))
+                        ->url(OrderResource::getUrl('view', ['record' => $order->id]))
                         ->button(),
-                    \Filament\Notifications\Actions\Action::make('download_invoice')
+                    Action::make('download_invoice')
                         ->label('Unduh Invoice')
                         ->icon('heroicon-o-arrow-down-tray')
                         ->url(route('invoice.pdf', ['order' => $order->id, 'download' => true]))
@@ -274,7 +279,7 @@ class PaymentNotificationService
                 ])
                 ->sendToDatabase($user);
         } catch (\Throwable $e) {
-            Log::warning('[PaymentNotification] Bell notification failed: ' . $e->getMessage());
+            Log::warning('[PaymentNotification] Bell notification failed: '.$e->getMessage());
         }
     }
 
@@ -298,7 +303,7 @@ class PaymentNotificationService
                 Log::info("[PaymentNotification] Email CC sent to admin {$admin->email} for order #{$order->order_number}");
             }
         } catch (\Throwable $e) {
-            Log::warning('[PaymentNotification] Email failed: ' . $e->getMessage());
+            Log::warning('[PaymentNotification] Email failed: '.$e->getMessage());
         }
     }
 
@@ -311,18 +316,20 @@ class PaymentNotificationService
             $phone = $this->normalizePhone($user->whatsapp ?? $user->phone ?? '');
 
             if (empty($phone)) {
-                Log::info('[PaymentNotification] WhatsApp skipped — no phone for user #' . $user->id);
+                Log::info('[PaymentNotification] WhatsApp skipped — no phone for user #'.$user->id);
+
                 return;
             }
 
             $token = config('services.fonnte_token', env('FONNTE_TOKEN', ''));
             if (empty($token)) {
                 Log::warning('[PaymentNotification] WhatsApp skipped — FONNTE_TOKEN not set');
+
                 return;
             }
 
             $payload = [
-                'target'  => $phone,
+                'target' => $phone,
                 'message' => $message,
             ];
 
@@ -338,10 +345,10 @@ class PaymentNotificationService
             if ($response->successful()) {
                 Log::info("[PaymentNotification] WhatsApp sent to {$phone}");
             } else {
-                Log::warning("[PaymentNotification] WhatsApp failed ({$response->status()}): " . $response->body());
+                Log::warning("[PaymentNotification] WhatsApp failed ({$response->status()}): ".$response->body());
             }
         } catch (\Throwable $e) {
-            Log::warning('[PaymentNotification] WhatsApp exception: ' . $e->getMessage());
+            Log::warning('[PaymentNotification] WhatsApp exception: '.$e->getMessage());
         }
     }
 
@@ -359,7 +366,7 @@ class PaymentNotificationService
 
         // 08xxx → 628xxx
         if (str_starts_with($phone, '0')) {
-            $phone = '62' . substr($phone, 1);
+            $phone = '62'.substr($phone, 1);
         }
 
         // +628xxx → 628xxx (sudah di-strip oleh regex di atas)

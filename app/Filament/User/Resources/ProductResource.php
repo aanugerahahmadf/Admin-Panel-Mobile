@@ -32,6 +32,7 @@ use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
@@ -50,24 +51,24 @@ class ProductResource extends Resource
         return ['name', 'description', 'category.name', 'weddingOrganizer.name'];
     }
 
-
-    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
+    public static function getGlobalSearchResultTitle(Model $record): string
     {
-        return __($record->name) . ($record->stock <= 0 ? ' (' . __('Stok Habis') . ')' : '');
+        return __($record->name).($record->stock <= 0 ? ' ('.__('Stok Habis').')' : '');
     }
 
-    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    public static function getGlobalSearchResultDetails(Model $record): array
     {
         $price = $record->discount_price > 0 ? $record->discount_price : $record->price;
+
         return [
             __('Kategori') => __($record->category?->name ?? '-'),
-            __('Harga')    => 'Rp ' . number_format($price, 0, ',', '.'),
-            __('Stok')     => $record->stock . ' ' . __('Item'),
-            __('Rating')   => number_format($record->reviews()->avg('rating') ?: 5, 1) . ' ⭐',
+            __('Harga') => 'Rp '.number_format($price, 0, ',', '.'),
+            __('Stok') => $record->stock.' '.__('Item'),
+            __('Rating') => number_format($record->reviews()->avg('rating') ?: 5, 1).' ⭐',
         ];
     }
 
-    public static function getGlobalSearchResultUrl(\Illuminate\Database\Eloquent\Model $record): ?string
+    public static function getGlobalSearchResultUrl(Model $record): ?string
     {
         return static::getUrl('view', ['record' => $record]);
     }
@@ -330,7 +331,7 @@ class ProductResource extends Resource
                     ->visible(fn () => session()->has('cbir_product_results_ids')),
             ])
             ->content(view('filament.user.components.product-catalog-grid'))
-               ->filters([
+            ->filters([
                 SelectFilter::make('category_id')
                     ->searchable()
                     ->label(__('Kategori'))
@@ -572,7 +573,7 @@ class ProductResource extends Resource
                                                     'user_id' => auth()->id(),
                                                     'product_id' => $record->id,
                                                 ], [
-                                                    'quantity' => DB::raw('quantity + ' . $data['quantity']),
+                                                    'quantity' => DB::raw('quantity + '.$data['quantity']),
                                                 ]);
 
                                                 Notification::make()

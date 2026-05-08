@@ -6,6 +6,7 @@ use App\Models\Package;
 use App\Models\Product;
 use App\Services\CBIRService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -25,13 +26,14 @@ class SyncAICoreCommand extends Command
         $this->info('╚══════════════════════════════════════════╝');
 
         $aiCoreUrl = rtrim((string) config('services.ai_core_url', 'http://127.0.0.1:5000'), '/');
-        $appUrl    = $this->option('app-url') ?: config('app.url', 'http://127.0.0.1:8000');
-        $csvPath   = base_path('../ai_core/data/dataset.csv');
+        $appUrl = $this->option('app-url') ?: config('app.url', 'http://127.0.0.1:8000');
+        $csvPath = base_path('../ai_core/data/dataset.csv');
 
         // ── Mode: rebuild-only ────────────────────────────────────────────────
         if ($this->option('rebuild-only')) {
             $this->info('');
             $this->info('🔄 Mode: rebuild-only — menggunakan CSV yang sudah ada.');
+
             return $this->triggerRebuild($aiCoreUrl, $csvPath, $appUrl);
         }
 
@@ -42,13 +44,14 @@ class SyncAICoreCommand extends Command
         $csvDir = dirname($csvPath);
         if (! is_dir($csvDir)) {
             $this->error("Direktori tidak ditemukan: {$csvDir}");
+
             return 1;
         }
 
         $products = Product::with('media', 'category', 'weddingOrganizer')->get();
         $packages = Package::with('media', 'category', 'weddingOrganizer')->get();
 
-        $csvData   = [];
+        $csvData = [];
         $csvHeader = ['ID', 'Type', 'Name', 'Category', 'Price', 'Discount_Price', 'Organizer', 'Image_Path', 'Description'];
 
         $totalMedia = 0;
@@ -56,7 +59,9 @@ class SyncAICoreCommand extends Command
         foreach ($products as $product) {
             foreach ($product->media as $media) {
                 $imagePath = $media->getPath();
-                if (! file_exists($imagePath)) continue;
+                if (! file_exists($imagePath)) {
+                    continue;
+                }
 
                 $csvData[] = [
                     $product->id,
@@ -76,7 +81,9 @@ class SyncAICoreCommand extends Command
         foreach ($packages as $package) {
             foreach ($package->media as $media) {
                 $imagePath = $media->getPath();
-                if (! file_exists($imagePath)) continue;
+                if (! file_exists($imagePath)) {
+                    continue;
+                }
 
                 $csvData[] = [
                     $package->id,
@@ -131,6 +138,7 @@ class SyncAICoreCommand extends Command
 
         // ── 3. Rebuild index dari CSV ─────────────────────────────────────────
         $this->info('');
+
         return $this->triggerRebuild($aiCoreUrl, $csvPath, $appUrl);
     }
 
@@ -142,16 +150,16 @@ class SyncAICoreCommand extends Command
             $response = Http::timeout(300)
                 ->post("{$aiCoreUrl}/api/index/rebuild-from-dataset", [
                     'csv_path' => $csvPath,
-                    'app_url'  => $appUrl,
+                    'app_url' => $appUrl,
                 ]);
 
             if ($response->successful()) {
                 $data = $response->json();
                 $this->info('  ✅ Rebuild selesai!');
-                $this->info("  📊 Terindeks  : " . ($data['total']   ?? '?'));
-                $this->info("  ⏭️  Diskip     : " . ($data['skipped'] ?? '?'));
+                $this->info('  📊 Terindeks  : '.($data['total'] ?? '?'));
+                $this->info('  ⏭️  Diskip     : '.($data['skipped'] ?? '?'));
                 if (! empty($data['errors'])) {
-                    $this->warn("  ❌ Error      : " . $data['errors']);
+                    $this->warn('  ❌ Error      : '.$data['errors']);
                 }
                 if (! empty($data['categories'])) {
                     $cats = collect($data['categories'])->map(fn ($v, $k) => "{$k}:{$v}")->implode(', ');
@@ -162,26 +170,29 @@ class SyncAICoreCommand extends Command
                     $this->info("  📦 Tipe       : {$types}");
                 }
                 if (! empty($data['elapsed_seconds'])) {
-                    $this->info("  ⏱️  Waktu      : " . $data['elapsed_seconds'] . 's');
+                    $this->info('  ⏱️  Waktu      : '.$data['elapsed_seconds'].'s');
                 }
 
                 // Invalidate CBIR cache
-                \Illuminate\Support\Facades\Cache::increment('cbir_cache_version');
+                Cache::increment('cbir_cache_version');
                 $this->info('  🗑️  Cache CBIR di-invalidate.');
                 $this->info('');
                 $this->info('✨ Sync selesai! CBIR siap digunakan.');
+
                 return 0;
             } else {
-                $this->error('  ❌ AI Core error: ' . $response->status());
-                $this->error('  ' . $response->body());
+                $this->error('  ❌ AI Core error: '.$response->status());
+                $this->error('  '.$response->body());
                 Log::error('ai:sync rebuild error', ['status' => $response->status(), 'body' => $response->body()]);
+
                 return 1;
             }
         } catch (\Exception $e) {
-            $this->error('  ❌ Gagal terhubung ke AI Core: ' . $e->getMessage());
-            $this->warn('  ℹ️  Pastikan AI Core berjalan di: ' . $aiCoreUrl);
-            $this->warn('  ℹ️  Atau jalankan manual: python rebuild_index.py --csv ' . $csvPath);
+            $this->error('  ❌ Gagal terhubung ke AI Core: '.$e->getMessage());
+            $this->warn('  ℹ️  Pastikan AI Core berjalan di: '.$aiCoreUrl);
+            $this->warn('  ℹ️  Atau jalankan manual: python rebuild_index.py --csv '.$csvPath);
             Log::error('ai:sync connection error', ['error' => $e->getMessage()]);
+
             return 1;
         }
     }

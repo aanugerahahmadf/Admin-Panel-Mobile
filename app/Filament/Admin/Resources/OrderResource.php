@@ -261,7 +261,7 @@ class OrderResource extends Resource
                             'Kirim notifikasi status pembayaran pesanan #:order ke :name via Email & WhatsApp.',
                             [
                                 'order' => $record->order_number,
-                                'name'  => $record->user?->full_name ?? '-',
+                                'name' => $record->user?->full_name ?? '-',
                             ]
                         ))
                         ->modalSubmitActionLabel(__('Kirim Sekarang'))
@@ -273,16 +273,17 @@ class OrderResource extends Resource
                                     ->body(__('User tidak ditemukan.'))
                                     ->danger()
                                     ->send();
+
                                 return;
                             }
 
                             try {
-                                app(\App\Services\PaymentNotificationService::class)
+                                app(PaymentNotificationService::class)
                                     ->sendPaymentNotification($record, $user);
 
                                 Notification::make()
                                     ->title(__('Notifikasi Terkirim!'))
-                                    ->body(__('Email & WhatsApp telah dikirim ke ') . $user->full_name)
+                                    ->body(__('Email & WhatsApp telah dikirim ke ').$user->full_name)
                                     ->success()
                                     ->send();
                             } catch (\Throwable $e) {
@@ -519,10 +520,10 @@ class OrderResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListOrders::route('/'),
+            'index' => Pages\ListOrders::route('/'),
             'create' => Pages\CreateOrder::route('/create'),
-            'view'   => Pages\ViewOrder::route('/{record}'),
-            'edit'   => Pages\EditOrder::route('/{record}/edit'),
+            'view' => Pages\ViewOrder::route('/{record}'),
+            'edit' => Pages\EditOrder::route('/{record}/edit'),
         ];
     }
 }

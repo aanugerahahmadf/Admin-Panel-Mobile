@@ -2,8 +2,8 @@
 
 namespace App\Filament\User\Resources\ProductResource\Pages;
 
-use App\Filament\User\Resources\ProductResource;
 use App\Filament\User\Pages\CbirSearchPage;
+use App\Filament\User\Resources\ProductResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
 

@@ -14,6 +14,8 @@ use App\Models\Transaction;
 use App\Models\Voucher;
 use App\Providers\NativeServiceProvider;
 use App\Services\MidtransService;
+use Carbon\Carbon;
+use Filament\Actions\Action;
 use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Infolists;
@@ -26,6 +28,9 @@ use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
 use Livewire\Component;
 
@@ -40,22 +45,22 @@ class OrderResource extends Resource
         return ['order_number', 'package.name', 'product.name', 'package.weddingOrganizer.name', 'user.full_name', 'user.phone', 'notes', 'status', 'payment_status'];
     }
 
-    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
+    public static function getGlobalSearchResultTitle(Model $record): string
     {
-        return '#' . $record->order_number . ' - ' . (__($record->package?->name) ?? __($record->product?->name) ?? __('Pesanan'));
+        return '#'.$record->order_number.' - '.(__($record->package?->name) ?? __($record->product?->name) ?? __('Pesanan'));
     }
 
-    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    public static function getGlobalSearchResultDetails(Model $record): array
     {
         return [
-            __('Status')      => $record->status?->getLabel() ?? '-',
-            __('Pembayaran')  => $record->payment_status?->getLabel() ?? '-',
-            __('Total')       => 'Rp ' . number_format($record->total_price, 0, ',', '.'),
-            __('Tanggal')     => $record->booking_date ? \Carbon\Carbon::parse($record->booking_date)->translatedFormat('d M Y') : '-',
+            __('Status') => $record->status?->getLabel() ?? '-',
+            __('Pembayaran') => $record->payment_status?->getLabel() ?? '-',
+            __('Total') => 'Rp '.number_format($record->total_price, 0, ',', '.'),
+            __('Tanggal') => $record->booking_date ? Carbon::parse($record->booking_date)->translatedFormat('d M Y') : '-',
         ];
     }
 
-    public static function getGlobalSearchResultUrl(\Illuminate\Database\Eloquent\Model $record): ?string
+    public static function getGlobalSearchResultUrl(Model $record): ?string
     {
         return static::getUrl('view', ['record' => $record]);
     }
@@ -162,7 +167,9 @@ class OrderResource extends Resource
                                         ->prefixIcon('heroicon-o-ticket')
                                         ->options(function ($record) {
                                             $user = auth()->user();
-                                            if (! $user || ! $record) return [];
+                                            if (! $user || ! $record) {
+                                                return [];
+                                            }
                                             $finalPrice = $record->total_price ?? 0;
                                             $vouchers = Voucher::query()
                                                 ->where('is_active', true)
@@ -170,10 +177,12 @@ class OrderResource extends Resource
                                                 ->whereHas('users', fn ($q) => $q->where('users.id', $user->id)->whereNull('user_vouchers.used_at'))
                                                 ->get()
                                                 ->filter(fn ($v) => $v->isValidFor($finalPrice));
+
                                             return $vouchers->mapWithKeys(function ($v) {
                                                 $amount = $v->discount_type === DiscountType::PERCENTAGE
                                                     ? number_format($v->discount_amount, 2, ',', '.').'%'
                                                     : 'Rp '.number_format($v->discount_amount, 2, ',', '.');
+
                                                 return [$v->id => $v->code.__(' - Diskon ').$amount];
                                             });
                                         })
@@ -183,6 +192,7 @@ class OrderResource extends Resource
                                             if (! $state) {
                                                 $set('voucher_discount', 0);
                                                 $set('_voucher_info', null);
+
                                                 return;
                                             }
                                             $finalPrice = $record?->total_price ?? 0;
@@ -220,6 +230,7 @@ class OrderResource extends Resource
                                             $finalPrice = $record?->total_price ?? 0;
                                             $discount = (float) $get('voucher_discount');
                                             $final = max(0, $finalPrice - $discount);
+
                                             return new HtmlString(
                                                 '<div class="flex flex-col gap-2 p-4 bg-success-50 dark:bg-success-950 rounded-xl border border-success-200 dark:border-success-800">'.
                                                     '<div class="flex justify-between text-sm">'.
@@ -255,7 +266,7 @@ class OrderResource extends Resource
                                 ]),
                         ]),
                 ])
-                ->submitAction(new \Illuminate\Support\HtmlString(\Illuminate\Support\Facades\Blade::render(<<<BLADE
+                    ->submitAction(new HtmlString(Blade::render(<<<'BLADE'
                     <x-filament::button
                         type="submit"
                         size="sm"
@@ -263,7 +274,7 @@ class OrderResource extends Resource
                         {{ __('Simpan Perubahan') }}
                     </x-filament::button>
                 BLADE)))
-                ->columnSpanFull(),
+                    ->columnSpanFull(),
             ]);
     }
 
@@ -297,10 +308,10 @@ class OrderResource extends Resource
             ])
             ->contentGrid([
                 'default' => 1,
-                'sm'      => 2,
-                'md'      => 2,
-                'lg'      => 3,
-                'xl'      => 4,
+                'sm' => 2,
+                'md' => 2,
+                'lg' => 3,
+                'xl' => 4,
             ])
             ->columns([
                 Tables\Columns\Layout\Stack::make([
@@ -425,18 +436,18 @@ class OrderResource extends Resource
                         ]))
                         ->action(function (Order $record, Component $livewire) {
                             try {
-                                $reference   = 'PAY-' . strtoupper(str()->random(5)) . '-' . $record->id;
+                                $reference = 'PAY-'.strtoupper(str()->random(5)).'-'.$record->id;
                                 $transaction = Transaction::create([
-                                    'user_id'          => $record->user_id,
-                                    'order_id'         => $record->id,
-                                    'type'             => 'order',
+                                    'user_id' => $record->user_id,
+                                    'order_id' => $record->id,
+                                    'type' => 'order',
                                     'reference_number' => $reference,
-                                    'amount'           => $record->total_price,
-                                    'admin_fee'        => 0,
-                                    'total_amount'     => $record->total_price,
-                                    'payment_gateway'  => 'midtrans',
-                                    'status'           => 'pending',
-                                    'notes'            => __('Pembayaran via Midtrans untuk Pesanan #') . $record->order_number,
+                                    'amount' => $record->total_price,
+                                    'admin_fee' => 0,
+                                    'total_amount' => $record->total_price,
+                                    'payment_gateway' => 'midtrans',
+                                    'status' => 'pending',
+                                    'notes' => __('Pembayaran via Midtrans untuk Pesanan #').$record->order_number,
                                 ]);
                                 $record->update(['payment_status' => OrderPaymentStatus::PENDING]);
 
@@ -461,16 +472,17 @@ class OrderResource extends Resource
                                 $transaction = $record->latestTransaction;
                                 if (! $transaction) {
                                     Notification::make()->title(__('Transaksi Tidak Ditemukan'))->body(__('Belum ada transaksi untuk pesanan ini.'))->warning()->send();
+
                                     return;
                                 }
                                 $midtrans = new MidtransService;
-                                $status   = $midtrans->getStatus($midtrans->getMidtransOrderId($transaction));
-                                $data     = (array) $status;
+                                $status = $midtrans->getStatus($midtrans->getMidtransOrderId($transaction));
+                                $data = (array) $status;
                                 if ($midtrans->isSuccess($data)) {
                                     $transaction->markAsSuccess();
                                     Notification::make()->title(__('Pembayaran Berhasil!'))->success()->send();
                                 } elseif ($midtrans->isFailed($data)) {
-                                    $transaction->markAsFailed('Midtrans: ' . ($data['transaction_status'] ?? 'failed'));
+                                    $transaction->markAsFailed('Midtrans: '.($data['transaction_status'] ?? 'failed'));
                                     Notification::make()->title(__('Pembayaran Gagal/Kadaluarsa'))->danger()->send();
                                 } else {
                                     Notification::make()->title(__('Pembayaran Masih Pending'))->info()->send();
@@ -532,7 +544,7 @@ class OrderResource extends Resource
                                 }
                             } catch (\Throwable $e) {
                                 // Lanjut meski cancel Midtrans gagal (misal 404 = belum ada di Midtrans)
-                                \Illuminate\Support\Facades\Log::warning('[CancelOrder] Midtrans cancel failed: ' . $e->getMessage());
+                                Log::warning('[CancelOrder] Midtrans cancel failed: '.$e->getMessage());
                             }
 
                             // 2. Update status ke cancelled (trigger observer → notifikasi + payment_status)
@@ -547,17 +559,17 @@ class OrderResource extends Resource
                         ->label(__('Lihat Invoice'))
                         ->icon('heroicon-o-document-text')
                         ->color('gray')
-                        ->modalHeading(fn (Order $record) => 'Invoice #' . $record->order_number)
-                        ->modalContent(fn (Order $record) => new \Illuminate\Support\HtmlString(
+                        ->modalHeading(fn (Order $record) => 'Invoice #'.$record->order_number)
+                        ->modalContent(fn (Order $record) => new HtmlString(
                             '<div style="width:100%;height:75vh;">'
-                            . '<iframe src="' . route('invoice.pdf', $record) . '" '
-                            . 'style="width:100%;height:100%;border:none;border-radius:4px;" '
-                            . 'title="Invoice #' . $record->order_number . '">'
-                            . '</iframe>'
-                            . '</div>'
+                            .'<iframe src="'.route('invoice.pdf', $record).'" '
+                            .'style="width:100%;height:100%;border:none;border-radius:4px;" '
+                            .'title="Invoice #'.$record->order_number.'">'
+                            .'</iframe>'
+                            .'</div>'
                         ))
                         ->modalFooterActions(fn (Order $record) => [
-                            \Filament\Actions\Action::make('download_pdf')
+                            Action::make('download_pdf')
                                 ->label(__('Download PDF'))
                                 ->icon('heroicon-o-arrow-down-tray')
                                 ->color('primary')
@@ -568,11 +580,11 @@ class OrderResource extends Resource
                         ->slideOver(false),
 
                 ])
-                ->label(__('Klik Tombol Grup'))
-                ->icon('heroicon-m-ellipsis-vertical')
-                ->button()
-                ->size('sm')
-                ->color('gray'),
+                    ->label(__('Klik Tombol Grup'))
+                    ->icon('heroicon-m-ellipsis-vertical')
+                    ->button()
+                    ->size('sm')
+                    ->color('gray'),
             ])
             ->actionsAlignment('center')
             ->headerActions([
@@ -745,8 +757,8 @@ class OrderResource extends Resource
     {
         return [
             'index' => ManageOrders::route('/'),
-            'view'  => ViewOrder::route('/{record}'),
-            'edit'  => EditOrder::route('/{record}/edit'),
+            'view' => ViewOrder::route('/{record}'),
+            'edit' => EditOrder::route('/{record}/edit'),
         ];
     }
 }

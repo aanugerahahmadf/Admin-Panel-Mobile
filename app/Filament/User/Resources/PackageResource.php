@@ -36,6 +36,7 @@ use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
@@ -54,23 +55,24 @@ class PackageResource extends Resource
         return ['name', 'description', 'category.name', 'weddingOrganizer.name', 'price', 'discount_price'];
     }
 
-    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
+    public static function getGlobalSearchResultTitle(Model $record): string
     {
-        return __($record->name) . ($record->stock <= 0 ? ' (' . __('Layanan Habis') . ')' : '');
+        return __($record->name).($record->stock <= 0 ? ' ('.__('Layanan Habis').')' : '');
     }
 
-    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    public static function getGlobalSearchResultDetails(Model $record): array
     {
         $price = $record->discount_price > 0 ? $record->discount_price : $record->price;
+
         return [
             __('Kategori') => __($record->category?->name ?? '-'),
-            __('Harga')    => 'Rp ' . number_format($price, 0, ',', '.'),
-            __('Stok')     => $record->stock . ' ' . __('Paket'),
-            __('Rating')   => number_format($record->reviews()->avg('rating') ?: 5, 1) . ' ⭐',
+            __('Harga') => 'Rp '.number_format($price, 0, ',', '.'),
+            __('Stok') => $record->stock.' '.__('Paket'),
+            __('Rating') => number_format($record->reviews()->avg('rating') ?: 5, 1).' ⭐',
         ];
     }
 
-    public static function getGlobalSearchResultUrl(\Illuminate\Database\Eloquent\Model $record): ?string
+    public static function getGlobalSearchResultUrl(Model $record): ?string
     {
         return static::getUrl('view', ['record' => $record]);
     }
@@ -577,7 +579,7 @@ class PackageResource extends Resource
                                                     'user_id' => auth()->id(),
                                                     'package_id' => $record->id,
                                                 ], [
-                                                    'quantity' => DB::raw('quantity + ' . $data['quantity']),
+                                                    'quantity' => DB::raw('quantity + '.$data['quantity']),
                                                 ]);
 
                                                 Notification::make()
@@ -986,7 +988,7 @@ class PackageResource extends Resource
      */
     public static function buildCbirMixedResults(array $results): array
     {
-        $pkgIds  = collect($results)->where('type', 'package')->pluck('owner_id')->all();
+        $pkgIds = collect($results)->where('type', 'package')->pluck('owner_id')->all();
         $prodIds = collect($results)->where('type', 'product')->pluck('owner_id')->all();
 
         $packages = Package::query()->whereIn('id', $pkgIds, 'and', false)->with('weddingOrganizer', 'category')->get()->keyBy('id');
@@ -1002,9 +1004,9 @@ class PackageResource extends Resource
 
             foreach ($allProducts as $product) {
                 $results[] = [
-                    'type'     => 'product',
+                    'type' => 'product',
                     'owner_id' => $product->id,
-                    'score'    => 0,
+                    'score' => 0,
                 ];
                 $products->put($product->id, $product);
             }
@@ -1018,9 +1020,9 @@ class PackageResource extends Resource
 
             foreach ($allPackages as $package) {
                 $results[] = [
-                    'type'     => 'package',
+                    'type' => 'package',
                     'owner_id' => $package->id,
-                    'score'    => 0,
+                    'score' => 0,
                 ];
                 $packages->put($package->id, $package);
             }
@@ -1029,19 +1031,19 @@ class PackageResource extends Resource
         return collect($results)
             ->unique(fn ($res) => ($res['type'] ?? 'package').'-'.($res['owner_id'] ?? 0))
             ->map(function ($res) use ($packages, $products) {
-                $type  = $res['type'] ?? 'package';
+                $type = $res['type'] ?? 'package';
                 $model = $type === 'product' ? $products->get($res['owner_id']) : $packages->get($res['owner_id']);
                 if (! $model) {
                     return null;
                 }
 
                 return [
-                    'type'       => $type,
+                    'type' => $type,
                     'similarity' => ($res['score'] ?? 0) * 100,
-                    'data'       => array_merge($model->toArray(), [
-                        'image_url'        => $model->image_url,
+                    'data' => array_merge($model->toArray(), [
+                        'image_url' => $model->image_url,
                         'wedding_organizer' => $model->weddingOrganizer?->toArray(),
-                        'category'         => $model->category?->toArray(),
+                        'category' => $model->category?->toArray(),
                     ]),
                 ];
             })

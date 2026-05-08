@@ -15,6 +15,8 @@ use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class ReviewResource extends Resource
 {
@@ -27,20 +29,20 @@ class ReviewResource extends Resource
         return ['package.name', 'product.name', 'comment', 'weddingOrganizer.name'];
     }
 
-    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
+    public static function getGlobalSearchResultTitle(Model $record): string
     {
         return $record->package?->name ?? $record->product?->name ?? __('Ulasan');
     }
 
-    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    public static function getGlobalSearchResultDetails(Model $record): array
     {
         return [
-            __('Rating')  => ($record->rating ?? 0) . ' ⭐',
-            __('Komentar') => \Illuminate\Support\Str::limit($record->comment ?? '-', 50),
+            __('Rating') => ($record->rating ?? 0).' ⭐',
+            __('Komentar') => Str::limit($record->comment ?? '-', 50),
         ];
     }
 
-    public static function getGlobalSearchResultUrl(\Illuminate\Database\Eloquent\Model $record): ?string
+    public static function getGlobalSearchResultUrl(Model $record): ?string
     {
         return static::getUrl('index');
     }

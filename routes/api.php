@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CBIRController;
 use App\Http\Controllers\Api\ChatController;
+use App\Http\Controllers\Api\FonnteWebhookController;
 use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PackageController;
@@ -84,9 +85,9 @@ Route::post('/webhooks/midtrans', [PaymentWebhookController::class, 'handleMidtr
 Route::post('/v1.0/payment/notify', [PaymentWebhookController::class, 'handleSnapBiNotification']);
 
 // Fonnte WhatsApp Webhooks (No auth required — verified by token in payload)
-Route::post('/webhooks/fonnte', [\App\Http\Controllers\Api\FonnteWebhookController::class, 'handleIncomingMessage']);
-Route::post('/webhooks/fonnte/connect', [\App\Http\Controllers\Api\FonnteWebhookController::class, 'handleConnectionStatus']);
-Route::post('/webhooks/fonnte/status', [\App\Http\Controllers\Api\FonnteWebhookController::class, 'handleMessageStatus']);
+Route::post('/webhooks/fonnte', [FonnteWebhookController::class, 'handleIncomingMessage']);
+Route::post('/webhooks/fonnte/connect', [FonnteWebhookController::class, 'handleConnectionStatus']);
+Route::post('/webhooks/fonnte/status', [FonnteWebhookController::class, 'handleMessageStatus']);
 
 // CBIR - AI Visual Search Public Probing
 Route::get('/cbir/stats', [CBIRController::class, 'getStats']);

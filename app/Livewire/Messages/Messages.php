@@ -1,23 +1,37 @@
 <?php
 
 namespace App\Livewire\Messages;
-use App\Models\Package;
-use App\Models\Product;
-use Filament\Actions\Action;
+
+use App\Actions\EmojiPickerAction;
+use App\Enums\DiscountType;
 use App\Enums\Messages\MediaCollectionType;
+use App\Enums\OrderPaymentStatus;
+use App\Enums\OrderStatus;
 use App\Filament\Admin\Pages\MessagesPage;
+use App\Filament\User\Resources\PackageResource;
+use App\Filament\User\Resources\ProductResource;
 use App\Jobs\SendBotReply;
 use App\Livewire\Traits\CanMarkAsRead;
 use App\Livewire\Traits\CanValidateFiles;
 use App\Livewire\Traits\HasPollInterval;
 use App\Models\Message;
+use App\Models\Order;
+use App\Models\Package;
+use App\Models\Product;
+use App\Models\Voucher;
+use App\Services\CBIRService;
 use emmanpbarrameda\FilamentTakePictureField\Forms\Components\TakePicture;
+use Filament\Actions\Action;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
 use Filament\Facades\Filament;
 use Filament\Forms;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Actions\Contracts\HasActions;
-use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Illuminate\Contracts\Pagination\Paginator;
@@ -25,29 +39,25 @@ use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Application;
+use Illuminate\Http\File;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
-use App\Services\CBIRService;
-use App\Filament\User\Resources\PackageResource;
-use App\Filament\User\Resources\ProductResource;
-use Illuminate\Http\File;
-use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
-use Illuminate\Support\HtmlString;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Computed;
 use Livewire\Component;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithPagination;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
-use App\Actions\EmojiPickerAction;
 
 /**
  * @mixin Component
  */
-class Messages extends Component implements HasForms, HasActions
+class Messages extends Component implements HasActions, HasForms
 {
-    use CanMarkAsRead, CanValidateFiles, HasPollInterval, InteractsWithForms, InteractsWithActions, WithPagination;
+    use CanMarkAsRead, CanValidateFiles, HasPollInterval, InteractsWithActions, InteractsWithForms, WithPagination;
 
     public $selectedConversation;
 
@@ -56,6 +66,7 @@ class Messages extends Component implements HasForms, HasActions
     public Collection $conversationMessages;
 
     public ?array $data = [];
+
     public string $searchItem = '';
 
     public bool $showUpload = false;
@@ -318,7 +329,7 @@ class Messages extends Component implements HasForms, HasActions
             ->modalHeading(__('Pilih Katalog Paket Dekorasi Bunga Atau Katalog Bunga'))
             ->modalSubmitAction(false)
             ->form(fn (array $arguments) => [
-                Forms\Components\Section::make('')
+                Section::make('')
                     ->compact()
                     ->schema([
                         Forms\Components\TextInput::make('search')
@@ -331,6 +342,7 @@ class Messages extends Component implements HasForms, HasActions
                                 if (empty($state)) {
                                     session()->forget(['cbir_mixed_results', 'cbir_product_results_ids', 'cbir_search_time', 'cbir_context']);
                                     $set('status_message', null);
+
                                     return;
                                 }
 
@@ -351,11 +363,12 @@ class Messages extends Component implements HasForms, HasActions
                                 if ($products->isEmpty() && $packages->isEmpty()) {
                                     session()->forget(['cbir_mixed_results', 'cbir_product_results_ids', 'cbir_search_time', 'cbir_context']);
                                     $set('status_message', __('Tidak ada item yang cocok untuk pencarian teks.'));
+
                                     return;
                                 }
 
                                 $mixedResults = [];
-                                
+
                                 foreach ($products as $model) {
                                     $mixedResults[] = [
                                         'type' => 'product',
@@ -413,42 +426,46 @@ class Messages extends Component implements HasForms, HasActions
                                     ->icon('heroicon-m-arrow-up-tray')
                                     ->color('primary')
                                     ->action(function ($state, Forms\Set $set, CBIRService $cbirService) {
-                                        if (! $state) return;
-                                        
+                                        if (! $state) {
+                                            return;
+                                        }
+
                                         $this->clearVisualSearch();
                                         $set('status_message', __('Mengunggah & Mencari...'));
 
                                         // Handle Base64 or Path
                                         if (str_starts_with($state, 'data:image/')) {
                                             $base64Data = preg_replace('#^data:image/\w+;base64,#i', '', $state);
-                                            $filename = 'cbir-msg-' . time() . '.jpg';
+                                            $filename = 'cbir-msg-'.time().'.jpg';
                                             $dir = 'cbir-camera';
-                                            if (!is_dir(storage_path('app/public/' . $dir))) {
-                                                mkdir(storage_path('app/public/' . $dir), 0755, true);
+                                            if (! is_dir(storage_path('app/public/'.$dir))) {
+                                                mkdir(storage_path('app/public/'.$dir), 0755, true);
                                             }
-                                            $filePath = storage_path('app/public/' . $dir . '/' . $filename);
+                                            $filePath = storage_path('app/public/'.$dir.'/'.$filename);
                                             file_put_contents($filePath, base64_decode($base64Data));
                                         } else {
-                                            $filePath = storage_path('app/public/' . $state);
+                                            $filePath = storage_path('app/public/'.$state);
                                         }
 
                                         if (! file_exists($filePath)) {
                                             $set('status_message', __('Gagal memproses gambar.'));
+
                                             return;
                                         }
-                                        
+
                                         $file = new File($filePath);
                                         $response = $cbirService->searchByImage($file, 20);
 
                                         if (isset($response['error']) || ! ($response['success'] ?? false)) {
                                             $set('status_message', $response['message'] ?? __('Server AI Offline.'));
+
                                             return;
                                         }
 
                                         $results = $response['results'] ?? [];
-                                        
+
                                         // Filter out 0% results
-                                        $results = collect($results)->filter(fn($r) => ($r['similarity'] ?? 0) > 0)->all();
+                                        $results = collect($results)->filter(fn ($r) => ($r['similarity'] ?? 0) > 0)->all();
 
                                         if (! empty($results)) {
                                             $mixedResults = PackageResource::buildCbirMixedResults($results);
@@ -458,29 +475,36 @@ class Messages extends Component implements HasForms, HasActions
                                             session()->forget(['cbir_mixed_results', 'cbir_product_results_ids', 'cbir_search_time', 'cbir_context']);
                                             $set('status_message', __('Tidak ada item yang cocok.'));
                                         }
-                                    })
+                                    }),
                             ])
                             ->afterStateUpdated(function (Component $livewire, $state, Forms\Set $set, CBIRService $cbirService) {
-                                if (! $state) return;
-                                
+                                if (! $state) {
+                                    return;
+                                }
+
                                 // Auto-trigger only for file paths (non-base64)
-                                if (str_starts_with($state, 'data:image/')) return;
+                                if (str_starts_with($state, 'data:image/')) {
+                                    return;
+                                }
 
                                 $filePath = storage_path('app/public/'.$state);
-                                if (! file_exists($filePath)) return;
-                                
+                                if (! file_exists($filePath)) {
+                                    return;
+                                }
+
                                 $file = new File($filePath);
                                 $response = $cbirService->searchByImage($file, 20);
 
                                 if (isset($response['error']) || ! ($response['success'] ?? false)) {
                                     $set('status_message', $response['message'] ?? __('Server AI Offline.'));
+
                                     return;
                                 }
 
                                 $results = $response['results'] ?? [];
-                                
+
                                 // Filter out 0% results
-                                $results = collect($results)->filter(fn($r) => ($r['similarity'] ?? 0) > 0)->all();
+                                $results = collect($results)->filter(fn ($r) => ($r['similarity'] ?? 0) > 0)->all();
 
                                 if (! empty($results)) {
                                     $mixedResults = PackageResource::buildCbirMixedResults($results);
@@ -499,26 +523,31 @@ class Messages extends Component implements HasForms, HasActions
                             ->directory('cbir-queries')
                             ->live()
                             ->afterStateUpdated(function (Component $livewire, $state, Forms\Set $set, CBIRService $cbirService) {
-                                if (! $state) return;
+                                if (! $state) {
+                                    return;
+                                }
                                 $fileObj = is_array($state) ? reset($state) : $state;
                                 $filePath = $fileObj instanceof TemporaryUploadedFile
                                     ? $fileObj->getRealPath()
                                     : storage_path('app/public/'.$fileObj);
 
-                                if (! file_exists($filePath)) return;
+                                if (! file_exists($filePath)) {
+                                    return;
+                                }
 
                                 $file = new File($filePath);
                                 $response = $cbirService->searchByImage($file, 20);
 
                                 if (isset($response['error']) || ! ($response['success'] ?? false)) {
                                     $set('status_message', $response['message'] ?? __('Server AI Offline.'));
+
                                     return;
                                 }
 
                                 $results = $response['results'] ?? [];
-                                
+
                                 // Filter out 0% results
-                                $results = collect($results)->filter(fn($r) => ($r['similarity'] ?? 0) > 0)->all();
+                                $results = collect($results)->filter(fn ($r) => ($r['similarity'] ?? 0) > 0)->all();
 
                                 if (! empty($results)) {
                                     $mixedResults = PackageResource::buildCbirMixedResults($results);
@@ -632,40 +661,43 @@ class Messages extends Component implements HasForms, HasActions
             ->modalHeading(__('Edit Pesanan'))
             ->modalSubmitActionLabel(__('Simpan'))
             ->form(fn (array $arguments): array => [
-                \Filament\Forms\Components\Section::make(__('Status & Keuangan'))
+                Section::make(__('Status & Keuangan'))
                     ->schema([
-                        \Filament\Forms\Components\Select::make('status')
+                        Select::make('status')
                             ->label(__('Status Pengerjaan'))
-                            ->options(\App\Enums\OrderStatus::class)
+                            ->options(OrderStatus::class)
                             ->native(false)
                             ->required(),
-                        \Filament\Forms\Components\Select::make('payment_status')
+                        Select::make('payment_status')
                             ->label(__('Status Pembayaran'))
-                            ->options(\App\Enums\OrderPaymentStatus::class)
+                            ->options(OrderPaymentStatus::class)
                             ->native(false)
                             ->required(),
-                        \Filament\Forms\Components\DatePicker::make('booking_date')
+                        DatePicker::make('booking_date')
                             ->label(__('Tanggal Acara'))
                             ->native(false)
                             ->prefixIcon('heroicon-o-calendar'),
-                        \Filament\Forms\Components\Textarea::make('notes')
+                        Textarea::make('notes')
                             ->label(__('Catatan'))
                             ->rows(3)
                             ->columnSpanFull(),
                     ])->columns(2),
             ])
             ->fillForm(function (array $arguments): array {
-                $order = \App\Models\Order::find($arguments['orderId'] ?? null);
+                $order = Order::find($arguments['orderId'] ?? null);
+
                 return $order ? $order->toArray() : [];
             })
             ->action(function (array $arguments, array $data): void {
-                $order = \App\Models\Order::find($arguments['orderId'] ?? null);
-                if (! $order) return;
+                $order = Order::find($arguments['orderId'] ?? null);
+                if (! $order) {
+                    return;
+                }
                 $order->update([
-                    'status'         => $data['status'],
+                    'status' => $data['status'],
                     'payment_status' => $data['payment_status'],
-                    'booking_date'   => $data['booking_date'],
-                    'notes'          => $data['notes'],
+                    'booking_date' => $data['booking_date'],
+                    'notes' => $data['notes'],
                 ]);
                 Notification::make()
                     ->title(__('Pesanan berhasil diperbarui'))
@@ -684,7 +716,9 @@ class Messages extends Component implements HasForms, HasActions
     public function selectNewItem(string $type, int $id, int $orderId): void
     {
         $item = $type === 'package' ? Package::find($id) : Product::find($id);
-        if (!$item) return;
+        if (! $item) {
+            return;
+        }
 
         // Tutup modal changeOrder
         $this->unmountAction();
@@ -705,47 +739,50 @@ class Messages extends Component implements HasForms, HasActions
             ->modalWidth('screen')
             ->modalHeading(__('Lengkapi Detail Pesanan'))
             ->modalSubmitAction(false)
-            ->modalCancelAction(false)           
+            ->modalCancelAction(false)
             ->form(function (array $arguments) {
-                $type    = $arguments['type'] ?? 'package';
-                $itemId  = $arguments['itemId'] ?? null;
+                $type = $arguments['type'] ?? 'package';
+                $itemId = $arguments['itemId'] ?? null;
                 $orderId = $arguments['orderId'] ?? null;
-                $item    = $type === 'package' ? Package::find($itemId) : Product::find($itemId);
-                $order   = \App\Models\Order::find($orderId);
+                $item = $type === 'package' ? Package::find($itemId) : Product::find($itemId);
+                $order = Order::find($orderId);
 
-                if (! $item) return [];
+                if (! $item) {
+                    return [];
+                }
 
                 $finalPrice = $item->price ?? 0;
                 if ($item instanceof Package && isset($item->final_price)) {
                     $finalPrice = $item->final_price;
                 }
+
                 return [
                     Forms\Components\Placeholder::make('_item_preview')
                         ->hiddenLabel()
                         ->content(new HtmlString(
                             '<div class="flex items-center gap-3 p-3 mb-2 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10">'
-                            . ($item->image_url ? '<img src="'.$item->image_url.'" class="w-16 h-16 rounded-lg object-cover flex-shrink-0">' : '')
-                            . '<div class="flex-1 min-w-0">'
-                            . '<p class="text-[10px] font-semibold mb-0.5 text-warning-600 dark:text-warning-400">'
-                            . ($type === 'package' ? PackageResource::getModelLabel() : ProductResource::getModelLabel())
-                            . '</p>'
-                            . '<p class="text-sm font-semibold text-gray-950 dark:text-white truncate">'.$item->name.'</p>'
-                            . '<p class="text-xs font-semibold mt-0.5 text-primary-600 dark:text-primary-400">Rp '.number_format($finalPrice, 0, ',', '.').'</p>'
-                            . '</div>'
-                            . '</div>'
+                            .($item->image_url ? '<img src="'.$item->image_url.'" class="w-16 h-16 rounded-lg object-cover flex-shrink-0">' : '')
+                            .'<div class="flex-1 min-w-0">'
+                            .'<p class="text-[10px] font-semibold mb-0.5 text-warning-600 dark:text-warning-400">'
+                            .($type === 'package' ? PackageResource::getModelLabel() : ProductResource::getModelLabel())
+                            .'</p>'
+                            .'<p class="text-sm font-semibold text-gray-950 dark:text-white truncate">'.$item->name.'</p>'
+                            .'<p class="text-xs font-semibold mt-0.5 text-primary-600 dark:text-primary-400">Rp '.number_format($finalPrice, 0, ',', '.').'</p>'
+                            .'</div>'
+                            .'</div>'
                         )),
 
                     Forms\Components\Placeholder::make('_wizard_style')
                         ->hiddenLabel()
                         ->content(new HtmlString('<style>ol.fi-fo-wizard-header { pointer-events: none !important; opacity: 0.9; } .fi-fo-wizard-header-step-button { pointer-events: none !important; cursor: default !important; } .fi-fo-wizard > div:last-child > span:nth-child(3), .fi-fo-wizard > div:last-child > span:nth-child(4) { margin-left: auto !important; } .fi-fo-wizard > div:last-child > span:nth-child(2) { display: none !important; }</style><script>document.addEventListener("alpine:init", () => { setTimeout(() => { document.querySelectorAll(".fi-fo-wizard-header-step-button").forEach(btn => btn.disabled = true); }, 100); });</script>')),
 
-                    Forms\Components\Wizard::make([                        
+                    Forms\Components\Wizard::make([
                         Forms\Components\Wizard\Step::make(__('Detail Acara'))
                             ->icon('heroicon-o-calendar-days')
                             ->schema([
-                                Forms\Components\Section::make(__('Pilih Waktu & Kebutuhan'))
+                                Section::make(__('Pilih Waktu & Kebutuhan'))
                                     ->schema([
-                                        Forms\Components\DatePicker::make('booking_date')
+                                        DatePicker::make('booking_date')
                                             ->label(__('Rencana Tanggal Acara'))
                                             ->required()
                                             ->native(false)
@@ -753,7 +790,7 @@ class Messages extends Component implements HasForms, HasActions
                                             ->minDate(now())
                                             ->prefixIcon('heroicon-o-calendar-days')
                                             ->columnSpanFull(),
-                                        Forms\Components\Textarea::make('notes')
+                                        Textarea::make('notes')
                                             ->label(__('Catatan Khusus / Alamat Lokasi'))
                                             ->rows(4)
                                             ->required()
@@ -765,7 +802,7 @@ class Messages extends Component implements HasForms, HasActions
                         Forms\Components\Wizard\Step::make(__('Info Kontak'))
                             ->icon('heroicon-o-user-circle')
                             ->schema([
-                                Forms\Components\Section::make(__('Verifikasi Data Anda'))
+                                Section::make(__('Verifikasi Data Anda'))
                                     ->schema([
                                         Forms\Components\TextInput::make('customer_name')
                                             ->label(__('Nama Lengkap'))
@@ -782,27 +819,31 @@ class Messages extends Component implements HasForms, HasActions
                         Forms\Components\Wizard\Step::make(__('Voucher & Diskon'))
                             ->icon('heroicon-o-ticket')
                             ->schema([
-                                Forms\Components\Section::make(__('Pilih Voucher Anda'))
+                                Section::make(__('Pilih Voucher Anda'))
                                     ->description(__('Gunakan voucher yang telah Anda klaim di menu Voucher.'))
                                     ->icon('heroicon-o-ticket')
                                     ->schema([
-                                        Forms\Components\Select::make('voucher_id')
+                                        Select::make('voucher_id')
                                             ->searchable()
                                             ->label(__('Voucher Tersedia'))
                                             ->prefixIcon('heroicon-o-ticket')
                                             ->options(function () use ($finalPrice) {
                                                 $user = auth()->user();
-                                                if (! $user) return [];
-                                                $vouchers = \App\Models\Voucher::query()
+                                                if (! $user) {
+                                                    return [];
+                                                }
+                                                $vouchers = Voucher::query()
                                                     ->where('is_active', true)
                                                     ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
                                                     ->whereHas('users', fn ($q) => $q->where('users.id', $user->id)->whereNull('user_vouchers.used_at'))
                                                     ->get()
                                                     ->filter(fn ($v) => $v->isValidFor($finalPrice));
+
                                                 return $vouchers->mapWithKeys(function ($v) {
-                                                    $amount = $v->discount_type === \App\Enums\DiscountType::PERCENTAGE
+                                                    $amount = $v->discount_type === DiscountType::PERCENTAGE
                                                         ? number_format($v->discount_amount, 2, ',', '.').'%'
                                                         : 'Rp '.number_format($v->discount_amount, 2, ',', '.');
+
                                                     return [$v->id => $v->code.__(' - Diskon ').$amount];
                                                 });
                                             })
@@ -812,9 +853,10 @@ class Messages extends Component implements HasForms, HasActions
                                                 if (! $state) {
                                                     $set('voucher_discount', 0);
                                                     $set('_voucher_info', null);
+
                                                     return;
                                                 }
-                                                $voucher = \App\Models\Voucher::find($state);
+                                                $voucher = Voucher::find($state);
                                                 if ($voucher && $voucher->isValidFor($finalPrice)) {
                                                     $discount = $voucher->calculateDiscount($finalPrice);
                                                     $set('voucher_discount', $discount);
@@ -847,6 +889,7 @@ class Messages extends Component implements HasForms, HasActions
                                             ->content(function (Forms\Get $get) use ($finalPrice) {
                                                 $discount = (float) $get('voucher_discount');
                                                 $final = max(0, $finalPrice - $discount);
+
                                                 return new HtmlString(
                                                     '<div class="flex flex-col gap-2 p-4 bg-success-50 dark:bg-success-950 rounded-xl border border-success-200 dark:border-success-800">'.
                                                         '<div class="flex justify-between text-sm">'.
@@ -870,7 +913,7 @@ class Messages extends Component implements HasForms, HasActions
                         Forms\Components\Wizard\Step::make(__('Konfirmasi'))
                             ->icon('heroicon-o-check-badge')
                             ->schema([
-                                Forms\Components\Section::make(__('Ringkasan Pembayaran'))
+                                Section::make(__('Ringkasan Pembayaran'))
                                     ->schema([
                                         Forms\Components\Placeholder::make('pkg_summary')
                                             ->label(__('Item'))
@@ -882,23 +925,25 @@ class Messages extends Component implements HasForms, HasActions
                                     ]),
                             ]),
                     ])
-                    ->cancelAction(new HtmlString(''))
-                    ->previousAction(fn (Forms\Components\Actions\Action $action) => $action->extraAttributes([
-                        'style' => 'display: none;',
-                        'x-bind:style' => 'isFirstStep() ? \'display: none !important\' : \'\'',
-                    ]))
-                    ->submitAction(new HtmlString('<div style="display: none;" x-bind:style="{ display: isLastStep() ? \'block\' : \'none\' }"><button type="submit" class="fi-btn fi-btn-size-md fi-btn-color-primary fi-btn-style-solid bg-primary-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary-500">Konfirmasi Pesanan</button></div>')),
+                        ->cancelAction(new HtmlString(''))
+                        ->previousAction(fn (Forms\Components\Actions\Action $action) => $action->extraAttributes([
+                            'style' => 'display: none;',
+                            'x-bind:style' => 'isFirstStep() ? \'display: none !important\' : \'\'',
+                        ]))
+                        ->submitAction(new HtmlString('<div style="display: none;" x-bind:style="{ display: isLastStep() ? \'block\' : \'none\' }"><button type="submit" class="fi-btn fi-btn-size-md fi-btn-color-primary fi-btn-style-solid bg-primary-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-primary-500">Konfirmasi Pesanan</button></div>')),
                 ];
             })
             ->action(function (array $arguments, array $data) {
-                $type    = $arguments['type'] ?? 'package';
-                $itemId  = $arguments['itemId'] ?? null;
+                $type = $arguments['type'] ?? 'package';
+                $itemId = $arguments['itemId'] ?? null;
                 $orderId = $arguments['orderId'] ?? null;
 
-                $item  = $type === 'package' ? Package::find($itemId) : Product::find($itemId);
-                $order = \App\Models\Order::find($orderId);
+                $item = $type === 'package' ? Package::find($itemId) : Product::find($itemId);
+                $order = Order::find($orderId);
 
-                if (! $item || ! $order || $order->user_id !== auth()->id()) return;
+                if (! $item || ! $order || $order->user_id !== auth()->id()) {
+                    return;
+                }
 
                 $finalPrice = $item->price ?? 0;
                 if ($item instanceof Package && isset($item->final_price)) {
@@ -913,9 +958,9 @@ class Messages extends Component implements HasForms, HasActions
                     : ['product_id' => $item->id, 'package_id' => null];
 
                 $order->update(array_merge($updateData, [
-                    'total_price'  => $finalPrice,
+                    'total_price' => $finalPrice,
                     'booking_date' => $data['booking_date'],
-                    'notes'        => $data['notes'],
+                    'notes' => $data['notes'],
                 ]));
 
                 if (! empty($data['phone']) && $data['phone'] !== auth()->user()->phone) {
@@ -925,32 +970,32 @@ class Messages extends Component implements HasForms, HasActions
                 if (! empty($data['voucher_id'])) {
                     auth()->user()->vouchers()->updateExistingPivot($data['voucher_id'], [
                         'order_id' => $order->id,
-                        'used_at'  => now(),
+                        'used_at' => now(),
                     ]);
                 }
 
                 $newMessage = $this->selectedConversation->messages()->create([
-                    'message'  => __('Saya telah mengganti pesanan #:orderNumber menjadi: :name', [
+                    'message' => __('Saya telah mengganti pesanan #:orderNumber menjadi: :name', [
                         'orderNumber' => $order->order_number,
-                        'name'        => $item->name,
+                        'name' => $item->name,
                     ]),
-                    'user_id'  => auth()->id(),
-                    'read_by'  => [auth()->id()],
-                    'read_at'  => [now()],
+                    'user_id' => auth()->id(),
+                    'read_by' => [auth()->id()],
+                    'read_at' => [now()],
                     'notified' => [auth()->id()],
-                    'meta'     => [
-                        'type'           => $type,
-                        'id'             => $item->id,
-                        'name'           => $item->name,
-                        'price'          => $finalPrice,
-                        'image'          => $item->image_url,
-                        'url'            => $type === 'package'
-                            ? \App\Filament\User\Resources\PackageResource::getUrl()
-                            : \App\Filament\User\Resources\ProductResource::getUrl(),
-                        'is_order'       => true,
-                        'order_id'       => $order->id,
-                        'order_number'   => $order->order_number,
-                        'order_status'   => $order->status,
+                    'meta' => [
+                        'type' => $type,
+                        'id' => $item->id,
+                        'name' => $item->name,
+                        'price' => $finalPrice,
+                        'image' => $item->image_url,
+                        'url' => $type === 'package'
+                            ? PackageResource::getUrl()
+                            : ProductResource::getUrl(),
+                        'is_order' => true,
+                        'order_id' => $order->id,
+                        'order_number' => $order->order_number,
+                        'order_status' => $order->status,
                         'payment_status' => $order->fresh()->payment_status->getLabel(),
                     ],
                 ]);
@@ -964,7 +1009,7 @@ class Messages extends Component implements HasForms, HasActions
                     ->title(__('Pesanan berhasil diperbarui'))
                     ->body(__('Pesanan #:orderNumber telah diganti ke :name', [
                         'orderNumber' => $order->order_number,
-                        'name'        => $item->name,
+                        'name' => $item->name,
                     ]))
                     ->success()
                     ->send();

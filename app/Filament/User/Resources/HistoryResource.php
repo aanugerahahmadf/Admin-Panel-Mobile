@@ -16,6 +16,7 @@ use Filament\Tables;
 use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class HistoryResource extends Resource
 {
@@ -30,20 +31,20 @@ class HistoryResource extends Resource
         return ['reference_number', 'type', 'info', 'notes', 'amount'];
     }
 
-    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
+    public static function getGlobalSearchResultTitle(Model $record): string
     {
         return $record->reference_number ?? __('Riwayat');
     }
 
-    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    public static function getGlobalSearchResultDetails(Model $record): array
     {
         return [
-            __('Tipe')   => $record->type ?? '-',
-            __('Jumlah') => $record->amount ? 'Rp ' . number_format($record->amount, 0, ',', '.') : '-',
+            __('Tipe') => $record->type ?? '-',
+            __('Jumlah') => $record->amount ? 'Rp '.number_format($record->amount, 0, ',', '.') : '-',
         ];
     }
 
-    public static function getGlobalSearchResultUrl(\Illuminate\Database\Eloquent\Model $record): ?string
+    public static function getGlobalSearchResultUrl(Model $record): ?string
     {
         return static::getUrl('index');
     }

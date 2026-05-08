@@ -28,21 +28,23 @@ class TestPaymentNotification extends Command
 
         // ── Ambil Order ───────────────────────────────────────────────────────
         $orderId = $this->option('order');
-        $order   = $orderId
+        $order = $orderId
             ? Order::with(['user', 'package', 'product'])->find($orderId)
             : Order::with(['user', 'package', 'product'])->latest()->first();
 
         if (! $order) {
             $this->error('Tidak ada order ditemukan. Buat order dulu atau gunakan --order=ID');
+
             return 1;
         }
 
         // ── Ambil User ────────────────────────────────────────────────────────
         $userId = $this->option('user');
-        $user   = $userId ? User::find($userId) : $order->user;
+        $user = $userId ? User::find($userId) : $order->user;
 
         if (! $user) {
             $this->error('User tidak ditemukan.');
+
             return 1;
         }
 
@@ -63,7 +65,7 @@ class TestPaymentNotification extends Command
                 ['Order Number',    $order->order_number],
                 ['Item',            $item?->name ?? '-'],
                 ['Payment Status',  $order->payment_status instanceof \BackedEnum ? $order->payment_status->value : (string) $order->payment_status],
-                ['Total',           'Rp ' . number_format($order->total_price, 0, ',', '.')],
+                ['Total',           'Rp '.number_format($order->total_price, 0, ',', '.')],
                 ['User',            $user->full_name ?? $user->email],
                 ['Email',           $user->email ?: '(kosong)'],
                 ['WhatsApp',        $user->whatsapp ?: ($user->phone ?: '(kosong)')],
@@ -73,6 +75,7 @@ class TestPaymentNotification extends Command
         // ── Konfirmasi ────────────────────────────────────────────────────────
         if (! $this->confirm('Kirim notifikasi ke email dan WhatsApp di atas?', true)) {
             $this->warn('Dibatalkan.');
+
             return 0;
         }
 
@@ -85,12 +88,13 @@ class TestPaymentNotification extends Command
 
             $this->info('');
             $this->info('✅ Notifikasi berhasil dikirim!');
-            $this->info('   📧 Email  → ' . ($user->email ?: 'tidak ada'));
-            $this->info('   📱 WA     → ' . ($user->whatsapp ?: $user->phone ?: 'tidak ada'));
+            $this->info('   📧 Email  → '.($user->email ?: 'tidak ada'));
+            $this->info('   📱 WA     → '.($user->whatsapp ?: $user->phone ?: 'tidak ada'));
             $this->info('');
             $this->info('Cek log di storage/logs/laravel.log untuk detail.');
         } catch (\Throwable $e) {
-            $this->error('❌ Gagal: ' . $e->getMessage());
+            $this->error('❌ Gagal: '.$e->getMessage());
+
             return 1;
         }
 

@@ -20,13 +20,15 @@ class OrderPaymentNotification extends Mailable implements ShouldQueue
      * URL gambar item yang bisa diakses publik.
      * Jika APP_URL lokal (127.0.0.1/localhost), gunakan base64 kecil sebagai fallback.
      */
-    public ?string $itemImageUrl    = null;
+    public ?string $itemImageUrl = null;
+
     public ?string $itemImageBase64 = null;
-    public ?string $logoBase64      = null;
+
+    public ?string $logoBase64 = null;
 
     public function __construct(
         public readonly Order $order,
-        public readonly User  $user,
+        public readonly User $user,
     ) {
         $this->prepareImages();
     }
@@ -41,7 +43,7 @@ class OrderPaymentNotification extends Mailable implements ShouldQueue
         // ── Gambar item ──────────────────────────────────────────────────────
         $item = $this->order->package ?? $this->order->product;
         if ($item) {
-            $col   = $this->order->package_id ? 'package_image' : 'product_image';
+            $col = $this->order->package_id ? 'package_image' : 'product_image';
             $media = $item->getFirstMedia($col);
 
             if ($media && file_exists($media->getPath())) {
@@ -63,7 +65,7 @@ class OrderPaymentNotification extends Mailable implements ShouldQueue
                 $this->logoBase64 = asset('images/logo.png');
             } else {
                 // Lokal: embed base64 (logo biasanya kecil)
-                $this->logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+                $this->logoBase64 = 'data:image/png;base64,'.base64_encode(file_get_contents($logoPath));
             }
         }
     }
@@ -77,27 +79,27 @@ class OrderPaymentNotification extends Mailable implements ShouldQueue
         try {
             // Deteksi MIME dari konten file
             $finfo = finfo_open(FILEINFO_MIME_TYPE);
-            $mime  = finfo_file($finfo, $srcPath);
+            $mime = finfo_file($finfo, $srcPath);
             finfo_close($finfo);
 
             [$origW, $origH] = getimagesize($srcPath);
             $ratio = min($maxSize / $origW, $maxSize / $origH, 1.0);
-            $newW  = max(1, (int) ($origW * $ratio));
-            $newH  = max(1, (int) ($origH * $ratio));
+            $newW = max(1, (int) ($origW * $ratio));
+            $newH = max(1, (int) ($origH * $ratio));
 
-            $src = match($mime) {
+            $src = match ($mime) {
                 'image/jpeg' => imagecreatefromjpeg($srcPath),
-                'image/png'  => imagecreatefrompng($srcPath),
-                'image/gif'  => imagecreatefromgif($srcPath),
+                'image/png' => imagecreatefrompng($srcPath),
+                'image/gif' => imagecreatefromgif($srcPath),
                 'image/webp' => imagecreatefromwebp($srcPath),
-                default      => null,
+                default => null,
             };
 
             if (! $src) {
                 return null;
             }
 
-            $dst   = imagecreatetruecolor($newW, $newH);
+            $dst = imagecreatetruecolor($newW, $newH);
             $white = imagecolorallocate($dst, 255, 255, 255);
             imagefill($dst, 0, 0, $white);
             imagecopyresampled($dst, $src, 0, 0, 0, 0, $newW, $newH, $origW, $origH);
@@ -109,9 +111,10 @@ class OrderPaymentNotification extends Mailable implements ShouldQueue
             imagedestroy($src);
             imagedestroy($dst);
 
-            return 'data:image/jpeg;base64,' . base64_encode($data);
+            return 'data:image/jpeg;base64,'.base64_encode($data);
         } catch (\Throwable $e) {
-            Log::warning('[Mail] resizeToBase64 failed: ' . $e->getMessage());
+            Log::warning('[Mail] resizeToBase64 failed: '.$e->getMessage());
+
             return null;
         }
     }
@@ -125,8 +128,8 @@ class OrderPaymentNotification extends Mailable implements ShouldQueue
         $isPaid = in_array($statusValue, ['paid', 'partial']);
 
         $subject = $isPaid
-            ? 'Pembayaran Berhasil - Pesanan #' . $this->order->order_number
-            : 'Pembayaran Belum Selesai - Pesanan #' . $this->order->order_number;
+            ? 'Pembayaran Berhasil - Pesanan #'.$this->order->order_number
+            : 'Pembayaran Belum Selesai - Pesanan #'.$this->order->order_number;
 
         return new Envelope(subject: $subject);
     }
@@ -137,7 +140,7 @@ class OrderPaymentNotification extends Mailable implements ShouldQueue
             view: 'emails.order-payment-notification',
             with: [
                 'itemImageSrc' => $this->itemImageUrl ?? $this->itemImageBase64,
-                'logoSrc'      => $this->logoBase64,
+                'logoSrc' => $this->logoBase64,
             ],
         );
     }

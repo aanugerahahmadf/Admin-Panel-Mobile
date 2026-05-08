@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Auth\SocialiteController;
 use App\Http\Controllers\LanguageController;
+use App\Models\Order;
+use Dompdf\Dompdf;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Native\Mobile\Facades\System;
@@ -56,28 +58,28 @@ Route::get('/media/{path}', function (string $path) {
 require __DIR__.'/debug.php';
 
 // Invoice PDF — hanya untuk user yang login dan punya order tersebut
-Route::get('/invoice/{order}/pdf', function (\App\Models\Order $order) {
+Route::get('/invoice/{order}/pdf', function (Order $order) {
     // Pastikan hanya pemilik order yang bisa akses
     if (auth()->id() !== $order->user_id && ! auth()->user()?->hasRole('super_admin')) {
         abort(403);
     }
 
     $order->load(['user', 'package.category', 'package.weddingOrganizer', 'package.media',
-                  'product.category', 'product.weddingOrganizer', 'product.media',
-                  'latestTransaction']);
+        'product.category', 'product.weddingOrganizer', 'product.media',
+        'latestTransaction']);
 
     $html = view('pdf.order-invoice', compact('order'))->render();
 
-    $dompdf = new \Dompdf\Dompdf;
+    $dompdf = new Dompdf;
     $dompdf->loadHtml($html);
     $dompdf->setPaper('A4', 'portrait');
     $dompdf->render();
 
-    $filename = 'invoice-' . $order->order_number . '.pdf';
-    $inline   = request()->boolean('download') ? 'attachment' : 'inline';
+    $filename = 'invoice-'.$order->order_number.'.pdf';
+    $inline = request()->boolean('download') ? 'attachment' : 'inline';
 
     return response($dompdf->output(), 200, [
-        'Content-Type'        => 'application/pdf',
+        'Content-Type' => 'application/pdf',
         'Content-Disposition' => "{$inline}; filename=\"{$filename}\"",
     ]);
 })->middleware(['auth'])->name('invoice.pdf');
