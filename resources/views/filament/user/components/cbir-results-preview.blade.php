@@ -1,158 +1,153 @@
 @php
-    $allResults = session('cbir_mixed_results', []);
-    $context    = session('cbir_context'); // 'package', 'product', or null
-
-    // Filter to only show the relevant type when context is set
-    $results = $context
-        ? collect($allResults)->filter(fn ($r) => ($r['type'] ?? '') === $context)->values()->all()
-        : $allResults;
-
-    $topMatch = collect($results)->first();
-    $topScore = $topMatch['similarity'] ?? 0;
+    $results = session('cbir_mixed_results', []);
 @endphp
 
+<style>
+.cbir-grid{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;}
+.cbir-card{
+    flex-shrink:0;border-radius:8px;overflow:hidden;background:#1a1a2e;
+    box-shadow:0 1px 4px rgba(0,0,0,.3);text-decoration:none;
+    display:flex;flex-direction:column;border:1px solid rgba(255,255,255,.07);
+    width:calc(50% - 3px);
+    position: relative;
+    transition: transform 0.2s;
+}
+.cbir-card:active { transform: scale(0.96); }
+@media(min-width:481px){.cbir-card{width:calc(25% - 5px);}}
+@media(min-width:769px){.cbir-card{width:calc(20% - 5px);}}
+@media(min-width:1025px){.cbir-card{width:calc(16.666% - 5px);}}
+
+.cbir-img{position:relative;width:100%;aspect-ratio:1/1;overflow:hidden;background:#111827;flex-shrink:0;}
+.cbir-img img{width:100%;height:100%;object-fit:cover;display:block;}
+
+.cbir-similarity-badge {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    background: rgba(16, 185, 129, 0.9);
+    color: white;
+    font-size: 8px;
+    font-weight: 800;
+    padding: 2px 5px;
+    border-radius: 4px;
+    backdrop-filter: blur(4px);
+    z-index: 5;
+}
+
+.cbir-type-badge {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #9ca3af;
+    font-size: 7px;
+    text-transform: uppercase;
+    font-weight: 700;
+    padding: 1px 4px;
+    border-radius: 3px;
+    backdrop-filter: blur(2px);
+}
+
+.cbir-info{padding:6px;flex:1;display:flex;flex-direction:column;gap:2px;overflow:hidden;}
+.cbir-cat-container{height:18px;overflow:hidden;margin-bottom:2px;display:flex;align-items:center;}
+.cbir-cat{display:inline-block;font-size:9px;font-weight:700;line-height:1;padding:2px 4px;border-left-width:2px;border-left-style:solid;background:transparent;color:#9ca3af;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.cbir-name{font-size:10px;font-weight:500;line-height:1.3;color:#e5e7eb;margin:0;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;height: 2.6rem;}
+.cbir-price{font-size:11px;font-weight:700;color:#eab308;margin:1px 0;line-height:1.2;}
+.cbir-organizer{font-size:8px;color:#6b7280;margin-top:auto;display:flex;align-items:center;gap:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+</style>
+
 @if(count($results) > 0)
-<div class="mt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-
-    {{-- Header --}}
-    <div class="flex items-center justify-between mb-4 px-1">
-        <div class="flex items-center gap-2">
-            <x-filament::icon icon="heroicon-s-sparkles" class="w-5 h-5 text-amber-500 shadow-sm" />
-            <span class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tighter">{{ __('Hasil Visual Terbaik') }}</span>
-        </div>
-        <div class="flex gap-2 items-center">
-            <span class="text-[10px] font-medium text-gray-400 dark:text-gray-500">{{ session('cbir_search_time', 0) }}s</span>
-            <x-filament::badge color="info" size="sm">
-                {{ count($results) }} {{ __('kecocokan') }}
-            </x-filament::badge>
-        </div>
-    </div>
-
-    {{-- Top Match Highlight --}}
-    @if($topScore >= 70)
-    <div class="mb-4">
-        <x-filament::section compact>
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-amber-500/10 rounded-xl">
-                    <x-filament::icon icon="heroicon-s-fire" class="w-5 h-5 text-amber-500" />
-                </div>
-                <div>
-                    <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">{{ __('Rekomendasi Utama') }}</p>
-                    <p class="text-sm font-semibold text-gray-900 dark:text-white">
-                        {{ number_format($topScore, 1) }}% {{ __('kemiripan visual ditemukan') }}
-                    </p>
-                </div>
+    <div class="mt-4">
+        <div class="flex items-center justify-between mb-3 px-1">
+            <div class="flex items-center gap-2">
+                <x-filament::icon icon="heroicon-s-sparkles" class="w-4 h-4 text-amber-500" />
+                <span class="text-sm font-bold text-gray-300">{{ __('Hasil Pencarian') }}</span>
+                <x-filament::badge color="gray" size="xs">
+                    {{ count($results) }}
+                </x-filament::badge>
             </div>
-        </x-filament::section>
-    </div>
-    @endif
-
-    {{-- Mixed Result Cards --}}
-    <div class="space-y-3">
-        @foreach($results as $res)
-        @php
-            $type = $res['type'] ?? 'product';
-            $data = $res['data'] ?? [];
-            $score = $res['similarity'] ?? 0;
-            $pct = number_format($score, 1);
-            $badgeColor = $score >= 85 ? 'success' : ($score >= 65 ? 'warning' : 'gray');
-
-            $url = $type === 'package'
-                ? route('filament.user.resources.packages.view', ['record' => $data['id'] ?? 0])
-                : route('filament.user.resources.products.view', ['record' => $data['id'] ?? 0]);
-        @endphp
-
-        {{-- Card: fully in-flow, no absolute badge --}}
-        <div class="relative group rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-gray-900 shadow-sm hover:shadow-md hover:ring-2 hover:ring-primary-500/40 transition-all duration-300 overflow-hidden">
-
-            {{-- Clickable overlay --}}
-            <a href="{{ $url }}" class="absolute inset-0 z-10" aria-label="{{ $data['name'] ?? '' }}"></a>
-
-            <div class="flex gap-3 p-3">
-
-                {{-- Thumbnail --}}
-                <div class="relative w-20 h-20 shrink-0 rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 shadow-inner self-center">
-                    <img
-                        src="{{ str_starts_with($data['image_url'] ?? '', 'http') ? $data['image_url'] : asset('storage/' . ($data['image_url'] ?? '')) }}"
-                        alt="{{ $data['name'] ?? '' }}"
-                        class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                        onerror="this.src='{{ asset('images/placeholders/image-placeholder.svg') }}'"
-                        loading="lazy"
-                    />
-                    {{-- Score bar at bottom of image --}}
-                    <div class="absolute bottom-0 left-0 right-0 h-1 bg-gray-200/30">
-                        <div class="h-full bg-gradient-to-r from-amber-500 to-primary-500 transition-all duration-1000 ease-out" style="width: {{ $pct }}%"></div>
-                    </div>
-                </div>
-
-                {{-- Info column --}}
-                <div class="flex-1 min-w-0 flex flex-col justify-between gap-1">
-
-                    {{-- Top row: badges inline, never overlapping --}}
-                    <div class="flex items-center gap-1.5 flex-wrap">
-                        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold leading-none
-                            @if($score >= 85) bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400
-                            @elseif($score >= 65) bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400
-                            @else bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400
-                            @endif">
-                            {{ $pct }}%
-                        </span>
-                        @if($data['category'] ?? null)
-                            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium leading-none bg-primary-50 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400 truncate max-w-[80px]">
-                                {{ is_array($data['category']) ? ($data['category']['name'] ?? '') : $data['category'] }}
-                            </span>
-                        @endif
-                    </div>
-
-                    {{-- Name --}}
-                    <h4 class="text-sm font-bold text-gray-900 dark:text-white leading-snug line-clamp-2">
-                        {{ $data['name'] ?? '' }}
-                    </h4>
-
-                    {{-- Organizer --}}
-                    @if($data['wedding_organizer']['name'] ?? null)
-                    <div class="flex items-center gap-1">
-                        <x-filament::icon icon="heroicon-s-building-storefront" class="w-3 h-3 text-gray-400 shrink-0" />
-                        <p class="text-[11px] text-gray-500 dark:text-gray-400 truncate">
-                            {{ $data['wedding_organizer']['name'] }}
-                        </p>
-                    </div>
-                    @endif
-
-                    {{-- Price --}}
-                    <div class="flex items-baseline gap-1.5 flex-wrap">
-                        @if(($data['discount_price'] ?? 0) > 0)
-                            <span class="text-sm font-black text-primary-600 dark:text-primary-400">
-                                Rp {{ number_format($data['discount_price'], 0, ',', '.') }}
-                            </span>
-                            <span class="text-[11px] text-gray-400 line-through">
-                                Rp {{ number_format($data['price'] ?? 0, 0, ',', '.') }}
-                            </span>
-                        @else
-                            <span class="text-sm font-black text-primary-600 dark:text-primary-400">
-                                Rp {{ number_format($data['price'] ?? 0, 0, ',', '.') }}
-                            </span>
-                        @endif
-                    </div>
-
-                </div>
-            </div>
+            <x-filament::link
+                wire:click="clearVisualSearch"
+                color="danger"
+                size="xs"
+                class="cursor-pointer font-bold no-underline hover:no-underline focus:underline select-none outline-none"
+                style="-webkit-tap-highlight-color: transparent;"
+            >
+                {{ __('Reset') }}
+            </x-filament::link>
         </div>
-        @endforeach
-    </div>
 
-    {{-- Reset Button --}}
-    <div class="mt-5">
-        <x-filament::button
-            wire:click="clearVisualSearch"
-            color="gray"
-            size="lg"
-            icon="heroicon-m-arrow-path"
-            class="w-full rounded-2xl font-bold"
-        >
-            {{ __('Bersihkan Hasil Pencarian') }}
-        </x-filament::button>
+        <div class="cbir-grid">
+            @foreach($results as $res)
+                @php
+                    $type = $res['type'] ?? 'product';
+                    $data = $res['data'] ?? [];
+                    $score = $res['similarity'] ?? 0;
+                    $pct_match = number_format($score, 1);
+                    
+                    $price = $data['price'] ?? 0;
+                    $discountPrice = $data['discount_price'] ?? 0;
+                    $finalPrice = $discountPrice > 0 ? $discountPrice : $price;
+                    $pct = $discountPrice > 0 && $price > 0 ? round(($price - $discountPrice) / $price * 100) : null;
+                    
+                    $url = $type === 'package'
+                        ? \App\Filament\User\Resources\PackageResource::getUrl('view', ['record' => $data['id'] ?? 0])
+                        : \App\Filament\User\Resources\ProductResource::getUrl('view', ['record' => $data['id'] ?? 0]);
+                        
+                    $img = str_starts_with($data['image_url'] ?? '', 'http') 
+                        ? $data['image_url'] 
+                        : asset('storage/' . ($data['image_url'] ?? ''));
+                        
+                    $catName = $data['category']['name'] ?? $data['category'] ?? null;
+                    $catColors = ['#f87171','#fb923c','#fbbf24','#34d399','#38bdf8','#818cf8','#e879f9','#f472b6','#a3e635','#2dd4bf'];
+                    $catColor = $catName ? $catColors[abs(crc32($catName)) % count($catColors)] : '#6b7280';
+                @endphp
+                
+                <a href="{{ $url }}" wire:navigate class="cbir-card">
+                    <div class="cbir-img">
+                        <span class="cbir-similarity-badge">{{ $pct_match }}% Match</span>
+                        <img src="{{ $img }}" alt="{{ $data['name'] ?? '' }}" loading="lazy"
+                             onerror="this.src='{{ asset('images/placeholders/image-placeholder.svg') }}'">
+                        @if($pct)<span class="cbir-badge-discount" style="position:absolute;top:3px;right:3px;background:#eab308;color:#000;font-size:9px;font-weight:900;padding:1px 4px;border-radius:3px;line-height:1.4;">-{{ $pct }}%</span>@endif
+                        <span class="cbir-type-badge">{{ __($type) }}</span>
+                    </div>
+                    
+                    <div class="cbir-info">
+                        <div class="cbir-cat-container">
+                            @if($catName)
+                                <span class="cbir-cat" style="border-left-color:{{ $catColor }};color:{{ $catColor }};">
+                                    {{ __($catName) }}
+                                </span>
+                            @endif
+                        </div>
+                        
+                        <p class="cbir-name">{{ $data['name'] ?? '' }}</p>
+                        
+                        <div style="height:2.2rem;display:flex;flex-direction:column;justify-content:flex-start;gap:0;margin-bottom:3px;">
+                            <span class="cbir-price">Rp{{ number_format($finalPrice, 0, ',', '.') }}</span>
+                            @if($pct)
+                                <span style="font-size:9px;color:#6b7280;text-decoration:line-through;line-height:1.2;">
+                                    Rp{{ number_format($price, 0, ',', '.') }}
+                                </span>
+                            @endif
+                        </div>
+                        <div class="cbir-footer" style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;padding-top:3px;">
+                            <span style="display:flex;align-items:center;gap:2px;font-size:9px;color:#9ca3af;">
+                                <svg width="9" height="9" viewBox="0 0 24 24" style="fill:#facc15;flex-shrink:0;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                {{ $data['rating'] ?? '0.0' }}
+                            </span>
+                            @php
+                                $stock = $data['stock'] ?? 0;
+                                $stockLabel = $stock <= 0 ? __('Habis') : $stock.' '.__('Tersedia');
+                                $stockColor = $stock <= 0 ? '#ef4444' : ($stock <= 3 ? '#f59e0b' : '#6b7280');
+                            @endphp
+                            <span style="font-size:9px;color:{{ $stockColor }}; font-weight: {{ $stock <= 3 ? '700' : '400' }};">
+                                {{ $stockLabel }}
+                            </span>
+                        </div>
+                    </div>
+                </a>
+            @endforeach
+        </div>
     </div>
-
-</div>
 @endif

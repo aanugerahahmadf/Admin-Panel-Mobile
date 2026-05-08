@@ -27,7 +27,25 @@ class HistoryResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['reference_number', 'type'];
+        return ['reference_number', 'type', 'info', 'notes', 'amount'];
+    }
+
+    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
+    {
+        return $record->reference_number ?? __('Riwayat');
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            __('Tipe')   => $record->type ?? '-',
+            __('Jumlah') => $record->amount ? 'Rp ' . number_format($record->amount, 0, ',', '.') : '-',
+        ];
+    }
+
+    public static function getGlobalSearchResultUrl(\Illuminate\Database\Eloquent\Model $record): ?string
+    {
+        return static::getUrl('index');
     }
 
     public static function getNavigationGroup(): ?string
@@ -114,13 +132,15 @@ class HistoryResource extends Resource
                             ->formatStateUsing(fn ($state) => match ($state) {
                                 'pending' => __('Menunggu'),
                                 'success', 'completed', 'approved', 'paid', 'confirmed' => __('Berhasil'),
-                                'failed', 'rejected', 'cancelled', 'expired' => __('Gagal'),
+                                'failed', 'rejected', 'expired' => __('Gagal'),
+                                'cancelled' => __('Dibatalkan'),
                                 default => ucfirst($state),
                             })
                             ->color(fn ($state) => match ($state) {
                                 'pending' => 'warning',
-                                'success', 'completed', 'approved' => 'success',
-                                'failed', 'rejected', 'cancelled' => 'danger',
+                                'success', 'completed', 'approved', 'paid', 'confirmed' => 'success',
+                                'failed', 'rejected', 'expired' => 'danger',
+                                'cancelled' => 'danger',
                                 default => 'gray',
                             })
                             ->alignEnd(),
@@ -178,6 +198,13 @@ class HistoryResource extends Resource
                     ->query(fn (Builder $query, array $data) => $query->when($data['value'], fn ($q, $id) => $q->where('id', $id)))
                     ->hidden(),
             ], layout: FiltersLayout::AboveContentCollapsible)
+            ->filtersTriggerAction(
+                fn (Tables\Actions\Action $action) => $action
+                    ->icon('heroicon-m-funnel')
+                    ->label(__('Filter'))
+                    ->color(fn ($livewire) => count($livewire->getTable()->getFilterIndicators()) > 0 ? 'primary' : 'gray')
+                    ->badge(fn ($livewire) => count($livewire->getTable()->getFilterIndicators()) > 0 ? count($livewire->getTable()->getFilterIndicators()) : null)
+            )
             ->actions([
                 Tables\Actions\ViewAction::make()
                     ->label(__('Rincian'))

@@ -122,10 +122,16 @@ class UserResource extends Resource
                                     ->native(false)
                                     ->prefixIcon('heroicon-o-variable'),
                                 Forms\Components\TextInput::make('phone')
-                                    ->label(__('Nomor Telepon / WhatsApp'))
+                                    ->label(__('Nomor Telepon'))
                                     ->tel()
                                     ->prefixIcon('heroicon-o-phone')
+                                    ->maxLength(255),
+                                Forms\Components\TextInput::make('whatsapp')
+                                    ->label(__('Nomor WhatsApp'))
+                                    ->tel()
+                                    ->prefixIcon('heroicon-o-chat-bubble-left-ellipsis')
                                     ->maxLength(255)
+                                    ->helperText(__('Untuk notifikasi pembayaran. Format: 08xxx atau 628xxx'))
                                     ->columnSpanFull(),
                                 Forms\Components\Textarea::make('address')
                                     ->label(__('Alamat Tempat Tinggal'))
@@ -262,6 +268,19 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('email')
                     ->searchable()
                     ->label(__('Email')),
+
+                Tables\Columns\TextColumn::make('phone')
+                    ->label(__('Telepon'))
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('whatsapp')
+                    ->label(__('WhatsApp'))
+                    ->searchable()
+                    ->icon('heroicon-o-chat-bubble-left-ellipsis')
+                    ->iconColor('success')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->placeholder('-'),
 
                 Tables\Columns\TextColumn::make('email_verified_at')
                     ->label(__('Diverifikasi Pada'))

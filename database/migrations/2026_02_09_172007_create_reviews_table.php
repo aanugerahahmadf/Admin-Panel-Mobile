@@ -17,6 +17,7 @@ return new class extends Migration
                 $table->foreignId('user_id')->constrained()->cascadeOnDelete();
                 $table->foreignId('wedding_organizer_id')->default(1)->constrained()->cascadeOnDelete();
                 $table->foreignId('package_id')->nullable()->constrained()->nullOnDelete();
+                $table->foreignId('product_id')->nullable()->constrained()->nullOnDelete();
                 $table->integer('rating');
                 $table->text('comment')->nullable();
                 $table->timestamps();

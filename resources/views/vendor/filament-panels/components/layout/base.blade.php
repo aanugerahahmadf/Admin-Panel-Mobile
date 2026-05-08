@@ -16,7 +16,7 @@
 
         <meta charset="utf-8" />
         <meta name="csrf-token" content="{{ csrf_token() }}" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
 
         @if ($favicon = filament()->getFavicon())
             <link rel="icon" href="{{ $favicon }}" />
@@ -104,9 +104,7 @@
     </head>
 
     <body
-        x-data="{}"
         {{ $attributes
-
                 ->merge(($livewire ?? null)?->getExtraBodyAttributes() ?? [], escape: false)
                 ->class([
                     'fi-body',

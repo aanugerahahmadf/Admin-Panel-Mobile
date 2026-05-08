@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('package_id')->nullable()->constrained()->cascadeOnDelete();
-            $table->unsignedBigInteger('product_id')->nullable();
+            $table->foreignId('product_id')->nullable()->constrained()->nullOnDelete();
             $table->string('order_number')->unique();
             $table->decimal('total_price', 15, 2);
             $table->enum('status', ['pending', 'confirmed', 'preparing', 'event_day', 'completed', 'cancelled'])->default('pending');

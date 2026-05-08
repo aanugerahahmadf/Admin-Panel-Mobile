@@ -5,7 +5,7 @@
 >
     {{ \Filament\Support\Facades\FilamentView::renderHook(\Filament\View\PanelsRenderHook::GLOBAL_SEARCH_START) }}
 
-    <div class="sm:relative">
+    <div class="sm:relative w-full">
         <x-filament-panels::global-search.field />
 
         @if ($results !== null)

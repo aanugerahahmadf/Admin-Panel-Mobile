@@ -83,6 +83,11 @@ Route::get('/packages/public', [PackageController::class, 'index']);
 Route::post('/webhooks/midtrans', [PaymentWebhookController::class, 'handleMidtransNotification']);
 Route::post('/v1.0/payment/notify', [PaymentWebhookController::class, 'handleSnapBiNotification']);
 
+// Fonnte WhatsApp Webhooks (No auth required — verified by token in payload)
+Route::post('/webhooks/fonnte', [\App\Http\Controllers\Api\FonnteWebhookController::class, 'handleIncomingMessage']);
+Route::post('/webhooks/fonnte/connect', [\App\Http\Controllers\Api\FonnteWebhookController::class, 'handleConnectionStatus']);
+Route::post('/webhooks/fonnte/status', [\App\Http\Controllers\Api\FonnteWebhookController::class, 'handleMessageStatus']);
+
 // CBIR - AI Visual Search Public Probing
 Route::get('/cbir/stats', [CBIRController::class, 'getStats']);
 Route::get('/cbir/health', [CBIRController::class, 'healthCheck']);

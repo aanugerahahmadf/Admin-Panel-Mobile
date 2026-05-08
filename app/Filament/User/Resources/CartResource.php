@@ -38,7 +38,25 @@ class CartResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['product.name', 'package.name'];
+        return ['product.name', 'package.name', 'product.category.name', 'package.category.name'];
+    }
+
+    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
+    {
+        return $record->package?->name ?? $record->product?->name ?? __('Item Keranjang');
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            __('Jenis')    => $record->package_id ? __('Paket') : __('Produk'),
+            __('Jumlah')   => $record->quantity ?? 1,
+        ];
+    }
+
+    public static function getGlobalSearchResultUrl(\Illuminate\Database\Eloquent\Model $record): ?string
+    {
+        return static::getUrl('index');
     }
 
     public static function getNavigationGroup(): ?string
@@ -74,93 +92,149 @@ class CartResource extends Resource
             ->emptyStateDescription(__('Mulai belanja dan temukan dekorasi impian Anda sekarang!'))
             ->emptyStateIcon('heroicon-o-shopping-cart')
             ->emptyStateActions([
-                Tables\Actions\Action::make('explore')
-                    ->label(__('Mulai Belanja'))
+                Tables\Actions\Action::make('shop_products')
+                    ->label(__('Belanja Bunga'))
                     ->url(ProductResource::getUrl())
                     ->button()
+                    ->color('info')
+                    ->size('lg')
+                    ->icon('ri-flower-line'),
+                Tables\Actions\Action::make('book_package')
+                    ->label(__('Pesan Paket Dekorasi'))
+                    ->url(PackageResource::getUrl())
+                    ->button()
                     ->color('primary')
-                    ->size('md'),
+                    ->size('lg')
+                    ->icon('ri-gift-line'),
+            ])
+            ->contentGrid([
+                'default' => 1,
+                'md' => 2,
+                'lg' => 3,
+                'xl' => 4,
             ])
             ->columns([
-                Tables\Columns\ImageColumn::make('item.image_url')
-                    ->label(__('Foto'))
-                    ->circular()
-                    ->size(36),
-                Tables\Columns\TextColumn::make('item.name')
-                    ->label(__('Nama Item'))
-                    ->searchable()
-                    ->sortable()
-                    ->size('sm')
-                    ->description(fn (Cart $record): string => $record->product_id ? __('Produk') : __('Paket')),
-                Tables\Columns\TextColumn::make('quantity')
-                    ->label(__('Jumlah'))
-                    ->numeric()
-                    ->size('sm')
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('subtotal')
-                    ->label(__('Subtotal'))
-                    ->money('IDR')
-                    ->size('sm')
-                    ->sortable(),
-            ])
-            ->filters([
-                //
+                Tables\Columns\Layout\Stack::make([
+                    // Top Section: Image
+                    Tables\Columns\ImageColumn::make('item.image_url')
+                        ->label('')
+                        ->height('180px')
+                        ->width('100%')
+                        ->extraAttributes(['class' => 'w-full bg-gray-100 dark:bg-white/5 rounded-t-2xl overflow-hidden'])
+                        ->extraImgAttributes([
+                            'class' => 'w-full h-full object-cover transition-transform duration-700 group-hover:scale-110',
+                            'style' => 'width: 100%; height: 180px; object-fit: cover;',
+                        ]),
+
+                    // Middle Section: Content
+                    Tables\Columns\Layout\Stack::make([
+                        // Item Type Badge
+                        Tables\Columns\TextColumn::make('type_badge')
+                            ->state(fn (?Cart $record) => $record?->product_id ? __('Produk') : __('Paket'))
+                            ->badge()
+                            ->color(fn (?Cart $record) => $record?->product_id ? 'info' : 'warning')
+                            ->size('xs')
+                            ->extraAttributes(['class' => 'mb-2 self-start']),
+
+                        // Item Name
+                        Tables\Columns\TextColumn::make('item.name')
+                            ->label(__('Nama Item'))
+                            ->weight('bold')
+                            ->size('lg')
+                            ->lineClamp(1)
+                            ->color('gray')
+                            ->extraAttributes(['class' => 'tracking-tight']),
+
+                        // Store Info (Wedding Organizer)
+                        Tables\Columns\TextColumn::make('item.weddingOrganizer.name')
+                            ->color('gray')
+                            ->size('xs')
+                            ->icon('heroicon-o-building-storefront')
+                            ->extraAttributes(['class' => 'mt-1 opacity-75']),
+
+                        // Quantity & Price Info (Now with Stock indicator)
+                        Tables\Columns\Layout\Stack::make([
+                            Tables\Columns\Layout\Split::make([
+                                Tables\Columns\TextColumn::make('quantity')
+                                    ->prefix(__('Jumlah').': ')
+                                    ->weight('medium')
+                                    ->size('sm')
+                                    ->icon('heroicon-o-shopping-bag')
+                                    ->extraAttributes(['class' => 'text-gray-500']),
+
+                                Tables\Columns\TextColumn::make('product.stock')
+                                    ->prefix(__('Stok: '))
+                                    ->visible(fn (?Cart $record) => (bool) ($record?->product_id ?? false))
+                                    ->color(fn (?Cart $record) => ($record?->product?->stock ?? 0) > 0 ? 'success' : 'danger')
+                                    ->weight('bold')
+                                    ->size('xs')
+                                    ->alignEnd(),
+                            ]),
+
+                            Tables\Columns\TextColumn::make('subtotal')
+                                ->money('IDR')
+                                ->weight('black')
+                                ->size('lg')
+                                ->color('primary')
+                                ->extraAttributes(['class' => 'mt-1']),
+                        ])->extraAttributes(['class' => 'mt-4 pt-3 border-t border-gray-100 dark:border-white/5']),
+                    ])->extraAttributes(['class' => 'p-4 flex-1 flex flex-col']),
+                ])->extraAttributes([
+                    'class' => 'bg-white dark:bg-gray-900 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden group border border-gray-100 dark:border-white/10 flex flex-col h-full',
+                ]),
             ])
             ->actions([
-                Tables\Actions\DeleteAction::make()
-                    ->label(__('Hapus'))
-                    ->icon('heroicon-o-trash')
-                    ->button()
-                    ->color('danger')
-                    ->size('xs')
-                    ->extraAttributes(['class' => 'flex-1 justify-center rounded-lg shadow-sm font-bold'])
-                    ->after(fn () => NativeNotificationHelper::info(__('Dihapus'), __('Produk berhasil dihapus dari keranjang.'))),
-                Tables\Actions\Action::make('checkout')
-                    ->label(__('Beli'))
-                    ->button()
-                    ->color('primary')
-                    ->size('xs')
-                    ->icon('heroicon-m-shopping-cart')
-                    ->extraAttributes(['class' => 'flex-1 justify-center rounded-lg shadow-sm font-bold'])
-                    ->slideOver()
-                    ->modalHeading(fn (Cart $record) => $record->product_id ? __('Checkout Produk') : __('Checkout Layanan'))
-                    ->steps(fn (Cart $record) => $record->product_id
-                        ? ProductResource::getCheckoutWizardSteps($record->product)
-                        : PackageResource::getCheckoutWizardSteps($record->package)
-                    )
-                    ->action(function (Cart $record, array $data, Component $livewire) {
-                        if ($record->product_id) {
-                            $response = ProductResource::handleCheckout($record->product, $data, $livewire);
-                        } else {
-                            $response = PackageResource::handleCheckout($record->package, $data, $livewire);
-                        }
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('checkout')
+                        ->label(__('Beli Sekarang'))
+                        ->button()
+                        ->color('success')
+                        ->size('md')
+                        ->icon('heroicon-m-shopping-cart')
+                        ->extraAttributes(['class' => 'flex-1 !rounded-xl shadow-lg shadow-success-500/20 font-bold'])
+                        ->slideOver()
+                        ->modalHeading(fn (Cart $record) => $record->product_id ? __('Checkout Produk') : __('Checkout Layanan'))
+                        ->steps(fn (Cart $record) => $record->product_id
+                            ? ProductResource::getCheckoutWizardSteps($record->product)
+                            : PackageResource::getCheckoutWizardSteps($record->package)
+                        )
+                        ->action(function (Cart $record, array $data, Component $livewire) {
+                            if ($record->product_id) {
+                                $response = ProductResource::handleCheckout($record->product, $data, $livewire);
+                            } else {
+                                $response = PackageResource::handleCheckout($record->package, $data, $livewire);
+                            }
+                            $record->delete();
+                            NativeNotificationHelper::success(__('Pesanan Anda sedang diproses!'));
+                            return $response;
+                        }),
 
-                        // Remove from cart after successful checkout
-                        $record->delete();
-
-                        NativeNotificationHelper::success(__('Pesanan Anda sedang diproses!'));
-
-                        return $response;
-                    }),
-            ])
-            ->actionsAlignment('center')
-            ->extraAttributes([
-                'class' => 'filament-table-actions-container !flex !flex-row !gap-1 !p-3 !bg-gray-50/50 dark:!bg-white/5 !border-t dark:!border-gray-800',
-            ])
-            ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteAction::make()
+                        ->label(__('Hapus Item'))
+                        ->icon('heroicon-o-trash')
+                        ->button()
+                        ->color('danger')
+                        ->outlined()
+                        ->size('md')
+                        ->extraAttributes(['class' => 'flex-1 !rounded-xl font-bold'])
+                        ->after(fn () => NativeNotificationHelper::info(__('Dihapus'), __('Produk berhasil dihapus dari keranjang.'))),
+                ])
+                ->dropdown(false)
+                ->extraAttributes([
+                    'class' => 'flex gap-2 p-3 bg-gray-50 dark:bg-white/5 border-t border-gray-100 dark:border-white/5',
                 ]),
             ])
             ->headerActions([
                 Tables\Actions\Action::make('checkout_all')
-                    ->label(__('Lanjut ke Pembayaran'))
-                    ->color('success')
+                    ->label(__('Checkout Semua'))
+                    ->color('primary')
                     ->icon('heroicon-m-credit-card')
+                    ->button()
+                    ->size('lg')
+                    ->extraAttributes(['class' => 'shadow-xl shadow-primary-500/20 font-black'])
                     ->action(function () {
-                        // For now, just a placeholder or logic to convert cart to order
                         Notification::make()
-                            ->title(__('Fitur Checkout Massal Sedang Dikembangkan'))
+                            ->title(__('Fitur Checkout Massal Segang Dikembangkan'))
                             ->info()
                             ->send();
                     }),

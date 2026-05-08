@@ -113,9 +113,8 @@ class SendBotReply implements ShouldQueue
 
                 // E. Intent: Price & Budget (Sales Conversion)
             case preg_match('/(harga|berapa|price|biaya|budget|mahal|murah|diskon|promo|voucher)/', $text):
-                $reply = __('Halo :userName! Terkait biaya, kami sangat fleksibel dan memiliki paket yang bisa disesuaikan dengan budget Anda. Kabar baiknya, ada beberapa promo eksklusif yang bisa Anda cek di sini: :url. Admin kami akan segera memberikan estimasi penawaran yang paling kompetitif untuk Anda! 💰', [
+                $reply = __('Halo :userName! Terkait biaya, kami sangat fleksibel dan memiliki paket yang bisa disesuaikan dengan budget Anda. Kabar baiknya, ada beberapa promo eksklusif yang bisa Anda cek di halaman **Voucher & Promo**. Admin kami akan segera memberikan estimasi penawaran yang paling kompetitif untuk Anda! 💰', [
                     'userName' => $userName,
-                    'url' => VoucherResource::getUrl(),
                 ]);
                 break;
 
@@ -133,9 +132,8 @@ class SendBotReply implements ShouldQueue
 
                 // G. Intent: Booking & Procedure
             case preg_match('/(pesan|booking|order|beli|cara|prosedur|syarat)/', $text):
-                $reply = __('Tentu, :userName! Prosedurnya sangat simpel: Pilih paket, konsultasi tema, DP untuk kunci tanggal, dan sisanya kami yang urus. Anda bisa mulai dengan memilih paket di sini: :url. Admin kami akan memandu Anda langkah demi langkah sebentar lagi. 📝', [
+                $reply = __('Tentu, :userName! Prosedurnya sangat simpel: Pilih paket, konsultasi tema, DP untuk kunci tanggal, dan sisanya kami yang urus. Anda bisa mulai dengan memilih paket di halaman **Katalog Paket Dekorasi Bunga**. Admin kami akan memandu Anda langkah demi langkah sebentar lagi. 📝', [
                     'userName' => $userName,
-                    'url' => PackageResource::getUrl(),
                 ]);
                 break;
 
@@ -164,10 +162,9 @@ class SendBotReply implements ShouldQueue
 
                 // K. Fallback (The 'AI Thinking' response)
             default:
-                $reply = __(':greeting, :userName! Terima kasih telah menghubungi kami. Pesan Anda sangat berharga bagi kami. Admin kami sedang mempelajari permintaan Anda dan akan segera memberikan jawaban yang paling akurat dalam beberapa saat. Sambil menunggu, silakan lihat koleksi terbaru kami di: :url 🙏', [
+                $reply = __(':greeting, :userName! Terima kasih telah menghubungi kami. Pesan Anda sangat berharga bagi kami. Admin kami sedang mempelajari permintaan Anda dan akan segera memberikan jawaban yang paling akurat dalam beberapa saat. Sambil menunggu, silakan lihat koleksi terbaru kami di halaman **Katalog Paket Dekorasi Bunga** dan **Katalog Bunga**. 🙏', [
                     'greeting' => $greeting,
                     'userName' => $userName,
-                    'url' => PackageResource::getUrl(),
                 ]);
                 break;
         }

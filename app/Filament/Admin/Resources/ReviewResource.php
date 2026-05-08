@@ -97,7 +97,12 @@ class ReviewResource extends Resource
                             ->relationship('package', 'name')
                             ->searchable()
                             ->preload(),
-                    ])->columns(['sm' => 3]),
+                        Forms\Components\Select::make('product_id')
+                            ->label(__('Produk Target'))
+                            ->relationship('product', 'name')
+                            ->searchable()
+                            ->preload(),
+                    ])->columns(['sm' => 4]),
 
                 Forms\Components\Section::make(__('Rating & Umpan Balik'))
                     ->description(__('Evaluasi pengguna dan komentar detail.'))
@@ -133,9 +138,10 @@ class ReviewResource extends Resource
                 Tables\Columns\TextColumn::make('user.full_name')
                     ->label(__('Pengulas'))
                     ->searchable(),
-                Tables\Columns\TextColumn::make('package.name')
-                    ->searchable()
-                    ->label(__('Paket')),
+                Tables\Columns\TextColumn::make('item_name')
+                    ->label(__('Layanan/Produk'))
+                    ->getStateUsing(fn ($record) => $record->package?->name ?? $record->product?->name ?? '-')
+                    ->searchable(['package.name', 'product.name']),
                 Tables\Columns\TextColumn::make('rating')
                     ->label(__('Rating'))
                     ->icon('heroicon-s-star')

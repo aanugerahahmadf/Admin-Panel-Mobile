@@ -24,7 +24,25 @@ class ReviewResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['package.name', 'comment'];
+        return ['package.name', 'product.name', 'comment', 'weddingOrganizer.name'];
+    }
+
+    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
+    {
+        return $record->package?->name ?? $record->product?->name ?? __('Ulasan');
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            __('Rating')  => ($record->rating ?? 0) . ' ⭐',
+            __('Komentar') => \Illuminate\Support\Str::limit($record->comment ?? '-', 50),
+        ];
+    }
+
+    public static function getGlobalSearchResultUrl(\Illuminate\Database\Eloquent\Model $record): ?string
+    {
+        return static::getUrl('index');
     }
 
     public static function getNavigationGroup(): ?string
@@ -67,18 +85,24 @@ class ReviewResource extends Resource
         return $form
             ->schema([
                 Forms\Components\Section::make(__('Pilih Layanan'))
-                    ->description(__('Silahkan pilih paket yang ingin Anda beri ulasan.'))
+                    ->description(__('Silahkan pilih paket atau produk yang ingin Anda beri ulasan.'))
                     ->schema([
                         Forms\Components\Select::make('package_id')
                             ->searchable()
                             ->relationship('package', 'name', fn ($query) => $query->whereHas('orders', fn ($q) => $q->where('user_id', Filament::auth()->id())))
-                            ->required()
-
                             ->preload()
                             ->label(__('Layanan Paket'))
                             ->prefixIcon('heroicon-o-gift')
-                            ->columnSpanFull(),
-                    ]),
+                            ->requiredWithout('product_id'),
+
+                        Forms\Components\Select::make('product_id')
+                            ->searchable()
+                            ->relationship('product', 'name', fn ($query) => $query->whereHas('orders', fn ($q) => $q->where('user_id', Filament::auth()->id())))
+                            ->preload()
+                            ->label(__('Produk'))
+                            ->prefixIcon('heroicon-o-shopping-bag')
+                            ->requiredWithout('package_id'),
+                    ])->columns(2),
                 Forms\Components\Section::make(__('Rating & Ceritakan Pengalaman Anda'))
                     ->schema([
                         Forms\Components\Placeholder::make('organizer_info')
@@ -113,6 +137,22 @@ class ReviewResource extends Resource
         return $table
             ->emptyStateHeading(__('Belum ada ulasan'))
             ->emptyStateDescription(__('Bagikan pengalamanmu dengan kami!'))
+            ->emptyStateActions([
+                Tables\Actions\Action::make('shop_products')
+                    ->label(__('Belanja Bunga'))
+                    ->url(ProductResource::getUrl())
+                    ->button()
+                    ->color('info')
+                    ->size('lg')
+                    ->icon('ri-flower-line'),
+                Tables\Actions\Action::make('book_package')
+                    ->label(__('Pesan Paket Dekorasi'))
+                    ->url(PackageResource::getUrl())
+                    ->button()
+                    ->color('primary')
+                    ->size('lg')
+                    ->icon('ri-gift-line'),
+            ])
             ->contentGrid([
                 'default' => 2,
                 'md' => 2,
@@ -123,11 +163,12 @@ class ReviewResource extends Resource
                 Tables\Columns\Layout\Stack::make([
                     // Header (Package info & Rating)
                     Tables\Columns\Layout\Split::make([
-                        Tables\Columns\TextColumn::make('package.name')
+                        Tables\Columns\TextColumn::make('item_name')
+                            ->getStateUsing(fn ($record) => $record->package?->name ?? $record->product?->name ?? '-')
                             ->formatStateUsing(fn ($state) => __($state))
                             ->weight(FontWeight::Bold)
                             ->size('md')
-                            ->icon('heroicon-s-briefcase')
+                            ->icon(fn ($record) => $record->package_id ? 'heroicon-s-briefcase' : 'heroicon-s-shopping-bag')
                             ->color('gray')
                             ->grow(false),
                         Tables\Columns\TextColumn::make('rating')
@@ -206,6 +247,13 @@ class ReviewResource extends Resource
                         default => $query,
                     }),
             ], layout: FiltersLayout::AboveContentCollapsible)
+            ->filtersTriggerAction(
+                fn (Tables\Actions\Action $action) => $action
+                    ->icon('heroicon-m-funnel')
+                    ->label(__('Filter'))
+                    ->color(fn ($livewire) => count($livewire->getTable()->getFilterIndicators()) > 0 ? 'primary' : 'gray')
+                    ->badge(fn ($livewire) => count($livewire->getTable()->getFilterIndicators()) > 0 ? count($livewire->getTable()->getFilterIndicators()) : null)
+            )
             ->headerActions([
                 Tables\Actions\CreateAction::make()
                     ->label(__('Tulis Ulasan'))

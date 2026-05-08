@@ -78,7 +78,7 @@ return [
     |
     */
 
-    'start_url' => env('NATIVEPHP_START_URL', '/user/login'),
+    'start_url' => env('NATIVEPHP_START_URL', '/'),
 
     /*
     |--------------------------------------------------------------------------
@@ -128,6 +128,11 @@ return [
         'storage/framework/cache',
         'storage/framework/testing',
         'storage/logs/laravel.log',
+        '.git',
+        '.idea',
+        '.vscode',
+        'node_modules',
+        'vendor/nativephp/mobile/resources',
     ],
 
     'android' => [

@@ -48,6 +48,30 @@ class ArticleResource extends Resource
         return __('Tips & Inspiration');
     }
 
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['title', 'content', 'excerpt', 'category.name', 'weddingOrganizer.name', 'slug'];
+    }
+
+    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
+    {
+        return __($record->title);
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            __('Kategori') => __($record->category?->name ?? '-'),
+            __('Kutipan')  => \Illuminate\Support\Str::limit(__($record->excerpt ?? '-'), 50),
+            __('Isi')      => \Illuminate\Support\Str::limit(strip_tags(__($record->content)), 100),
+        ];
+    }
+
+    public static function getGlobalSearchResultUrl(\Illuminate\Database\Eloquent\Model $record): ?string
+    {
+        return static::getUrl('view', ['record' => $record]);
+    }
+
     public static function getNavigationBadge(): ?string
     {
         return (string) static::getModel()::count();
@@ -76,12 +100,29 @@ class ArticleResource extends Resource
     {
         return $table
             ->emptyStateHeading(__('Belum ada artikel'))
+            ->emptyStateDescription(__('Jelajahi layanan kami untuk mendapatkan inspirasi terbaik.'))
+            ->emptyStateActions([
+                Tables\Actions\Action::make('shop_products')
+                    ->label(__('Belanja Bunga'))
+                    ->url(ProductResource::getUrl())
+                    ->button()
+                    ->color('info')
+                    ->size('lg')
+                    ->icon('ri-flower-line'),
+                Tables\Actions\Action::make('book_package')
+                    ->label(__('Pesan Paket Dekorasi'))
+                    ->url(PackageResource::getUrl())
+                    ->button()
+                    ->color('primary')
+                    ->size('lg')
+                    ->icon('ri-gift-line'),
+            ])
             ->contentGrid([
                 'default' => 1,
-                'sm' => 2,
-                'md' => 4,
-                'lg' => 5,
-                'xl' => 6,
+                'sm' => 1,
+                'md' => 2,
+                'lg' => 3,
+                'xl' => 4,
             ])
             ->columns([
                 Tables\Columns\Layout\Stack::make([
@@ -89,16 +130,15 @@ class ArticleResource extends Resource
                     Tables\Columns\Layout\Stack::make([
                         Tables\Columns\ImageColumn::make('image_url')
                             ->label('')
-                            ->height('15rem')
                             ->width('100%')
                             ->alignment('center')
-                            ->getStateUsing(fn ($record) => $record->image_url)
+                            ->getStateUsing(fn ($record) => $record?->image_url)
                             ->extraAttributes([
-                                'class' => 'article-img-wrap w-full h-full overflow-hidden bg-white/5 flex products-center justify-center rounded-t-xl shadow-inner',
+                                'class' => 'article-img-wrap w-full aspect-square overflow-hidden bg-white/5 flex items-center justify-center rounded-t-xl shadow-inner',
                             ])
                             ->extraImgAttributes([
                                 'class' => 'w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-110 blur-0',
-                                'style' => 'width: 100%; object-fit: cover;',
+                                'style' => 'aspect-ratio: 1/1; object-fit: cover;',
                             ]),
 
                         // Video Indicator (Premium Play Icon)
@@ -118,20 +158,21 @@ class ArticleResource extends Resource
 
                     // Text content block
                     Tables\Columns\Layout\Stack::make([
-                        // Category Badge - Now clearly at the top of content section
+                        // Category Badge
                         Tables\Columns\TextColumn::make('category.name')
                             ->formatStateUsing(fn ($state) => __($state))
                             ->badge()
                             ->color('info')
                             ->size('xs')
-                            ->extraAttributes(['class' => 'mt-1 mb-2']),
+                            ->extraAttributes(['class' => 'mt-1 mb-1']),
 
                         Tables\Columns\TextColumn::make('title')
                             ->formatStateUsing(fn ($state) => __($state))
                             ->searchable()
                             ->weight(FontWeight::Bold)
                             ->size('xs')
-                            ->lineClamp(2),
+                            ->lineClamp(2)
+                            ->extraAttributes(['class' => 'leading-tight']),
 
                         Tables\Columns\TextColumn::make('excerpt')
                             ->formatStateUsing(fn ($state) => __($state))
@@ -156,7 +197,7 @@ class ArticleResource extends Resource
                         ])->extraAttributes(['class' => 'mt-3 pt-3 border-t border-gray-100 dark:border-gray-800']),
                     ])->extraAttributes(['class' => 'p-3']),
                 ])->extraAttributes([
-                    'class' => 'bg-white dark:bg-gray-900 rounded-xl shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-800 transition-all duration-300 group overflow-hidden cursor-pointer',
+                    'class' => 'bg-white dark:bg-gray-900 rounded-xl shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-800 transition-all duration-300 group overflow-hidden cursor-pointer h-full',
                 ]),
             ])
             ->filters([
@@ -205,6 +246,13 @@ class ArticleResource extends Resource
                         default => $query,
                     }),
             ], layout: FiltersLayout::AboveContentCollapsible)
+            ->filtersTriggerAction(
+                fn (Tables\Actions\Action $action) => $action
+                    ->icon('heroicon-m-funnel')
+                    ->label(__('Filter'))
+                    ->color(fn ($livewire) => count($livewire->getTable()->getFilterIndicators()) > 0 ? 'primary' : 'gray')
+                    ->badge(fn ($livewire) => count($livewire->getTable()->getFilterIndicators()) > 0 ? count($livewire->getTable()->getFilterIndicators()) : null)
+            )
             ->actions([
                 Tables\Actions\ViewAction::make()
                     ->label(__('Baca Artikel'))
@@ -329,6 +377,7 @@ class ArticleResource extends Resource
     {
         return [
             'index' => Pages\ManageArticles::route('/'),
+            'view'  => Pages\ViewArticle::route('/{record}'),
         ];
     }
 }

@@ -30280,9 +30280,20 @@ namespace App\Filament\Admin\Resources\CategoryResource\Pages {
 
 namespace App\Filament\Admin\Resources\OrderResource\Pages {
     /**
-     * @property-read \App\Filament\Resources\OrderResource $resource
      */
-    class ManageOrders extends \Filament\Resources\Pages\ManageRecords {
+    class CreateOrder extends \Filament\Resources\Pages\CreateRecord {
+            }
+    /**
+     */
+    class EditOrder extends \Filament\Resources\Pages\EditRecord {
+            }
+    /**
+     */
+    class ListOrders extends \Filament\Resources\Pages\ListRecords {
+            }
+    /**
+     */
+    class ViewOrder extends \Filament\Resources\Pages\ViewRecord {
             }
     }
 
@@ -30553,6 +30564,10 @@ namespace App\Filament\User\Resources\ArticleResource\Pages {
      */
     class ManageArticles extends \Filament\Resources\Pages\ManageRecords {
             }
+    /**
+     */
+    class ViewArticle extends \Filament\Resources\Pages\ViewRecord {
+            }
     }
 
 namespace App\Filament\User\Resources\CartResource\Pages {
@@ -30572,7 +30587,15 @@ namespace App\Filament\User\Resources\HistoryResource\Pages {
 namespace App\Filament\User\Resources\OrderResource\Pages {
     /**
      */
+    class EditOrder extends \Filament\Resources\Pages\EditRecord {
+            }
+    /**
+     */
     class ManageOrders extends \Filament\Resources\Pages\ManageRecords {
+            }
+    /**
+     */
+    class ViewOrder extends \Filament\Resources\Pages\ViewRecord {
             }
     }
 
@@ -30651,6 +30674,10 @@ namespace App\Filament\User\Resources\WishlistResource\Pages {
     }
 
 namespace App\Filament\User\Pages {
+    /**
+     */
+    class CbirSearchPage extends \Filament\Pages\Page {
+            }
     /**
      */
     class Dashboard extends \Filament\Pages\Dashboard {
@@ -36427,6 +36454,11 @@ namespace  {
 }
 
 
+namespace Facades\Livewire\Features\SupportFileUploads {
+    /**
+     * @mixin \Livewire\Features\SupportFileUploads\GenerateSignedUploadUrl     */
+    class GenerateSignedUploadUrl extends \Livewire\Features\SupportFileUploads\GenerateSignedUploadUrl {}
+}
 
 namespace {
     

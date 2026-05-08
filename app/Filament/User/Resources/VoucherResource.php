@@ -23,7 +23,30 @@ class VoucherResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['code', 'description'];
+        return ['code', 'description', 'discount_amount', 'min_purchase'];
+    }
+
+    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
+    {
+        return $record->code . ' - ' . __('Voucher Promo');
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        $discount = $record->discount_type === \App\Enums\DiscountType::PERCENTAGE
+            ? number_format($record->discount_amount, 0) . '%'
+            : 'Rp ' . number_format($record->discount_amount, 0, ',', '.');
+
+        return [
+            __('Potongan') => $discount,
+            __('Min. Blj') => 'Rp ' . number_format($record->min_purchase, 0, ',', '.'),
+            __('Berlaku')  => $record->expires_at ? \Carbon\Carbon::parse($record->expires_at)->translatedFormat('d M Y') : __('Selamanya'),
+        ];
+    }
+
+    public static function getGlobalSearchResultUrl(\Illuminate\Database\Eloquent\Model $record): ?string
+    {
+        return static::getUrl('index');
     }
 
     public static function getNavigationGroup(): ?string

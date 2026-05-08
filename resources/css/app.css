@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "../../vendor/livewire/flux/dist/flux.css";
 
-/* Global Scrollbar Hiding Strategy */
+/* Global Scrollbar Hiding & Performance Strategy */
 html, body, * {
     scrollbar-width: none !important; /* Firefox */
     -ms-overflow-style: none !important; /* IE/Edge */
@@ -99,8 +99,46 @@ footer.fixed > *,
 
 /* Filament uses divide-y on the table container which adds lines */
 .fi-ta-ctn > .divide-y > *,
-.fi-ta > .divide-y > * {
+.fi-ta > .divide-y > *,
+.fi-ta-header-toolbar,
+.fi-ta-content {
     border-top: none !important;
+    border-bottom: none !important;
+    border-left: none !important;
+    border-right: none !important;
+}
+
+/* ─── Remove Table Container Background & Borders (Transparent Layout) ─── */
+.fi-ta-ctn, 
+.fi-ta-content,
+.fi-ta-header-toolbar,
+.fi-ta-header {
+    background-color: transparent !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.dark .fi-ta-ctn,
+.dark .fi-ta-content,
+.dark .fi-ta-header-toolbar,
+.dark .fi-ta-header {
+    background-color: transparent !important;
+    background: transparent !important;
+}
+
+/* Ensure the table itself doesn't have a background */
+.fi-ta-ctn table {
+    background-color: transparent !important;
+}
+
+.fi-ta-ctn {
+    overflow: visible !important;
+}
+
+.fi-ta-filter-indicators {
+    margin-bottom: 1rem !important;
+    padding-top: 0.5rem !important;
 }
 
 @source '../views';
@@ -463,3 +501,6 @@ select:focus[data-flux-control] {
     border-bottom-color: rgb(var(--gray-800)) !important;
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   CBIR SEARCH BAR — tombol camera & upload menyatu di dalam search
+*/

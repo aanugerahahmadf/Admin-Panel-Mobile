@@ -43,17 +43,34 @@ class MessagesPage extends Page
             return null;
         }
 
-        return (string) Cache::remember(
+        $count = Cache::remember(
             "admin_{$userId}_unread_messages_count",
-            now()->addMinutes(1),
+            now()->addSeconds(30),
             function () use ($userId) {
-                return Inbox::query()->whereJsonContains('user_ids', $userId, 'and', false)
+                return Inbox::query()
+                    ->whereJsonContains('user_ids', $userId)
                     ->whereHas('messages', function (Builder $query) use ($userId) {
-                        $query->whereJsonDoesntContain('read_by', $userId, 'and', false);
+                        $query->whereRaw(
+                            'JSON_SEARCH(read_by, "one", ?) IS NULL',
+                            [(string) $userId]
+                        )
+                        ->where('user_id', '!=', $userId);
                     })
                     ->count();
             }
         );
+
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return __('Pesan belum dibaca');
+    }
+
+    public static function getNavigationBadgeColor(): string|array|null
+    {
+        return 'danger';
     }
 
     public static function getNavigationIcon(): string|Htmlable|null

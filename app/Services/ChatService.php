@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Filament\User\Resources\OrderResource;
+use App\Filament\User\Resources\PackageResource;
+use App\Filament\User\Resources\ProductResource;
 use App\Jobs\SendBotReply;
 use App\Models\Inbox;
 use App\Models\Message;
@@ -44,9 +46,15 @@ class ChatService
      */
     public static function sendContextMessage(Inbox $inbox, array $meta): Message
     {
-        // Avoid sending duplicate context cards for the same product in a short time
+        // Avoid sending duplicate context cards for the same item in a short time
+        // Only skip if the last message is also a context card (not an order card) for the same item
         $lastMessage = $inbox->messages()->latest('id')->first();
-        if ($lastMessage && isset($lastMessage->meta['id']) && $lastMessage->meta['id'] == $meta['id']) {
+        if (
+            $lastMessage
+            && isset($lastMessage->meta['id'])
+            && $lastMessage->meta['id'] == $meta['id']
+            && empty($lastMessage->meta['is_order'])
+        ) {
             return $lastMessage;
         }
 
@@ -73,13 +81,18 @@ class ChatService
      */
     public static function sendOrderMessage(Inbox $inbox, Order $order): Message
     {
+        $admin = User::whereHas('roles', function ($q) {
+            $q->where('name', 'super_admin');
+        })->first();
+
         $type = $order->package_id ? 'package' : 'product';
         $item = $order->package ?? $order->product;
 
         $message = Message::create([
             'inbox_id' => $inbox->id,
-            'user_id' => $order->user_id,
-            'message' => __('Halo Admin, saya baru saja membuat pesanan baru dengan nomor: :orderNumber', [
+            'user_id' => $admin ? $admin->id : $order->user_id, // Kirim atas nama Admin
+            'message' => __('Halo Kak :userName, pesanan baru Anda telah kami terima dengan nomor: :orderNumber. Silakan lakukan pembayaran agar pesanan segera diproses.', [
+                'userName' => $order->user->name,
                 'orderNumber' => $order->order_number,
             ]),
             'meta' => [
@@ -88,17 +101,14 @@ class ChatService
                 'name' => $item->name,
                 'price' => $order->total_price,
                 'image' => $item->image_url,
-                'url' => OrderResource::getUrl('index').'?tableFilters[id][value]='.$order->id,
+                'url' => $order->package_id ? PackageResource::getUrl() : ProductResource::getUrl(),
                 'is_order' => true,
+                'order_id' => $order->id,
                 'order_number' => $order->order_number,
                 'order_status' => $order->status,
+                'payment_status' => $order->payment_status->getLabel(),
             ],
         ]);
-
-        // Dispatch bot reply for new order
-        if ($order->user && ! $order->user->hasRole('super_admin')) {
-            SendBotReply::dispatch($message->id)->delay(now()->addSeconds(5));
-        }
 
         return $message;
     }

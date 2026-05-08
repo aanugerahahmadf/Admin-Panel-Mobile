@@ -40,11 +40,8 @@ class OrderObserver
                 $user = $order->user;
                 if ($user) {
                     $user->increment('balance', $order->total_price);
-
-                    // Update status pembayaran jadi Refunded secara otomatis
                     $order->updateQuietly(['payment_status' => OrderPaymentStatus::REFUNDED]);
 
-                    // Catat Log Refund Otomatis
                     History::create([
                         'user_id' => $order->user_id,
                         'type' => 'balance',
@@ -55,7 +52,6 @@ class OrderObserver
                         'status' => 'success',
                     ]);
 
-                    // 🔔 Notify User: Refund
                     try {
                         Notification::make()
                             ->title(__('Refund Berhasil'))
@@ -66,6 +62,9 @@ class OrderObserver
                         Log::warning('[OrderObserver] Notification failed: '.$e->getMessage());
                     }
                 }
+            } else {
+                // Belum bayar → set payment_status ke CANCELLED
+                $order->updateQuietly(['payment_status' => OrderPaymentStatus::CANCELLED]);
             }
         }
 
@@ -73,6 +72,12 @@ class OrderObserver
         if ($order->isDirty('status')) {
             $user = $order->user;
             if ($user) {
+                // 📣 Notifikasi Pembatalan: Inbox + Bell + Email + WhatsApp
+                if ($order->status === OrderStatus::CANCELLED) {
+                    app(\App\Services\PaymentNotificationService::class)
+                        ->sendCancellationNotification($order, $user);
+                }
+
                 $statusLabel = $order->status instanceof OrderStatus
                     ? $order->status->getLabel()
                     : (is_string($order->status) ? $order->status : __('Tidak Diketahui'));
@@ -94,6 +99,15 @@ class OrderObserver
             }
         }
 
+        // 💰 Notifikasi Otomatis: Update Status Pembayaran (Inbox + Bell + Email + WhatsApp)
+        if ($order->isDirty('payment_status')) {
+            $user = $order->user;
+            if ($user) {
+                app(\App\Services\PaymentNotificationService::class)
+                    ->sendPaymentNotification($order, $user);
+            }
+        }
+
         History::updateOrCreate(
             ['type' => 'order', 'transaction_id' => $order->id],
             [
@@ -106,13 +120,23 @@ class OrderObserver
     }
 
     /**
+     * Handle the Order "deleting" event — fired BEFORE the record is deleted.
+     * Update History status to cancelled so it's visible in Transaction History.
+     */
+    public function deleting(Order $order): void
+    {
+        History::where('type', 'order')
+            ->where('transaction_id', $order->id)
+            ->update(['status' => 'cancelled']);
+    }
+
+    /**
      * Handle the Order "deleted" event.
      */
     public function deleted(Order $order): void
     {
-        History::where('type', 'order')
-            ->where('transaction_id', $order->id)
-            ->delete();
+        // History already updated to cancelled in deleting() event
+        // Nothing else needed here
     }
 
     /**

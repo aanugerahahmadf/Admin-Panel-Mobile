@@ -14,8 +14,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $package_id
  * @property string $order_number
  * @property float $total_price
- * @property string $status
- * @property string $payment_status
+ * @property OrderStatus $status
+ * @property OrderPaymentStatus $payment_status
  * @property \Illuminate\Support\Carbon $booking_date
  * @property string|null $notes
  * @property \Illuminate\Support\Carbon|null $created_at
@@ -50,7 +50,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $packageId
  * @property string $orderNumber
  * @property numeric $totalPrice
- * @property string $paymentStatus
+ * @property OrderStatus $status
+ * @property OrderPaymentStatus $paymentStatus
  * @property \Illuminate\Support\Carbon $bookingDate
  * @property \Illuminate\Support\Carbon|null $createdAt
  * @property \Illuminate\Support\Carbon|null $updatedAt
@@ -74,6 +75,8 @@ class Order extends Model
         'status',
         'payment_status',
         'booking_date',
+        'booking_time',
+        'quantity',
         'notes',
     ];
 

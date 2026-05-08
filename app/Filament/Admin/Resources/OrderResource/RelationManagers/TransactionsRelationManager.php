@@ -81,7 +81,7 @@ class TransactionsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('status')
                     ->label(__('Status'))
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn ($state): string => match (is_string($state) ? $state : ($state?->value ?? '')) {
                         'pending' => 'warning',
                         'success' => 'success',
                         'failed' => 'danger',
@@ -89,13 +89,13 @@ class TransactionsRelationManager extends RelationManager
                         'cancelled' => 'gray',
                         default => 'gray',
                     })
-                    ->formatStateUsing(fn ($state) => match ($state) {
+                    ->formatStateUsing(fn ($state) => match (is_string($state) ? $state : ($state?->value ?? '')) {
                         'pending' => __('Tertunda'),
                         'success' => __('Berhasil'),
                         'failed' => __('Gagal'),
                         'expired' => __('Kedaluwarsa'),
                         'cancelled' => __('Dibatalkan'),
-                        default => ucfirst($state),
+                        default => ucfirst(is_string($state) ? $state : ($state?->value ?? '')),
                     }),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Dibuat'))

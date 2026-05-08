@@ -64,20 +64,18 @@ class UserPanelProvider extends PanelProvider
             ->font('Inter')
             ->defaultThemeMode(ThemeMode::System)
             ->topNavigation()
-            ->maxContentWidth(MaxWidth::Full)
+            // ->maxContentWidth(MaxWidth::Full)
             ->spa()
+            ->unsavedChangesAlerts(false)
+            ->collapsibleNavigationGroups()
             ->globalSearch()
             ->renderHook(
                 'panels::global-search.after',
-                fn (): ?View => (! NativeServiceProvider::isNativeMobile() && ! preg_match('/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i', request()->userAgent()))
-                    ? view('filament.filament-language-switcher.language-switcher')
-                    : null
+                fn (): ?View => view('filament.filament-language-switcher.language-switcher')
             )
             ->renderHook(
                 'panels::auth.form.before',
-                fn (): ?View => (! NativeServiceProvider::isNativeMobile() && ! preg_match('/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i', request()->userAgent()))
-                    ? view('filament.filament-language-switcher.language-switcher')
-                    : null
+                fn (): ?View => view('filament.filament-language-switcher.language-switcher')
             )
             ->renderHook(
                 'panels::styles.after',

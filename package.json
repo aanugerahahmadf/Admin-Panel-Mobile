@@ -23,6 +23,7 @@
     },
     "dependencies": {
         "@popperjs/core": "^2.11.8",
+        "emoji-js": "^3.9.0",
         "emoji-picker-element": "^1.29.1"
     }
 }

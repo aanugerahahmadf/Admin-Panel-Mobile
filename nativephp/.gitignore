@@ -1,0 +1,16 @@
+android/local.properties
+android/app/build/
+android/.gradle/
+android/.cxx/
+android-build.log
+binaries/*.zip
+!android/
+!android/app/src/
+!android/app/build.gradle.kts
+!android/build.gradle.kts
+!android/settings.gradle.kts
+!android/gradle.properties
+!android/gradle/
+!binaries/
+!binaries/INSTALLED
+!resources/

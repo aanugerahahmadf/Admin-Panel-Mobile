@@ -27,7 +27,6 @@
         <div
             @if ($collapsible)
                 x-on:click="$store.sidebar.toggleCollapsedGroup(label)"
-                x-on:mouseenter="if (window.innerWidth > 1024 && $store.sidebar.groupIsCollapsed(label)) $store.sidebar.toggleCollapsedGroup(label)"
             @endif
             @if ($sidebarCollapsible)
                 x-show="$store.sidebar.isOpen"
@@ -48,7 +47,7 @@
             @endif
 
             <span
-                class="fi-sidebar-group-label flex-1 text-sm font-medium leading-6 text-gray-700 dark:text-gray-200"
+                class="fi-sidebar-group-label flex-1 text-sm font-medium leading-6 text-gray-500 dark:text-gray-400"
             >
                 {{ $label }}
             </span>

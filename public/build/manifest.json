@@ -1,6 +1,10 @@
 {
+  "_popper-BwhhPXy0.js": {
+    "file": "assets/popper-BwhhPXy0.js",
+    "name": "popper"
+  },
   "resources/css/app.css": {
-    "file": "assets/app-DEJERo8Q.css",
+    "file": "assets/app-DbzpjdHg.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -9,13 +13,13 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-XfumOuW6.js",
+    "file": "assets/app-64w02FTD.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
     "imports": [
       "resources/js/echo.js",
-      "vendor/tangodev-it/filament-emoji-picker/resources/js/index.js"
+      "_popper-BwhhPXy0.js"
     ]
   },
   "resources/js/echo.js": {
@@ -31,9 +35,12 @@
     "isEntry": true
   },
   "vendor/tangodev-it/filament-emoji-picker/resources/js/index.js": {
-    "file": "assets/index-CPnQ4eVH.js",
+    "file": "assets/index-BkvlMlil.js",
     "name": "index",
     "src": "vendor/tangodev-it/filament-emoji-picker/resources/js/index.js",
-    "isEntry": true
+    "isEntry": true,
+    "imports": [
+      "_popper-BwhhPXy0.js"
+    ]
   }
 }

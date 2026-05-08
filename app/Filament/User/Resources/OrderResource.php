@@ -2,12 +2,16 @@
 
 namespace App\Filament\User\Resources;
 
+use App\Enums\DiscountType;
 use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
+use App\Filament\User\Resources\OrderResource\Pages\EditOrder;
 use App\Filament\User\Resources\OrderResource\Pages\ManageOrders;
+use App\Filament\User\Resources\OrderResource\Pages\ViewOrder;
 use App\Helpers\NativeNotificationHelper;
 use App\Models\Order;
 use App\Models\Transaction;
+use App\Models\Voucher;
 use App\Providers\NativeServiceProvider;
 use App\Services\MidtransService;
 use Filament\Facades\Filament;
@@ -22,6 +26,7 @@ use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\HtmlString;
 use Livewire\Component;
 
 class OrderResource extends Resource
@@ -32,7 +37,27 @@ class OrderResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['order_number', 'package.name', 'package.weddingOrganizer.name'];
+        return ['order_number', 'package.name', 'product.name', 'package.weddingOrganizer.name', 'user.full_name', 'user.phone', 'notes', 'status', 'payment_status'];
+    }
+
+    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
+    {
+        return '#' . $record->order_number . ' - ' . (__($record->package?->name) ?? __($record->product?->name) ?? __('Pesanan'));
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            __('Status')      => $record->status?->getLabel() ?? '-',
+            __('Pembayaran')  => $record->payment_status?->getLabel() ?? '-',
+            __('Total')       => 'Rp ' . number_format($record->total_price, 0, ',', '.'),
+            __('Tanggal')     => $record->booking_date ? \Carbon\Carbon::parse($record->booking_date)->translatedFormat('d M Y') : '-',
+        ];
+    }
+
+    public static function getGlobalSearchResultUrl(\Illuminate\Database\Eloquent\Model $record): ?string
+    {
+        return static::getUrl('view', ['record' => $record]);
     }
 
     public static function getNavigationGroup(): ?string
@@ -69,20 +94,176 @@ class OrderResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make(__('Edit Pesanan'))
-                    ->description(__('Anda hanya dapat merubah catatan dan tanggal acara.'))
-                    ->schema([
-                        Forms\Components\DatePicker::make('booking_date')
-                            ->label(__('Tanggal Acara'))
-                            ->required()
-                            ->native(false)
-                            ->minDate(now()->addDays(7))
-                            ->prefixIcon('heroicon-o-calendar-days'),
-                        Forms\Components\Textarea::make('notes')
-                            ->label(__('Catatan Khusus'))
-                            ->rows(4)
-                            ->required(),
-                    ]),
+                Forms\Components\Wizard::make([
+                    Forms\Components\Wizard\Step::make(__('Detail Acara'))
+                        ->icon('heroicon-o-calendar-days')
+                        ->schema([
+                            Forms\Components\Section::make(__('Pilih Waktu & Kebutuhan'))
+                                ->schema([
+                                    Forms\Components\DatePicker::make('booking_date')
+                                        ->label(__('Rencana Tanggal Acara'))
+                                        ->required()
+                                        ->native(false)
+                                        ->minDate(now()->addDays(7))
+                                        ->prefixIcon('heroicon-o-calendar-days')
+                                        ->columnSpanFull(),
+                                    Forms\Components\TimePicker::make('booking_time')
+                                        ->label(__('Waktu Pelaksanaan'))
+                                        ->required()
+                                        ->native(false)
+                                        ->prefixIcon('heroicon-o-clock')
+                                        ->columnSpanFull(),
+                                    Forms\Components\TextInput::make('quantity')
+                                        ->label(__('Jumlah yang ingin dibeli'))
+                                        ->numeric()
+                                        ->required()
+                                        ->default(1)
+                                        ->minValue(1)
+                                        ->suffix(__('Paket / Item'))
+                                        ->columnSpanFull(),
+                                    Forms\Components\Textarea::make('notes')
+                                        ->label(__('Alamat Lokasi'))
+                                        ->rows(4)
+                                        ->required()
+                                        ->columnSpanFull(),
+                                ]),
+                        ]),
+
+                    Forms\Components\Wizard\Step::make(__('Info Kontak'))
+                        ->icon('heroicon-o-user-circle')
+                        ->schema([
+                            Forms\Components\Section::make(__('Verifikasi Data Anda'))
+                                ->schema([
+                                    Forms\Components\TextInput::make('customer_name')
+                                        ->label(__('Nama Lengkap'))
+                                        ->default(fn ($record) => $record?->user?->name ?? auth()->user()?->name)
+                                        ->dehydrated(false)
+                                        ->required(),
+                                    Forms\Components\TextInput::make('whatsapp')
+                                        ->label(__('Nomor WhatsApp'))
+                                        ->default(fn ($record) => $record?->user?->whatsapp ?: $record?->user?->phone ?: auth()->user()?->whatsapp ?: auth()->user()?->phone)
+                                        ->dehydrated(false)
+                                        ->tel()
+                                        ->required()
+                                        ->helperText(__('Notifikasi pembayaran akan dikirim ke nomor ini.')),
+                                ])->columns(2),
+                        ]),
+
+                    Forms\Components\Wizard\Step::make(__('Voucher & Diskon'))
+                        ->icon('heroicon-o-ticket')
+                        ->schema([
+                            Forms\Components\Section::make(__('Pilih Voucher Anda'))
+                                ->description(__('Gunakan voucher yang telah Anda klaim di menu Voucher.'))
+                                ->icon('heroicon-o-ticket')
+                                ->schema([
+                                    Forms\Components\Select::make('voucher_id')
+                                        ->searchable()
+                                        ->label(__('Voucher Tersedia'))
+                                        ->prefixIcon('heroicon-o-ticket')
+                                        ->options(function ($record) {
+                                            $user = auth()->user();
+                                            if (! $user || ! $record) return [];
+                                            $finalPrice = $record->total_price ?? 0;
+                                            $vouchers = Voucher::query()
+                                                ->where('is_active', true)
+                                                ->where(fn ($q) => $q->whereNull('expires_at')->orWhere('expires_at', '>', now()))
+                                                ->whereHas('users', fn ($q) => $q->where('users.id', $user->id)->whereNull('user_vouchers.used_at'))
+                                                ->get()
+                                                ->filter(fn ($v) => $v->isValidFor($finalPrice));
+                                            return $vouchers->mapWithKeys(function ($v) {
+                                                $amount = $v->discount_type === DiscountType::PERCENTAGE
+                                                    ? number_format($v->discount_amount, 2, ',', '.').'%'
+                                                    : 'Rp '.number_format($v->discount_amount, 2, ',', '.');
+                                                return [$v->id => $v->code.__(' - Diskon ').$amount];
+                                            });
+                                        })
+                                        ->preload()
+                                        ->live()
+                                        ->afterStateUpdated(function (Forms\Set $set, Forms\Get $get, ?string $state, $record) {
+                                            if (! $state) {
+                                                $set('voucher_discount', 0);
+                                                $set('_voucher_info', null);
+                                                return;
+                                            }
+                                            $finalPrice = $record?->total_price ?? 0;
+                                            $voucher = Voucher::find($state);
+                                            if ($voucher && $voucher->isValidFor($finalPrice)) {
+                                                $discount = $voucher->calculateDiscount($finalPrice);
+                                                $set('voucher_discount', $discount);
+                                                $set('_voucher_info', 'valid:'.$voucher->id.':'.$discount.':'.$voucher->description);
+                                            } else {
+                                                $set('voucher_id', null);
+                                                $set('voucher_discount', 0);
+                                                $set('_voucher_info', 'invalid');
+                                            }
+                                        })
+                                        ->hint(fn (Forms\Get $get) => match (true) {
+                                            str_starts_with((string) $get('_voucher_info'), 'valid:') => __('Voucher Berhasil Dipasang!'),
+                                            $get('_voucher_info') === 'invalid' => __('Voucher tidak valid'),
+                                            default => null,
+                                        })
+                                        ->hintIcon(fn (Forms\Get $get) => match (true) {
+                                            str_starts_with((string) $get('_voucher_info'), 'valid:') => 'heroicon-m-check-circle',
+                                            $get('_voucher_info') === 'invalid' => 'heroicon-m-x-circle',
+                                            default => null,
+                                        })
+                                        ->hintColor(fn (Forms\Get $get) => str_starts_with((string) $get('_voucher_info'), 'valid:') ? 'success' : 'danger')
+                                        ->helperText(__('Hanya voucher yang memenuhi syarat minimum belanja yang akan muncul di sini. Jika kosong, silakan ke menu Voucher untuk Klaim.')),
+
+                                    Forms\Components\Hidden::make('voucher_discount')->default(0),
+                                    Forms\Components\Hidden::make('_voucher_info'),
+
+                                    Forms\Components\Placeholder::make('_discount_preview')
+                                        ->hiddenLabel()
+                                        ->visible(fn (Forms\Get $get) => str_starts_with((string) $get('_voucher_info'), 'valid:'))
+                                        ->content(function (Forms\Get $get, $record) {
+                                            $finalPrice = $record?->total_price ?? 0;
+                                            $discount = (float) $get('voucher_discount');
+                                            $final = max(0, $finalPrice - $discount);
+                                            return new HtmlString(
+                                                '<div class="flex flex-col gap-2 p-4 bg-success-50 dark:bg-success-950 rounded-xl border border-success-200 dark:border-success-800">'.
+                                                    '<div class="flex justify-between text-sm">'.
+                                                        '<span class="text-gray-600 dark:text-gray-400">'.__('Harga').'</span>'.
+                                                        '<span class="font-semibold">Rp '.number_format($finalPrice, 2, ',', '.').'</span>'.
+                                                    '</div>'.
+                                                    '<div class="flex justify-between text-sm text-success-600 dark:text-success-400">'.
+                                                        '<span class="flex products-center gap-1"><svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 0 1 0 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a2.999 2.999 0 0 1 0-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375Z" /></svg> '.__('Diskon Voucher').'</span>'.
+                                                        '<span class="font-bold">- Rp '.number_format($discount, 2, ',', '.').'</span>'.
+                                                    '</div>'.
+                                                    '<div class="flex justify-between text-base font-bold border-t border-success-300 dark:border-success-700 pt-2">'.
+                                                        '<span>'.__('Total Bayar').'</span>'.
+                                                        '<span class="text-success-700 dark:text-success-300">Rp '.number_format(max(0, $final), 2, ',', '.').'</span>'.
+                                                    '</div>'.
+                                                '</div>'
+                                            );
+                                        }),
+                                ]),
+                        ]),
+
+                    Forms\Components\Wizard\Step::make(__('Konfirmasi'))
+                        ->icon('heroicon-o-check-badge')
+                        ->schema([
+                            Forms\Components\Section::make(__('Ringkasan Pembayaran'))
+                                ->schema([
+                                    Forms\Components\Placeholder::make('pkg_summary')
+                                        ->label(__('Paket / Produk'))
+                                        ->content(fn ($record) => $record?->package?->name ?? $record?->product?->name ?? '-'),
+                                    Forms\Components\Placeholder::make('price_summary')
+                                        ->label(__('Total Harga'))
+                                        ->content(fn ($record) => 'Rp '.number_format($record?->total_price ?? 0, 0, ',', '.'))
+                                        ->extraAttributes(['class' => 'text-primary-600 dark:text-primary-400 font-bold text-2xl']),
+                                ]),
+                        ]),
+                ])
+                ->submitAction(new \Illuminate\Support\HtmlString(\Illuminate\Support\Facades\Blade::render(<<<BLADE
+                    <x-filament::button
+                        type="submit"
+                        size="sm"
+                    >
+                        {{ __('Simpan Perubahan') }}
+                    </x-filament::button>
+                BLADE)))
+                ->columnSpanFull(),
             ]);
     }
 
@@ -115,10 +296,11 @@ class OrderResource extends Resource
                     ->icon('ri-gift-line'),
             ])
             ->contentGrid([
-                'default' => 2,
-                'md' => 3,
-                'lg' => 4,
-                'xl' => 5,
+                'default' => 1,
+                'sm'      => 2,
+                'md'      => 2,
+                'lg'      => 3,
+                'xl'      => 4,
             ])
             ->columns([
                 Tables\Columns\Layout\Stack::make([
@@ -162,16 +344,12 @@ class OrderResource extends Resource
                             ->color('info')
                             ->alignCenter()
                             ->extraAttributes(['class' => 'mt-1']),
-
-                        // Order ID
                         Tables\Columns\TextColumn::make('order_number')
                             ->prefix('#')
                             ->size('xs')
                             ->color('gray')
                             ->weight('medium')
                             ->alignCenter(),
-
-                        // Booking Date & Total Price
                         Tables\Columns\Layout\Stack::make([
                             Tables\Columns\TextColumn::make('booking_date')
                                 ->label(__('Tanggal:'))
@@ -179,6 +357,12 @@ class OrderResource extends Resource
                                 ->icon('heroicon-m-calendar-days')
                                 ->size('xs')
                                 ->color('primary')
+                                ->alignCenter(),
+                            Tables\Columns\TextColumn::make('booking_time')
+                                ->time('H:i')
+                                ->icon('heroicon-m-clock')
+                                ->size('xs')
+                                ->color('info')
                                 ->alignCenter(),
                             Tables\Columns\TextColumn::make('payment_status')
                                 ->badge()
@@ -191,10 +375,8 @@ class OrderResource extends Resource
                                 ->color('primary')
                                 ->alignCenter(),
                         ])->space(2)->extraAttributes(['class' => 'mt-3']),
-
-                        // Rating Stats
                         Tables\Columns\TextColumn::make('avg_rating')
-                            ->state(fn ($record) => $record->package ? number_format($record->package->reviews()->avg('rating') ?: 0, 1) : '5.0')
+                            ->state(fn ($record) => $record?->package ? number_format($record->package->reviews()->avg('rating') ?: 0, 1) : '5.0')
                             ->icon('heroicon-m-star')
                             ->iconColor('warning')
                             ->size('xs')
@@ -221,119 +403,176 @@ class OrderResource extends Resource
                     ->query(fn (Builder $query, array $data) => $query->when($data['value'], fn ($q, $id) => $q->where('id', $id)))
                     ->hidden(),
             ], layout: FiltersLayout::AboveContentCollapsible)
+            ->filtersTriggerAction(
+                fn (Tables\Actions\Action $action) => $action
+                    ->icon('heroicon-m-funnel')
+                    ->label(__('Filter'))
+                    ->color(fn ($livewire) => count($livewire->getTable()->getFilterIndicators()) > 0 ? 'primary' : 'gray')
+                    ->badge(fn ($livewire) => count($livewire->getTable()->getFilterIndicators()) > 0 ? count($livewire->getTable()->getFilterIndicators()) : null)
+            )
             ->actions([
-                Tables\Actions\ViewAction::make()
-                    ->hiddenLabel()
-                    ->tooltip(__('Detail'))
-                    ->icon('heroicon-m-eye')
-                    ->button()
-                    ->size('sm')
-                    ->color('gray')
-                    ->slideOver()
-                    ->modalWidth('2xl')
-                    ->extraAttributes(['class' => 'order-3 !rounded-lg justify-center gap-0']),
+                Tables\Actions\ActionGroup::make([
 
-                Tables\Actions\EditAction::make()
-                    ->hiddenLabel()
-                    ->tooltip(__('Ubah'))
-                    ->icon('heroicon-m-pencil-square')
-                    ->button()
-                    ->size('sm')
-                    ->color('warning')
-                    ->extraAttributes(['class' => 'order-4 !rounded-lg justify-center gap-0'])
-                    ->visible(fn ($record) => in_array($record?->status, [
-                        OrderStatus::PENDING,
-                        OrderStatus::CONFIRMED,
-                        OrderStatus::COMPLETED,
-                    ]))
-                    ->after(fn () => NativeNotificationHelper::success(__('Pesanan berhasil diperbarui.'))),
+                    // Bayar
+                    Tables\Actions\Action::make('pay_midtrans')
+                        ->label(__('Bayar Sekarang'))
+                        ->icon('heroicon-m-credit-card')
+                        ->color('primary')
+                        ->visible(fn ($record) => in_array($record?->payment_status, [
+                            OrderPaymentStatus::UNPAID,
+                            OrderPaymentStatus::FAILED,
+                            OrderPaymentStatus::PENDING,
+                        ]))
+                        ->action(function (Order $record, Component $livewire) {
+                            try {
+                                $reference   = 'PAY-' . strtoupper(str()->random(5)) . '-' . $record->id;
+                                $transaction = Transaction::create([
+                                    'user_id'          => $record->user_id,
+                                    'order_id'         => $record->id,
+                                    'type'             => 'order',
+                                    'reference_number' => $reference,
+                                    'amount'           => $record->total_price,
+                                    'admin_fee'        => 0,
+                                    'total_amount'     => $record->total_price,
+                                    'payment_gateway'  => 'midtrans',
+                                    'status'           => 'pending',
+                                    'notes'            => __('Pembayaran via Midtrans untuk Pesanan #') . $record->order_number,
+                                ]);
+                                $record->update(['payment_status' => OrderPaymentStatus::PENDING]);
 
-                Tables\Actions\DeleteAction::make()
-                    ->hiddenLabel()
-                    ->tooltip(__('Batal'))
-                    ->icon('heroicon-m-trash')
-                    ->button()
-                    ->size('sm')
-                    ->color('danger')
-                    ->extraAttributes(['class' => 'order-5 !rounded-lg justify-center gap-0'])
-                    ->visible(fn ($record) => in_array($record?->status, [
-                        OrderStatus::PENDING,
-                        OrderStatus::CONFIRMED,
-                        OrderStatus::COMPLETED,
-                    ])),
-
-                Tables\Actions\Action::make('pay_midtrans')
-                    ->hiddenLabel()
-                    ->tooltip(__('Bayar Sekarang'))
-                    ->button()
-                    ->color('primary')
-                    ->size('sm')
-                    ->icon('heroicon-m-credit-card')
-                    ->extraAttributes(['class' => 'flex-1 !rounded-lg shadow-sm font-bold order-1 justify-center gap-0'])
-                    ->visible(fn ($record) => in_array($record?->payment_status, [
-                        OrderPaymentStatus::UNPAID,
-                        OrderPaymentStatus::FAILED,
-                        OrderPaymentStatus::PENDING,
-                    ]))
-                    ->action(function (Order $record, Component $livewire) {
-                        try {
-                            // Selalu buat transaksi dengan ref baru biar Midtrans nggak komplain "Duplicate Order ID"
-                            $reference = 'PAY-'.strtoupper(str()->random(5)).'-'.$record->id;
-                            $transaction = Transaction::create([
-                                'user_id' => $record->user_id,
-                                'order_id' => $record->id,
-                                'type' => 'order',
-                                'reference_number' => $reference,
-                                'amount' => $record->total_price,
-                                'admin_fee' => 0,
-                                'total_amount' => $record->total_price,
-                                'payment_gateway' => 'midtrans',
-                                'status' => 'pending',
-                                'notes' => __('Pembayaran via Midtrans untuk Pesanan #').$record->order_number,
-                            ]);
-                            $record->update(['payment_status' => OrderPaymentStatus::PENDING]);
-
-                            $midtrans = new MidtransService;
-                            if (! $transaction->snap_token) {
-                                $transaction = $midtrans->createTransactionSnap($transaction);
+                                $midtrans = new MidtransService;
+                                if (! $transaction->snap_token) {
+                                    $transaction = $midtrans->createTransactionSnap($transaction);
+                                }
+                                $livewire->dispatch('open-midtrans-snap', token: $transaction->snap_token);
+                            } catch (\Exception $e) {
+                                Notification::make()->title(__('Gagal Memuat Pembayaran'))->body($e->getMessage())->danger()->send();
                             }
-                            $livewire->dispatch('open-midtrans-snap', token: $transaction->snap_token);
-                        } catch (\Exception $e) {
-                            Notification::make()->title(__('Gagal Memuat Pembayaran'))->body($e->getMessage())->danger()->send();
-                        }
-                    }),
+                        }),
 
-                Tables\Actions\Action::make('refresh_midtrans_status')
-                    ->hiddenLabel()
-                    ->tooltip(__('Cek Status Pembayaran'))
-                    ->icon('heroicon-o-arrow-path')
-                    ->color('info')
-                    ->button()
-                    ->size('sm')
-                    ->extraAttributes(['class' => 'flex-1 !rounded-lg shadow-sm font-bold order-2 justify-center gap-0'])
-                    ->visible(fn ($record) => $record?->payment_status === OrderPaymentStatus::PENDING)
-                    ->action(function (Order $record) {
-                        try {
-                            $transaction = $record->latestTransaction;
-                            if (! $transaction) {
-                                return;
+                    // Cek status pembayaran
+                    Tables\Actions\Action::make('refresh_midtrans_status')
+                        ->label(__('Cek Status Pembayaran'))
+                        ->icon('heroicon-o-arrow-path')
+                        ->color('info')
+                        ->visible(fn ($record) => $record?->payment_status === OrderPaymentStatus::PENDING)
+                        ->action(function (Order $record) {
+                            try {
+                                $transaction = $record->latestTransaction;
+                                if (! $transaction) {
+                                    Notification::make()->title(__('Transaksi Tidak Ditemukan'))->body(__('Belum ada transaksi untuk pesanan ini.'))->warning()->send();
+                                    return;
+                                }
+                                $midtrans = new MidtransService;
+                                $status   = $midtrans->getStatus($midtrans->getMidtransOrderId($transaction));
+                                $data     = (array) $status;
+                                if ($midtrans->isSuccess($data)) {
+                                    $transaction->markAsSuccess();
+                                    Notification::make()->title(__('Pembayaran Berhasil!'))->success()->send();
+                                } elseif ($midtrans->isFailed($data)) {
+                                    $transaction->markAsFailed('Midtrans: ' . ($data['transaction_status'] ?? 'failed'));
+                                    Notification::make()->title(__('Pembayaran Gagal/Kadaluarsa'))->danger()->send();
+                                } else {
+                                    Notification::make()->title(__('Pembayaran Masih Pending'))->info()->send();
+                                }
+                            } catch (\Exception $e) {
+                                $msg = $e->getMessage();
+                                // 404 = transaksi belum dibuat di Midtrans atau sudah expired
+                                if (str_contains($msg, '404') || str_contains($msg, "doesn't exist") || str_contains($msg, 'Transaction doesn')) {
+                                    Notification::make()
+                                        ->title(__('Transaksi Belum Ada di Midtrans'))
+                                        ->body(__('Silakan klik "Bayar Sekarang" untuk membuat transaksi baru.'))
+                                        ->warning()
+                                        ->send();
+                                } else {
+                                    Notification::make()->title(__('Gagal Sinkronisasi'))->body($msg)->danger()->send();
+                                }
                             }
-                            $midtrans = new MidtransService;
-                            $status = $midtrans->getStatus($midtrans->getMidtransOrderId($transaction));
-                            $data = (array) $status;
-                            if ($midtrans->isSuccess($data)) {
-                                $transaction->markAsSuccess();
-                                Notification::make()->title(__('Pembayaran Berhasil!'))->success()->send();
-                            } elseif ($midtrans->isFailed($data)) {
-                                $transaction->markAsFailed('Midtrans: '.($data['transaction_status'] ?? 'failed'));
-                                Notification::make()->title(__('Pembayaran Gagal/Kadaluarsa'))->danger()->send();
-                            } else {
-                                Notification::make()->title(__('Pembayaran Masih Pending'))->info()->send();
+                        }),
+
+                    // Detail
+                    Tables\Actions\ViewAction::make()
+                        ->label(__('Detail Pesanan'))
+                        ->slideOver()
+                        ->modalWidth('full'),
+
+                    // Edit
+                    Tables\Actions\EditAction::make()
+                        ->label(__('Ubah Pesanan'))
+                        ->slideOver()
+                        ->modalWidth('full')
+                        ->visible(fn ($record) => in_array($record?->status, [
+                            OrderStatus::PENDING,
+                            OrderStatus::CONFIRMED,
+                            OrderStatus::COMPLETED,
+                        ]))
+                        ->after(fn () => NativeNotificationHelper::success(__('Pesanan berhasil diperbarui.'))),
+
+                    // Batalkan
+                    Tables\Actions\Action::make('cancel_order')
+                        ->label(__('Batalkan Pesanan'))
+                        ->icon('heroicon-m-x-circle')
+                        ->color('danger')
+                        ->modalHeading(__('Batalkan Pesanan?'))
+                        ->modalDescription(__('Pesanan yang dibatalkan tidak dapat dikembalikan.'))
+                        ->requiresConfirmation()
+                        ->visible(fn ($record) => in_array($record?->status, [
+                            OrderStatus::PENDING,
+                            OrderStatus::CONFIRMED,
+                            OrderStatus::COMPLETED,
+                        ]))
+                        ->action(function ($record) {
+                            // 1. Cancel transaksi Midtrans yang masih pending
+                            try {
+                                $transaction = $record->latestTransaction;
+                                if ($transaction && in_array($transaction->status?->value ?? $transaction->status, ['pending', 'capture'])) {
+                                    $midtrans = new MidtransService;
+                                    $midtrans->cancel($midtrans->getMidtransOrderId($transaction));
+                                    $transaction->markAsFailed('Dibatalkan oleh user');
+                                }
+                            } catch (\Throwable $e) {
+                                // Lanjut meski cancel Midtrans gagal (misal 404 = belum ada di Midtrans)
+                                \Illuminate\Support\Facades\Log::warning('[CancelOrder] Midtrans cancel failed: ' . $e->getMessage());
                             }
-                        } catch (\Exception $e) {
-                            Notification::make()->title(__('Gagal Sinkronisasi'))->body($e->getMessage())->danger()->send();
-                        }
-                    }),
+
+                            // 2. Update status ke cancelled (trigger observer → notifikasi + payment_status)
+                            $record->update(['status' => OrderStatus::CANCELLED]);
+
+                            // 3. Hapus order dari tabel
+                            $record->delete();
+                        }),
+
+                    // Preview & Download Invoice PDF
+                    Tables\Actions\Action::make('preview_invoice')
+                        ->label(__('Lihat Invoice'))
+                        ->icon('heroicon-o-document-text')
+                        ->color('gray')
+                        ->modalHeading(fn (Order $record) => 'Invoice #' . $record->order_number)
+                        ->modalContent(fn (Order $record) => new \Illuminate\Support\HtmlString(
+                            '<div style="width:100%;height:75vh;">'
+                            . '<iframe src="' . route('invoice.pdf', $record) . '" '
+                            . 'style="width:100%;height:100%;border:none;border-radius:4px;" '
+                            . 'title="Invoice #' . $record->order_number . '">'
+                            . '</iframe>'
+                            . '</div>'
+                        ))
+                        ->modalFooterActions(fn (Order $record) => [
+                            \Filament\Actions\Action::make('download_pdf')
+                                ->label(__('Download PDF'))
+                                ->icon('heroicon-o-arrow-down-tray')
+                                ->color('primary')
+                                ->url(route('invoice.pdf', ['order' => $record, 'download' => 1]))
+                                ->openUrlInNewTab(),
+                        ])
+                        ->modalWidth('4xl')
+                        ->slideOver(false),
+
+                ])
+                ->label(__('Klik Tombol Grup'))
+                ->icon('heroicon-m-ellipsis-vertical')
+                ->button()
+                ->size('sm')
+                ->color('gray'),
             ])
             ->actionsAlignment('center')
             ->headerActions([
@@ -400,10 +639,6 @@ class OrderResource extends Resource
                             ->send();
                     })
                     ->visible(fn () => Order::query()->where('user_id', auth()->id())->exists()),
-            ])
-            ->actionsAlignment('center')
-            ->extraAttributes([
-                'class' => 'filament-table-actions-container !flex !flex-row !gap-1 !p-3 !bg-gray-50/50 dark:!bg-white/5 !border-t dark:!border-gray-800',
             ]);
 
     }
@@ -461,6 +696,17 @@ class OrderResource extends Resource
                                     ->date('d F Y')
                                     ->weight(FontWeight::Bold)
                                     ->color('primary'),
+                                Infolists\Components\TextEntry::make('booking_time')
+                                    ->label(__('Waktu:'))
+                                    ->inlineLabel()
+                                    ->time('H:i')
+                                    ->weight(FontWeight::Bold)
+                                    ->color('info'),
+                                Infolists\Components\TextEntry::make('quantity')
+                                    ->label(__('Jumlah:'))
+                                    ->inlineLabel()
+                                    ->badge()
+                                    ->color('warning'),
                             ])->columnSpan(2),
                         ])->columns(3),
                     ]),
@@ -499,6 +745,8 @@ class OrderResource extends Resource
     {
         return [
             'index' => ManageOrders::route('/'),
+            'view'  => ViewOrder::route('/{record}'),
+            'edit'  => EditOrder::route('/{record}/edit'),
         ];
     }
 }

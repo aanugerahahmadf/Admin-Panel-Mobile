@@ -20,6 +20,15 @@ class NativeServiceProvider extends ServiceProvider
     // ═══════════════════════════════════════════════════════════════════════
 
     /**
+     * Returns true if the request is from a mobile device (Native App OR Mobile Browser).
+     */
+    public static function isAnyMobile(): bool
+    {
+        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+        return self::isNativeMobile() || preg_match('/Mobile|Android|iPhone|iPad|iPod/i', $userAgent);
+    }
+
+    /**
      * Returns true ONLY when running inside a real NativePHP mobile app
      * (Android or iOS), even without NATIVEPHP_RUNNING being set.
      *
@@ -350,6 +359,8 @@ class NativeServiceProvider extends ServiceProvider
             SystemServiceProvider::class,
             DeviceServiceProvider::class,
             NetworkServiceProvider::class,
+            \Native\Mobile\Providers\CameraServiceProvider::class,
+        
         ];
     }
 }

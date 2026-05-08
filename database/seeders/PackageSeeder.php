@@ -32,7 +32,7 @@ class PackageSeeder extends Seeder
                 'featured' => true,
                 'stock' => 5,
                 'color' => '#8B4513',
-                'image' => 'package-1.png',
+                'image' => 'package-11.png',
                 'features' => ['Gebyok ukir premium', 'Bunga segar pilihan', 'Kain batik eksklusif', 'Lighting tradisional', 'Tim dekorasi profesional'],
                 'description' => 'Paket dekorasi pernikahan tradisional mewah dengan gebyok ukir kayu jati pilihan, dihiasi rangkaian bunga segar dan kain batik eksklusif.',
             ],

@@ -53,6 +53,7 @@ class Review extends Model
         'user_id',
         'wedding_organizer_id',
         'package_id',
+        'product_id',
         'rating',
         'comment',
     ];
@@ -65,5 +66,10 @@ class Review extends Model
     public function package()
     {
         return $this->belongsTo(Package::class);
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class);
     }
 }

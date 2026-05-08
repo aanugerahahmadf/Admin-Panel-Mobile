@@ -12,10 +12,14 @@ use App\Models\Message;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\MidtransService;
+use App\Services\PaymentNotificationService;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Infolists;
+use Filament\Infolists\Infolist;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Support\Enums\FontWeight;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -182,6 +186,14 @@ class OrderResource extends Resource
                     ->label(__('Tanggal Acara'))
                     ->date()
                     ->alignment('center'),
+                Tables\Columns\TextColumn::make('booking_time')
+                    ->label(__('Waktu'))
+                    ->time('H:i')
+                    ->alignment('center'),
+                Tables\Columns\TextColumn::make('quantity')
+                    ->label(__('Jumlah'))
+                    ->numeric()
+                    ->alignment('center'),
                 Tables\Columns\TextColumn::make('notes')
                     ->label(__('Catatan'))
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -238,7 +250,51 @@ class OrderResource extends Resource
                             }
                         }),
 
-                ])->label(__('Aksi'))
+                    // ── Kirim Notifikasi Pembayaran Manual ──────────────────
+                    Tables\Actions\Action::make('send_payment_notification')
+                        ->label(__('Kirim Notifikasi'))
+                        ->icon('heroicon-o-bell-alert')
+                        ->color('info')
+                        ->requiresConfirmation()
+                        ->modalHeading(__('Kirim Notifikasi Pembayaran'))
+                        ->modalDescription(fn (Order $record) => __(
+                            'Kirim notifikasi status pembayaran pesanan #:order ke :name via Email & WhatsApp.',
+                            [
+                                'order' => $record->order_number,
+                                'name'  => $record->user?->full_name ?? '-',
+                            ]
+                        ))
+                        ->modalSubmitActionLabel(__('Kirim Sekarang'))
+                        ->action(function (Order $record) {
+                            $user = $record->user;
+                            if (! $user) {
+                                Notification::make()
+                                    ->title(__('Gagal'))
+                                    ->body(__('User tidak ditemukan.'))
+                                    ->danger()
+                                    ->send();
+                                return;
+                            }
+
+                            try {
+                                app(\App\Services\PaymentNotificationService::class)
+                                    ->sendPaymentNotification($record, $user);
+
+                                Notification::make()
+                                    ->title(__('Notifikasi Terkirim!'))
+                                    ->body(__('Email & WhatsApp telah dikirim ke ') . $user->full_name)
+                                    ->success()
+                                    ->send();
+                            } catch (\Throwable $e) {
+                                Notification::make()
+                                    ->title(__('Gagal Kirim Notifikasi'))
+                                    ->body($e->getMessage())
+                                    ->danger()
+                                    ->send();
+                            }
+                        }),
+
+                ])->label(__('Klik Tombol Grup'))
                     ->icon('heroicon-m-ellipsis-vertical')
                     ->size('lg')
                     ->color('primary')
@@ -289,13 +345,11 @@ class OrderResource extends Resource
                         return MessagesPage::getUrl().'/'.$inbox->id;
                     }),
                 Tables\Actions\ViewAction::make()
-                    ->slideOver()
                     ->button()
                     ->color('info')
                     ->size('lg')
                     ->extraAttributes(['style' => 'min-width: 120px']),
                 Tables\Actions\EditAction::make()
-                    ->slideOver()
                     ->button()
                     ->color('warning')
                     ->size('lg')
@@ -332,10 +386,143 @@ class OrderResource extends Resource
         ];
     }
 
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                Infolists\Components\Section::make()
+                    ->schema([
+                        Infolists\Components\Grid::make(3)->schema([
+                            Infolists\Components\TextEntry::make('status')
+                                ->label(__('Status Pesanan'))
+                                ->badge()
+                                ->size(Infolists\Components\TextEntry\TextEntrySize::Large),
+                            Infolists\Components\TextEntry::make('payment_status')
+                                ->label(__('Status Pembayaran'))
+                                ->badge()
+                                ->size(Infolists\Components\TextEntry\TextEntrySize::Large),
+                            Infolists\Components\TextEntry::make('order_number')
+                                ->label(__('No. Pesanan'))
+                                ->weight(FontWeight::Bold)
+                                ->copyable(),
+                        ]),
+                    ])
+                    ->extraAttributes(['class' => 'bg-gray-50 dark:bg-white/5 border-0 shadow-none rounded-2xl']),
+
+                Infolists\Components\Section::make(__('Pelanggan'))
+                    ->icon('heroicon-o-user')
+                    ->iconColor('info')
+                    ->compact()
+                    ->schema([
+                        Infolists\Components\Grid::make(2)->schema([
+                            Infolists\Components\TextEntry::make('user.full_name')
+                                ->label(__('Nama'))
+                                ->weight(FontWeight::Bold),
+                            Infolists\Components\TextEntry::make('user.email')
+                                ->label(__('Email'))
+                                ->color('gray'),
+                            Infolists\Components\TextEntry::make('user.phone')
+                                ->label(__('Telepon'))
+                                ->icon('heroicon-o-phone')
+                                ->color('gray')
+                                ->placeholder('-'),
+                            Infolists\Components\TextEntry::make('user.whatsapp')
+                                ->label(__('WhatsApp'))
+                                ->icon('heroicon-o-chat-bubble-left-ellipsis')
+                                ->color('success')
+                                ->placeholder(__('Belum diisi')),
+                        ]),
+                    ]),
+
+                Infolists\Components\Section::make(__('Paket / Produk Dipesan'))
+                    ->icon('heroicon-o-shopping-bag')
+                    ->iconColor('primary')
+                    ->compact()
+                    ->schema([
+                        Infolists\Components\Grid::make()->schema([
+                            Infolists\Components\ImageEntry::make('package.image_url')
+                                ->hiddenLabel()
+                                ->height('6rem')
+                                ->width('6rem')
+                                ->extraImgAttributes(['class' => 'rounded-xl object-cover shadow-sm'])
+                                ->grow(false)
+                                ->visible(fn ($record) => (bool) $record->package_id),
+                            Infolists\Components\ImageEntry::make('product.image_url')
+                                ->hiddenLabel()
+                                ->height('6rem')
+                                ->width('6rem')
+                                ->extraImgAttributes(['class' => 'rounded-xl object-cover shadow-sm'])
+                                ->grow(false)
+                                ->visible(fn ($record) => (bool) $record->product_id),
+                            Infolists\Components\Group::make([
+                                Infolists\Components\TextEntry::make('package.name')
+                                    ->hiddenLabel()
+                                    ->weight(FontWeight::Bold)
+                                    ->size(Infolists\Components\TextEntry\TextEntrySize::Large)
+                                    ->visible(fn ($record) => (bool) $record->package_id),
+                                Infolists\Components\TextEntry::make('product.name')
+                                    ->hiddenLabel()
+                                    ->weight(FontWeight::Bold)
+                                    ->size(Infolists\Components\TextEntry\TextEntrySize::Large)
+                                    ->visible(fn ($record) => (bool) $record->product_id),
+                                Infolists\Components\TextEntry::make('package.weddingOrganizer.name')
+                                    ->hiddenLabel()
+                                    ->icon('heroicon-o-building-office')
+                                    ->color('gray')
+                                    ->visible(fn ($record) => (bool) $record->package_id),
+                                Infolists\Components\TextEntry::make('booking_date')
+                                    ->label(__('Tanggal Acara'))
+                                    ->inlineLabel()
+                                    ->date('d F Y')
+                                    ->weight(FontWeight::Bold)
+                                    ->color('primary'),
+                                Infolists\Components\TextEntry::make('booking_time')
+                                    ->label(__('Waktu'))
+                                    ->inlineLabel()
+                                    ->time('H:i')
+                                    ->color('info'),
+                                Infolists\Components\TextEntry::make('quantity')
+                                    ->label(__('Jumlah'))
+                                    ->inlineLabel()
+                                    ->badge()
+                                    ->color('warning'),
+                            ])->columnSpan(2),
+                        ])->columns(3),
+                    ]),
+
+                Infolists\Components\Section::make(__('Rincian Harga'))
+                    ->icon('heroicon-o-banknotes')
+                    ->iconColor('success')
+                    ->compact()
+                    ->schema([
+                        Infolists\Components\TextEntry::make('total_price')
+                            ->label(__('Total Pembayaran'))
+                            ->formatStateUsing(fn ($state) => 'Rp '.number_format($state, 2, ',', '.'))
+                            ->size(Infolists\Components\TextEntry\TextEntrySize::Large)
+                            ->weight(FontWeight::Bold)
+                            ->color('success')
+                            ->inlineLabel(),
+                    ]),
+
+                Infolists\Components\Section::make(__('Catatan'))
+                    ->icon('heroicon-o-document-text')
+                    ->iconColor('gray')
+                    ->compact()
+                    ->schema([
+                        Infolists\Components\TextEntry::make('notes')
+                            ->hiddenLabel()
+                            ->columnSpanFull(),
+                    ]),
+            ]);
+    }
+
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ManageOrders::route('/'),
+            'index'  => Pages\ListOrders::route('/'),
+            'create' => Pages\CreateOrder::route('/create'),
+            'view'   => Pages\ViewOrder::route('/{record}'),
+            'edit'   => Pages\EditOrder::route('/{record}/edit'),
         ];
     }
 }

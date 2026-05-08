@@ -230,6 +230,7 @@
 
                 this.stopCamera();
                 this.showingPreview = true;
+                this.$wire.clearVisualSearch();
             },
 
             confirmPhoto() {
@@ -340,6 +341,7 @@
             clearPhoto() {
                 this.photoData = null;
                 this.photoSelected = false;
+                this.$wire.clearVisualSearch();
             },
 
             openModal() {
@@ -465,6 +467,21 @@
 
                         <!-- Action buttons -->
                         <div class="flex items-center gap-1">
+
+                            <!-- Manual Search Action -->
+                            @if ($manualSearchAction = $field->getAction('manualSearch'))
+                                <button
+                                    type="button"
+                                    @click.stop="$wire.mountFormComponentAction('{{ $getStatePath() }}', 'manualSearch')"
+                                    class="flex items-center justify-center w-10 h-8 rounded-lg bg-primary-500/10 text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:bg-primary-500/20 dark:hover:bg-primary-500/10 transition-all"
+                                    title="{{ $manualSearchAction->getLabel() }}"
+                                >
+                                    <x-filament::icon
+                                        icon="heroicon-m-arrow-up-tray"
+                                        class="h-5 w-5"
+                                    />
+                                </button>
+                            @endif
 
                             <!-- Preview button -->
                             <button type="button" @click.stop="handlePreviewClick()" class="flex items-center justify-center w-8 h-8 rounded-lg text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" title="{{ __('View full size') }}">

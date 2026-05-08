@@ -39,6 +39,9 @@ return [
     'ai_core_timeout' => env('AI_CORE_TIMEOUT', 15),
     'cbir_api_url' => env('CBIR_API_URL', 'http://127.0.0.1:5000'),
 
+    // WhatsApp via Fonnte API — https://fonnte.com
+    'fonnte_token' => env('FONNTE_TOKEN', ''),
+
     'google' => [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),

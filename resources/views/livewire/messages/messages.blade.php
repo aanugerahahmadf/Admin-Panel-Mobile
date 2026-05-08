@@ -46,218 +46,316 @@
         <!-- Chat Header : End -->
         <!-- Chat Box : Start -->
         <div wire:poll.visible.{{ $pollInterval }}="pollMessages()" id="chatContainer"
-            class="flex flex-col-reverse flex-1 p-5 overflow-y-auto">
+            class="flex flex-col-reverse flex-1 p-2 sm:p-5 overflow-y-auto">
             @foreach ($conversationMessages as $index => $message)
-                <div @class([
-                    'flex mb-2 px-2 items-end gap-2',
-                    'justify-end' => $message->user_id === auth()->id(),
-                    'justify-start' => $message->user_id !== auth()->id(),
-                ]) wire:key="{{ $message->id }}">
-                    @if ($message->user_id !== auth()->id())
-                        @php
-                            $avatar = $message->sender->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($message->sender->name);
-                            $alt = urlencode($message->sender->name);
-                        @endphp
-                        <x-filament::avatar src="{{ $avatar }}" alt="{{ $alt }}" size="sm" />
+                @php
+                    $isMine = $message->user_id === auth()->id();
+                    $hasMeta = $message->meta && isset($message->meta['type']);
+                    $hasText = !empty($message->message);
+                    $hasMedia = $message->getMedia(MediaCollectionType::FILAMENT_MESSAGES->value)?->count() > 0;
 
+                    $meta = $message->meta ?? [];
+                    $displayMessage = $message->message ?? '';
+                    if ($hasText && is_array($meta) && isset($meta['type'], $meta['name']) && !isset($meta['is_order'])) {
+                        $displayMessage = __('Saya menanyakan tentang :itemType ini: :name', [
+                            'itemType' => __($meta['type'] === 'product' ? 'Produk' : 'Paket'),
+                            'name' => $meta['name'],
+                        ]);
+                    }
+                    // For order messages, use the original message text from DB (set by ChatService)
+
+                    $createdAt = \Carbon\Carbon::parse($message->created_at)->setTimezone(config('messages.timezone', 'app.timezone'));
+                    $date = $createdAt->isToday() ? $createdAt->format('H:i') : $createdAt->format('d/m/y H:i');
+                    $isRead = !empty($message->read_by) && count(array_filter($message->read_by, fn($id) => $id !== auth()->id())) > 0;
+                @endphp
+
+                {{-- Message Row --}}
+                <div @class(['flex mb-3', 'justify-end' => $isMine, 'justify-start' => !$isMine])
+                     wire:key="{{ $message->id }}">
+
+                    {{-- Avatar (only for received messages) --}}
+                    @if (!$isMine)
+                        @php
+                            $senderAvatar = $message->sender->avatar_url ?? 'https://ui-avatars.com/api/?name=' . urlencode($message->sender->name);
+                        @endphp
+                        <div class="flex-shrink-0 self-end mr-2">
+                            <x-filament::avatar src="{{ $senderAvatar }}" alt="{{ urlencode($message->sender->name) }}" size="sm" />
+                        </div>
                     @endif
-                    <div>
-                        @if ($message->user_id !== auth()->id())
-                            <p class="text-xs mb-2 text-gray-500 dark:text-gray-400">{{ $message->sender->name }}</p>
+
+                    {{-- Content column --}}
+                    <div @class(['flex flex-col min-w-0', 'items-end' => $isMine, 'items-start' => !$isMine])
+                         style="max-width: min(calc(100% - 2.5rem), 420px);">
+
+                        {{-- Sender name --}}
+                        @if (!$isMine)
+                            <p class="text-xs mb-1 text-gray-500 dark:text-gray-400 px-1">{{ $message->sender->name }}</p>
                         @endif
-                        <div @class([
-                            'max-w-md p-2 rounded-xl mb-2',
-                            'text-white bg-primary-600 dark:bg-primary-500' =>
-                                $message->user_id === auth()->id(),
-                            'text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-500' =>
-                                $message->user_id !== auth()->id(),
-                        ]) @style([
-                            'border-bottom-right-radius: 0' => $message->user_id === auth()->id(),
-                            'border-bottom-left-radius: 0' => $message->user_id !== auth()->id(),
-                        ])>
-                            <div class="px-1">
-                                @if ($message->meta && isset($message->meta['type']))
+
+                        {{-- Card (if has meta) --}}
+                        @if ($hasMeta)
+                            @php
+                                $itemImage = $meta['image'] ?? null;
+                                if (!$itemImage || str_contains($itemImage, 'placeholder')) {
+                                    $modelClass = $meta['type'] === 'product' ? \App\Models\Product::class : \App\Models\Package::class;
+                                    $item = $modelClass::find($meta['id']);
+                                    if ($item) { $itemImage = $item->image_url; }
+                                }
+                                if (!$itemImage || $itemImage === '') {
+                                    $itemImage = 'https://ui-avatars.com/api/?name=' . urlencode($meta['name']) . '&background=f3f4f6&color=a1a1aa&size=128';
+                                }
+                                $isOrderCard       = isset($meta['is_order']) && $meta['is_order'];
+                                $isCancellation    = isset($meta['is_cancellation']) && $meta['is_cancellation'];
+                                $isRefunded        = isset($meta['is_refunded']) && $meta['is_refunded'];
+
+                                if ($isCancellation) {
+                                    $cardBg     = 'background-color:#7f1d1d;';
+                                    $labelColor = 'color:#fca5a5;';
+                                    $nameColor  = 'color:#f1f5f9;';
+                                    $priceColor = 'color:#fca5a5;';
+                                } elseif ($isMine && !$isOrderCard) {
+                                    $cardBg     = 'background-color:#ca8a04;';
+                                    $labelColor = 'color:#1c1917;';
+                                    $nameColor  = 'color:#1c1917;';
+                                    $priceColor = 'color:#1c1917;';
+                                } else {
+                                    $cardBg     = 'background-color:#1e293b;';
+                                    $labelColor = 'color:#facc15;';
+                                    $nameColor  = 'color:#f1f5f9;';
+                                    $priceColor = 'color:#fb923c;';
+                                }
+                            @endphp
+                            <div class="w-full rounded-xl overflow-hidden shadow-md mb-1" style="{{ $cardBg }}">
+                                <div class="flex items-center gap-2 p-2">
+                                    <img src="{{ $itemImage }}"
+                                         class="w-16 h-16 rounded-lg object-cover flex-shrink-0"
+                                         alt="{{ $meta['name'] }}"
+                                         onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($meta['name']) }}&background=f3f4f6&color=a1a1aa&size=128'">
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-[9px] font-black tracking-tight leading-none mb-0.5" style="{{ $labelColor }}">
+                                            @if($isCancellation)
+                                                ❌ {{ __('PESANAN DIBATALKAN') }}
+                                            @elseif($isOrderCard)
+                                                {{ __('Pesanan') }} #{{ $meta['order_number'] }}
+                                            @else
+                                                {{ __($meta['type'] == 'product' ? 'PRODUCT' : 'PACKAGE') }}
+                                            @endif
+                                        </p>
+                                        <p class="text-sm font-bold truncate leading-tight" style="{{ $nameColor }}">{{ $meta['name'] }}</p>
+                                        <p class="text-xs font-black leading-none mt-0.5" style="{{ $priceColor }}">
+                                            Rp {{ number_format($meta['price'], 0, ',', '.') }}
+                                        </p>
+                                        @if($isCancellation)
+                                            <span class="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold leading-none"
+                                                  style="background-color:#dc2626;color:#fff;">
+                                                {{ $isRefunded ? __('Dana Dikembalikan') : __('Tidak Ada Refund') }}
+                                            </span>
+                                        @elseif($isOrderCard)
+                                            @php
+                                                // Fetch live payment status dari DB
+                                                $livePaymentStatus = null;
+                                                if (!empty($meta['order_id'])) {
+                                                    $livePaymentStatus = \App\Models\Order::find($meta['order_id'])?->payment_status;
+                                                } elseif (!empty($meta['order_number'])) {
+                                                    $livePaymentStatus = \App\Models\Order::where('order_number', $meta['order_number'])->value('payment_status');
+                                                    if ($livePaymentStatus) {
+                                                        $livePaymentStatus = \App\Enums\OrderPaymentStatus::tryFrom($livePaymentStatus);
+                                                    }
+                                                }
+
+                                                if ($livePaymentStatus instanceof \App\Enums\OrderPaymentStatus) {
+                                                    $payBadgeLabel = $livePaymentStatus->getLabel();
+                                                    $payBadgeBg = match($livePaymentStatus) {
+                                                        \App\Enums\OrderPaymentStatus::PAID    => '#16a34a',
+                                                        \App\Enums\OrderPaymentStatus::PARTIAL => '#0284c7',
+                                                        \App\Enums\OrderPaymentStatus::PENDING => '#d97706',
+                                                        \App\Enums\OrderPaymentStatus::REFUNDED => '#6b7280',
+                                                        default => '#dc2626', // unpaid, failed, cancelled
+                                                    };
+                                                } elseif ($livePaymentStatus === null && !empty($meta['order_id'])) {
+                                                    // Order sudah dihapus
+                                                    $payBadgeLabel = __('Dibatalkan');
+                                                    $payBadgeBg = '#dc2626';
+                                                } else {
+                                                    // Fallback ke meta snapshot
+                                                    $metaPs = strtolower($meta['payment_status'] ?? '');
+                                                    $isPaidMeta = str_contains($metaPs, 'paid') || str_contains($metaPs, 'lunas') || str_contains($metaPs, 'berhasil');
+                                                    $payBadgeLabel = $isPaidMeta ? __('Sudah Bayar') : __('Belum Bayar');
+                                                    $payBadgeBg = $isPaidMeta ? '#16a34a' : '#dc2626';
+                                                }
+                                            @endphp
+                                            <span class="inline-block mt-1 px-1.5 py-0.5 rounded text-[9px] font-bold leading-none"
+                                                  style="background-color:{{ $payBadgeBg }};color:#fff;">
+                                                {{ $payBadgeLabel }}
+                                            </span>
+                                        @endif
+                                    </div>
+                                    {{-- Inline Details button for context cards (non-order) --}}
+                                    @if(!$isOrderCard && !empty($meta['url']))
+                                        <a href="{{ $meta['url'] }}" wire:navigate
+                                           class="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+                                           style="background-color:#1c1917;color:#facc15;">
+                                            {{ __('Details') }}
+                                        </a>
+                                    @endif
+                                </div>
+                                @if($isOrderCard || $isCancellation)
                                     @php
-                                        $meta = $message->meta;
-                                        $itemImage = $meta['image'] ?? null;
-                                        
-                                        // If image is missing or broken, try to fetch it from the model
-                                        if (!$itemImage || str_contains($itemImage, 'placeholder')) {
-                                            $modelClass = $meta['type'] === 'product' ? \App\Models\Product::class : \App\Models\Package::class;
-                                            $item = $modelClass::find($meta['id']);
-                                            if ($item) {
-                                                $itemImage = $item->image_url;
+                                        $viewOrderId = $meta['order_id'] ?? null;
+                                        // Fallback: cari order_id dari order_number
+                                        if (!$viewOrderId && isset($meta['order_number'])) {
+                                            $orderQuery = \App\Models\Order::where('order_number', $meta['order_number']);
+                                            if ($this->panelId !== 'admin') {
+                                                $orderQuery->where('user_id', auth()->id());
                                             }
+                                            $viewOrderId = $orderQuery->value('id');
                                         }
 
-                                        if (!$itemImage || $itemImage === '') {
-                                            $itemImage = 'https://ui-avatars.com/api/?name=' . urlencode($meta['name']) . '&background=f3f4f6&color=a1a1aa&size=128';
+                                        // Fetch live order status dari DB
+                                        $liveOrder = $viewOrderId ? \App\Models\Order::find($viewOrderId) : null;
+                                        $liveStatus = $liveOrder?->status;
+                                        $isLiveCancelled = ($liveStatus instanceof \App\Enums\OrderStatus
+                                            && $liveStatus === \App\Enums\OrderStatus::CANCELLED)
+                                            // Jika order_id ada di meta tapi order tidak ditemukan di DB = sudah dihapus = cancelled
+                                            || ($viewOrderId && $liveOrder === null);
+                                        // Gabungkan: cancelled jika meta is_cancellation ATAU live status cancelled/deleted
+                                        $isCancelledCard = $isCancellation || $isLiveCancelled;
+
+                                        if ($this->panelId === 'admin') {
+                                            $viewOrderUrl = $viewOrderId
+                                                ? route('filament.admin.resources.orders.view', ['record' => $viewOrderId])
+                                                : route('filament.admin.resources.orders.index');
+                                        } else {
+                                            $viewOrderUrl = $viewOrderId
+                                                ? route('filament.user.resources.orders.view', ['record' => $viewOrderId])
+                                                : route('filament.user.resources.orders.index');
                                         }
                                     @endphp
-                                    <div class="mb-3 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden group max-w-sm">
-                                        <div class="flex items-center p-3 gap-3">
-                                            <div class="relative w-16 h-16 flex-shrink-0">
-                                                <img src="{{ $itemImage }}" 
-                                                     class="w-full h-full rounded-lg object-cover border border-gray-100 dark:border-gray-600" 
-                                                     alt="{{ $meta['name'] }}"
-                                                     onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($meta['name']) }}&background=f3f4f6&color=a1a1aa&size=128'">
-                                            </div>
-                                            <div class="flex-1 min-w-0">
-                                                <div class="flex justify-between items-start gap-2">
-                                                    <div class="flex-1 min-w-0">
-                                                        <p class="text-[9px] text-primary-600 dark:text-primary-400 font-black tracking-tighter mb-0.5">
-                                                            @if(isset($meta['is_order']) && $meta['is_order'])
-                                                                {{ __('Pesanan') }} #{{ $meta['order_number'] }}
-                                                            @else
-                                                                {{ __($meta['type'] == 'product' ? 'Produk' : 'Paket') }}
-                                                            @endif
-                                                        </p>
-                                                        <p class="text-sm font-bold text-gray-900 dark:text-white truncate">
-                                                            {{ $meta['name'] }}
-                                                        </p>
-                                                        <p class="text-xs font-black text-orange-600 dark:text-orange-400 mt-0.5">
-                                                            Rp {{ number_format($meta['price'], 0, ',', '.') }}
-                                                        </p>
-                                                    </div>
-                                                    <div class="flex-shrink-0 self-center">
-                                                        <a href="{{ $meta['url'] }}"
-                                                           wire:navigate
-                                                           class="inline-flex items-center px-3 py-1.5 text-[11px] bg-primary-600 hover:bg-primary-700 dark:bg-primary-500 dark:hover:bg-primary-400 text-white hover:text-white visited:text-white rounded-lg font-bold transition-all shadow-sm active:scale-95 whitespace-nowrap">
-                                                            {{ isset($meta['is_order']) && $meta['is_order'] ? __('Ubah Pesanan') : __('Detail') }}
-                                                        </a>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                    {{-- Update card background jika live cancelled/deleted --}}
+                                    @if($isLiveCancelled && !$isCancellation)
+                                        <div class="px-2 pb-1">
+                                            <span class="inline-block px-2 py-0.5 rounded text-[9px] font-bold"
+                                                  style="background-color:#dc2626;color:#fff;">
+                                                ❌ {{ $liveOrder === null ? __('PESANAN TELAH DIHAPUS') : __('PESANAN DIBATALKAN') }}
+                                            </span>
                                         </div>
+                                    @endif
+                                    <div class="flex">
+                                        @if($this->panelId === 'admin')
+                                            @php
+                                                $inboxId = $selectedConversation?->id ?? '';
+                                                $adminViewUrl = $viewOrderId
+                                                    ? route('filament.admin.resources.orders.view', ['record' => $viewOrderId]) . '?from=messages&inbox=' . $inboxId
+                                                    : route('filament.admin.resources.orders.index');
+                                            @endphp
+                                            <a href="{{ $adminViewUrl }}"
+                                               wire:navigate
+                                               class="flex-1 py-3 text-sm font-bold text-center transition-colors {{ $isCancelledCard ? 'rounded-b-xl' : 'rounded-bl-xl border-r border-gray-600' }}"
+                                               style="background-color:#334155;color:#f1f5f9;">
+                                                {{ __('View Details') }}
+                                            </a>
+                                            @if(!$isCancelledCard)
+                                                <button wire:click="mountAction('changeOrder', {{ json_encode(['orderId' => $meta['order_id'] ?? null]) }})"
+                                                    class="flex-1 py-3 text-sm font-bold transition-colors rounded-br-xl"
+                                                    style="background-color:#facc15;color:#111827;">
+                                                    {{ __('Change Order') }}
+                                                </button>
+                                            @endif
+                                        @else
+                                            <a href="{{ $viewOrderUrl }}"
+                                               wire:navigate
+                                               class="flex-1 py-3 text-sm font-bold text-center transition-colors {{ $isCancelledCard ? 'rounded-b-xl' : 'rounded-bl-xl border-r border-gray-600' }}"
+                                               style="background-color:#334155;color:#f1f5f9;">
+                                                {{ __('Lihat Detail') }}
+                                            </a>
+                                            @if(!$isCancelledCard)
+                                                <button wire:click="mountAction('changeOrder', {{ json_encode(['orderId' => $meta['order_id'] ?? null]) }})"
+                                                    class="flex-1 py-3 text-sm font-bold transition-colors rounded-br-xl"
+                                                    style="background-color:#facc15;color:#111827;">
+                                                    {{ __('Ubah Pesanan') }}
+                                                </button>
+                                            @endif
+                                        @endif
                                     </div>
                                 @endif
+                            </div>
+                        @endif
 
-                                @if ($message->message)
-                                    @php
-                                        $displayMessage = $message->message;
-                                        $meta = $message->meta ?? [];
-
-                                        if (is_array($meta) && isset($meta['type'], $meta['name']) && ! isset($meta['is_order'])) {
-                                            $displayMessage = __('Saya menanyakan tentang :itemType ini: :name', [
-                                                'itemType' => __($meta['type'] === 'product' ? 'Produk' : 'Paket'),
-                                                'name' => $meta['name'],
-                                            ]);
-                                        }
-
-                                        if (is_array($meta) && ! empty($meta['is_order']) && isset($meta['order_number'])) {
-                                            $displayMessage = __('Halo Admin, saya baru saja membuat pesanan baru dengan nomor: :orderNumber', [
-                                                'orderNumber' => $meta['order_number'],
-                                            ]);
-                                        }
-                                    @endphp
-                                    <p class="text-sm">
-                                        {!! nl2br(e($displayMessage)) !!}
-                                    </p>
+                        {{-- Text / Media bubble --}}
+                        @if ($hasText || $hasMedia)
+                            @php
+                                // Bubble color follows panel primary color
+                                // admin = Indigo (#4338ca), user = Yellow (#eab308 with dark text)
+                                $bubbleStyle = $isMine
+                                    ? ($this->panelId === 'user'
+                                        ? 'background-color:#eab308;color:#1c1917;'
+                                        : 'background-color:#4338ca;color:#fff;')
+                                    : '';
+                            @endphp
+                            <div @class([
+                                'px-3 py-2 rounded-2xl',
+                                'rounded-br-sm' => $isMine,
+                                'rounded-bl-sm text-gray-900 dark:text-white bg-gray-100 dark:bg-gray-600' => !$isMine,
+                            ]) style="{{ $bubbleStyle }}">
+                                @if ($hasText)
+                                    <p class="text-sm leading-relaxed">{!! nl2br(e($displayMessage)) !!}</p>
                                 @endif
-                                @if (
-                                    $message->getMedia(MediaCollectionType::FILAMENT_MESSAGES->value) &&
-                                        count($message->getMedia(MediaCollectionType::FILAMENT_MESSAGES->value)) > 0)
-                                    @foreach ($message->getMedia(MediaCollectionType::FILAMENT_MESSAGES->value) as $index => $media)
-                                        @php
-                                            $isImage = $this->validateImage($media->file_name);
-                                        @endphp
-                                        
+
+                                @if ($hasMedia)
+                                    @foreach ($message->getMedia(MediaCollectionType::FILAMENT_MESSAGES->value) as $media)
+                                        @php $isImage = $this->validateImage($media->file_name); @endphp
                                         @if($isImage)
-                                            <div class="my-2 relative group">
-                                                <img src="{{ $media->getUrl() }}" 
-                                                     class="rounded-lg max-w-full h-auto cursor-pointer border border-white/20 shadow-sm"
+                                            <div class="mt-1 relative group">
+                                                <img src="{{ $media->getUrl() }}"
+                                                     class="rounded-lg max-w-full h-auto cursor-pointer shadow-sm"
                                                      wire:click="downloadAttachment({{ $media->id }})" />
                                                 <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-lg pointer-events-none">
-                                                     <x-filament::icon icon="heroicon-o-arrow-down-tray" class="w-6 h-6 text-white" />
+                                                    <x-filament::icon icon="heroicon-o-arrow-down-tray" class="w-6 h-6 text-white" />
                                                 </div>
                                             </div>
                                         @else
                                             <div wire:click="downloadAttachment({{ $media->id }})"
                                                 @class([
-                                                    'flex items-center gap-2 p-2 my-2 rounded-lg group cursor-pointer',
-                                                    'bg-gray-200 dark:bg-gray-600' => $message->user_id !== auth()->id(),
-                                                    'bg-primary-500 dark:bg-primary-400' => $message->user_id === auth()->id(),
+                                                    'flex items-center gap-2 p-2 mt-1 rounded-lg cursor-pointer',
+                                                    'bg-gray-200 dark:bg-gray-500' => !$isMine,
+                                                    'bg-primary-500 dark:bg-primary-400' => $isMine,
                                                 ])>
-                                                <div @class([
-                                                    'p-2 rounded-full',
-                                                    'bg-gray-100 dark:bg-gray-500' => $message->user_id !== auth()->id(),
-                                                    'bg-primary-600 group-hover:bg-primary-700 group-hover:dark:bg-primary-900' =>
-                                                        $message->user_id === auth()->id(),
-                                                ])>
-                                                    @php
-                                                        $icon = 'heroicon-o-document';
-                                                        if ($this->validateDocument($media->file_name)) {
-                                                            $icon = 'heroicon-o-paper-clip';
-                                                        }
-
-                                                        if ($this->validateVideo($media->file_name)) {
-                                                            $icon = 'heroicon-o-video-camera';
-                                                        }
-
-                                                        if ($this->validateAudio($media->file_name)) {
-                                                            $icon = 'heroicon-o-speaker-wave';
-                                                        }
-                                                    @endphp
-                                                    <x-filament::icon icon="{{ $icon }}" class="w-4 h-4" />
-                                                </div>
-                                                <p class="text-sm">
-                                                    {{ $media->file_name }}
-                                                </p>
+                                                @php
+                                                    $icon = 'heroicon-o-document';
+                                                    if ($this->validateDocument($media->file_name)) $icon = 'heroicon-o-paper-clip';
+                                                    if ($this->validateVideo($media->file_name)) $icon = 'heroicon-o-video-camera';
+                                                    if ($this->validateAudio($media->file_name)) $icon = 'heroicon-o-speaker-wave';
+                                                @endphp
+                                                <x-filament::icon icon="{{ $icon }}" class="w-4 h-4" />
+                                                <p class="text-sm truncate">{{ $media->file_name }}</p>
                                             </div>
                                         @endif
                                     @endforeach
                                 @endif
                             </div>
-                        </div>
-                        <div @class([
-                            'flex items-center gap-1.5 mt-1',
-                            'justify-end' => $message->user_id === auth()->id(),
-                            'justify-start' => $message->user_id !== auth()->id(),
-                        ])>
-                            <p @class([
-                                'text-[10px] opacity-70',
-                                'text-white/80' => $message->user_id === auth()->id(),
-                                'text-gray-500 dark:text-gray-400' => $message->user_id !== auth()->id(),
-                            ])>
-                                @php
-                                    $createdAt = \Carbon\Carbon::parse($message->created_at)->setTimezone(
-                                        config('messages.timezone', 'app.timezone'),
-                                    );
+                        @endif
 
-                                    if ($createdAt->isToday()) {
-                                        $date = $createdAt->format('H:i');
-                                    } else {
-                                        $date = $createdAt->format('d/m/y H:i');
-                                    }
-                                @endphp
-                                {{ $date }}
-                            </p>
-
-                            @if($message->user_id === auth()->id())
-                                @php
-                                    // Check if anyone else has read it (excluding the sender)
-                                    $isRead = !empty($message->read_by) && count(array_filter($message->read_by, fn($id) => $id !== auth()->id())) > 0;
-                                @endphp
-                                <div class="flex items-center gap-0.5">
-                                    @if($isRead)
-                                        {{-- Double blue check = Dibaca --}}
-                                        <svg class="w-3.5 h-3.5 text-blue-300" viewBox="0 0 24 24" fill="currentColor">
-                                            <path d="M1.5 12.5l5 5L18 5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                                            <path d="M6 12.5l5 5L22.5 5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-                                        </svg>
-                                        <span class="text-[9px] text-blue-200 ml-0.5">{{ __('Dibaca') }}</span>
-                                    @else
-                                        {{-- Single gray check = Terkirim --}}
-                                        <svg class="w-3.5 h-3.5 text-white/50" viewBox="0 0 24 24" fill="none">
-                                            <path d="M4 12.5l5 5L20 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                                        </svg>
-                                        <span class="text-[9px] text-white/50 ml-0.5">{{ __('Terkirim') }}</span>
-                                    @endif
-                                </div>
+                        {{-- Timestamp + read status --}}
+                        <div @class(['flex items-center gap-1 mt-0.5 px-1', 'justify-end' => $isMine, 'justify-start' => !$isMine])>
+                            <span class="text-[10px] text-gray-400 dark:text-gray-500">{{ $date }}</span>
+                            @if ($isMine)
+                                @if ($isRead)
+                                    <svg class="w-3.5 h-3.5 text-blue-400" viewBox="0 0 24 24" fill="none">
+                                        <path d="M1.5 12.5l5 5L18 5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path d="M6 12.5l5 5L22.5 5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                    <span class="text-[9px] text-blue-400">{{ __('Dibaca') }}</span>
+                                @else
+                                    <svg class="w-3.5 h-3.5 text-gray-400" viewBox="0 0 24 24" fill="none">
+                                        <path d="M4 12.5l5 5L20 6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                    <span class="text-[9px] text-gray-400">{{ __('Terkirim') }}</span>
+                                @endif
                             @endif
                         </div>
-                    </div>
-                </div>
+
+                    </div>{{-- end content column --}}
+                </div>{{-- end message row --}}
                 @php
                     $nextMessage = $conversationMessages[$index + 1] ?? null;
                     $nextMessageDate = $nextMessage
@@ -307,8 +405,12 @@
                     {{ $this->form }}
                 </div>
                 <div class="p-1">
-                    <x-filament::button wire:click="sendMessage()" icon="heroicon-o-paper-airplane"
-                        wire:loading.attr="disabled">{{ __('Kirim') }}</x-filament::button>
+                    <x-filament::button 
+                        wire:click="sendMessage()" 
+                        icon="heroicon-o-paper-airplane"
+                        wire:loading.attr="disabled"
+                        class="native-send-btn">
+                    </x-filament::button>
                 </div>
             </form>
             <x-filament-actions::modals />

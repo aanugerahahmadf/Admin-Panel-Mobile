@@ -45,14 +45,15 @@ class PersonalInfoComponent extends Component implements HasForms
 
             $this->form->fill([
                 'avatar_url' => $avatarValue,
-                'full_name' => $user->full_name,
+                'full_name'  => $user->full_name,
                 'first_name' => $user->first_name,
-                'mid_name' => $user->mid_name,
-                'last_name' => $user->last_name,
-                'email' => $user->email,
-                'phone' => $user->phone,
-                'gender' => $user->gender,
-                'address' => $user->address,
+                'mid_name'   => $user->mid_name,
+                'last_name'  => $user->last_name,
+                'email'      => $user->email,
+                'phone'      => $user->phone,
+                'whatsapp'   => $user->whatsapp,
+                'gender'     => $user->gender,
+                'address'    => $user->address,
             ]);
         }
     }
@@ -109,9 +110,16 @@ class PersonalInfoComponent extends Component implements HasForms
                             ->maxLength(255)
                             ->unique(User::class, 'email', ignorable: Auth::user()),
                         TextInput::make('phone')
-                            ->label(__('Nomor Telepon / WhatsApp'))
+                            ->label(__('Nomor Telepon'))
                             ->tel()
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->helperText(__('Contoh: 08123456789')),
+                        TextInput::make('whatsapp')
+                            ->label(__('Nomor WhatsApp'))
+                            ->tel()
+                            ->maxLength(255)
+                            ->prefixIcon('heroicon-o-chat-bubble-left-ellipsis')
+                            ->helperText(__('Untuk notifikasi pembayaran via WhatsApp. Kosongkan jika sama dengan nomor telepon.')),
                         Select::make('gender')
                             ->label(__('Jenis Kelamin'))
                             ->options([

@@ -44,33 +44,45 @@ class MessagesPage extends Page
             return null;
         }
 
-        return (string) Cache::remember(
+        $count = Cache::remember(
             "user_{$userId}_unread_messages_count",
-            now()->addMinutes(1),
+            now()->addSeconds(30),
             function () use ($userId) {
-                $query = Inbox::query()->whereJsonContains('user_ids', $userId, 'and', false);
-
-                // User panel should only count messages that include an admin
                 $adminIds = User::query()->whereHas('roles', function ($q) {
                     $q->where('name', 'super_admin');
                 })->pluck('id')->toArray();
-                $query->where(function ($q) use ($adminIds) {
-                    foreach ($adminIds as $adminId) {
-                        $q->orWhereJsonContains('user_ids', $adminId);
-                    }
-                });
 
-                return $query->whereHas('messages', function (Builder $query) use ($userId) {
-                    $query->whereJsonDoesntContain('read_by', $userId, 'and', false);
-                })
+                return Inbox::query()
+                    ->whereJsonContains('user_ids', $userId)
+                    ->where(function ($q) use ($adminIds) {
+                        foreach ($adminIds as $adminId) {
+                            $q->orWhereJsonContains('user_ids', $adminId);
+                        }
+                    })
+                    ->whereHas('messages', function (Builder $query) use ($userId) {
+                        // Pesan yang read_by-nya tidak mengandung userId ini
+                        $query->whereRaw(
+                            'JSON_SEARCH(read_by, "one", ?) IS NULL',
+                            [(string) $userId]
+                        )
+                        ->where('user_id', '!=', $userId); // hanya pesan dari orang lain
+                    })
                     ->count();
             }
         );
+
+        // Jangan tampilkan badge kalau 0
+        return $count > 0 ? (string) $count : null;
     }
 
     public static function getNavigationBadgeTooltip(): ?string
     {
-        return static::getNavigationLabel();
+        return __('Pesan belum dibaca');
+    }
+
+    public static function getNavigationBadgeColor(): string|array|null
+    {
+        return 'danger';
     }
 
     public static function getNavigationIcon(): string|Htmlable|null

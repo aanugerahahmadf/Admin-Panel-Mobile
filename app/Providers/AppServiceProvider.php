@@ -22,10 +22,12 @@ use App\Livewire\Messages\Inbox;
 use App\Livewire\Messages\Messages;
 use App\Livewire\Messages\Search;
 use App\Livewire\UsernameComponent;
+use App\Models\Message;
 use App\Models\Order;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Observers\MediaObserver;
+use App\Observers\MessageObserver;
 use App\Observers\OrderObserver;
 use App\Observers\TransactionObserver;
 use App\Providers\Filament\UserPanelProvider;
@@ -195,6 +197,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Observers — MediaObserver sudah skip CBIR di mobile
         Media::observe(MediaObserver::class);
+        Message::observe(MessageObserver::class);
         Order::observe(OrderObserver::class);
         Transaction::observe(TransactionObserver::class);
 

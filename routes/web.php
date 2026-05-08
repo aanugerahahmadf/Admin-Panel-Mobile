@@ -54,3 +54,30 @@ Route::get('/media/{path}', function (string $path) {
 })->where('path', '.*')->name('media.serve');
 
 require __DIR__.'/debug.php';
+
+// Invoice PDF — hanya untuk user yang login dan punya order tersebut
+Route::get('/invoice/{order}/pdf', function (\App\Models\Order $order) {
+    // Pastikan hanya pemilik order yang bisa akses
+    if (auth()->id() !== $order->user_id && ! auth()->user()?->hasRole('super_admin')) {
+        abort(403);
+    }
+
+    $order->load(['user', 'package.category', 'package.weddingOrganizer', 'package.media',
+                  'product.category', 'product.weddingOrganizer', 'product.media',
+                  'latestTransaction']);
+
+    $html = view('pdf.order-invoice', compact('order'))->render();
+
+    $dompdf = new \Dompdf\Dompdf;
+    $dompdf->loadHtml($html);
+    $dompdf->setPaper('A4', 'portrait');
+    $dompdf->render();
+
+    $filename = 'invoice-' . $order->order_number . '.pdf';
+    $inline   = request()->boolean('download') ? 'attachment' : 'inline';
+
+    return response($dompdf->output(), 200, [
+        'Content-Type'        => 'application/pdf',
+        'Content-Disposition' => "{$inline}; filename=\"{$filename}\"",
+    ]);
+})->middleware(['auth'])->name('invoice.pdf');

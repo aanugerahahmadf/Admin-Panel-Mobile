@@ -15,11 +15,9 @@
 .phpunit.result.cache
 /tmp
 .vercel
-nativephp
 .netlify
 .idea
 sqlite.db
-.env
 .env.backup
 .phpstorm.meta.php
 _ide_helper.php
@@ -28,3 +26,4 @@ _ide_helper_models.php
 !.env.example
 # Credential files (keystores, private keys, etc.)
 /credentials/
+

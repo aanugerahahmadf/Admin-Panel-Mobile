@@ -25,7 +25,25 @@ class WishlistResource extends Resource
 
     public static function getGloballySearchableAttributes(): array
     {
-        return ['package.name', 'package.category.name'];
+        return ['package.name', 'package.category.name', 'product.name', 'product.category.name'];
+    }
+
+    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
+    {
+        return $record->package?->name ?? $record->product?->name ?? __('Wishlist');
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            __('Jenis')     => $record->package_id ? __('Paket') : __('Produk'),
+            __('Kategori')  => $record->package?->category?->name ?? $record->product?->category?->name ?? '-',
+        ];
+    }
+
+    public static function getGlobalSearchResultUrl(\Illuminate\Database\Eloquent\Model $record): ?string
+    {
+        return static::getUrl('index');
     }
 
     public static function getNavigationGroup(): ?string

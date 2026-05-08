@@ -73,6 +73,30 @@ class WeddingOrganizerResource extends Resource
         return __('Home');
     }
 
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'description', 'email', 'phone', 'address'];
+    }
+
+    public static function getGlobalSearchResultTitle(\Illuminate\Database\Eloquent\Model $record): string
+    {
+        return __($record->name) . ' (' . __('Profil Studio') . ')';
+    }
+
+    public static function getGlobalSearchResultDetails(\Illuminate\Database\Eloquent\Model $record): array
+    {
+        return [
+            __('Lokasi')  => __($record->city) . ', ' . __($record->address),
+            __('Kontak')  => $record->phone . ' / ' . $record->email,
+            __('Tentang') => \Illuminate\Support\Str::limit(__($record->description), 100),
+        ];
+    }
+
+    public static function getGlobalSearchResultUrl(\Illuminate\Database\Eloquent\Model $record): ?string
+    {
+        return static::getUrl('index', ['record' => $record]);
+    }
+
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()->where('id', 1);

@@ -17,5 +17,8 @@ class VerifyCsrfToken extends Middleware
         'api/db-proxy',
         'api/webhooks/midtrans',
         'api/v1.0/payment/notify',
+        'api/webhooks/fonnte',
+        'api/webhooks/fonnte/connect',
+        'api/webhooks/fonnte/status',
     ];
 }
