@@ -35,4 +35,8 @@ dataconnect-debug.log
 pglite-debug.log
 patches.lock.json
 skills-lock.json
+firebase-debug.log
+coverage/
+.phpunit.cache/
+/.phpunit.result.cache
 

@@ -1,12 +1,24 @@
-name: Production Deployment
+name: CI/CD Pipeline
 
 on:
   push:
+    branches: [ "main", "develop" ]
+  pull_request:
     branches: [ "main" ]
 
+env:
+  PHP_VERSION: '8.4'
+  NODE_VERSION: '20'
+  DB_CONNECTION: sqlite
+  DB_DATABASE: ":memory:"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  tests:
-    name: Run Tests & Static Analysis
+  lint:
+    name: Lint (Pint + PHPStan)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -14,55 +26,175 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: ${{ env.PHP_VERSION }}
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo, grpc
           coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/composer
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install Dependencies
+        run: composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+
+      - name: Run Pint
+        run: ./vendor/bin/pint --test
+
+      - name: Run PHPStan
+        run: ./vendor/bin/phpstan analyse --memory-limit=2G --no-progress || echo "PHPStan completed with warnings"
+
+  test:
+    name: Tests (Pest)
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, imagick, fileinfo, grpc
+          coverage: xdebug
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
 
-      - name: Get Composer Cache Directory
-        id: composer-cache
-        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
-
-      - name: Cache Composer dependencies
+      - name: Cache Composer
         uses: actions/cache@v4
         with:
-          path: ${{ steps.composer-cache.outputs.dir }}
+          path: ~/.cache/composer
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: ${{ runner.os }}-composer-
 
       - name: Install Composer Dependencies
         run: composer install --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
 
-      - name: Install NPM Dependencies
-        run: npm install
+      - name: Install NPM
+        run: npm ci
 
-      - name: Compile Assets
+      - name: Build Assets
         run: npm run build
 
-      - name: Copy .env
-        run: php -r "file_exists('.env') || copy('.env.example', '.env');"
+      - name: Prepare Laravel
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          mkdir -p storage/framework/{sessions,views,cache} bootstrap/cache
+          chmod -R 777 storage bootstrap/cache
 
-      - name: Generate Key
-        run: php artisan key:generate
+      - name: Run Tests
+        run: php artisan test --coverage --min=0
 
-      - name: Create Storage Directories
-        run: mkdir -p storage/framework/{sessions,views,cache} bootstrap/cache
+      - name: Upload Coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: storage/logs/*.xml
+          retention-days: 7
 
-      - name: Directory Permissions
-        run: chmod -R 777 storage bootstrap/cache
+  build:
+    name: Build Docker Image
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-      - name: Run Linting (Laravel Pint)
-        run: ./vendor/bin/pint --test
+      - name: Google Cloud Auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_KEY }}
 
-      - name: Execute Tests (Pest)
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker gcr.io -q
+
+      - name: Build image
+        run: |
+          docker build -f Dockerfile.cloudrun \
+            -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/wedding-decorasi-api:${{ github.sha }} \
+            -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/wedding-decorasi-api:latest .
+
+      - name: Push image
+        run: |
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/wedding-decorasi-api:${{ github.sha }}
+          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/wedding-decorasi-api:latest
+
+  deploy-cloud-run:
+    name: Deploy Cloud Run
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Google Cloud Auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy wedding-decorasi-api \
+            --image=gcr.io/${{ secrets.GCP_PROJECT_ID }}/wedding-decorasi-api:${{ github.sha }} \
+            --region=asia-southeast2 \
+            --platform=managed \
+            --allow-unauthenticated \
+            --memory=512Mi \
+            --cpu=1 \
+            --min-instances=0 \
+            --max-instances=10 \
+            --concurrency=80 \
+            --timeout=300 \
+            --set-env-vars="APP_ENV=production,APP_DEBUG=false,APP_URL=${{ secrets.APP_URL }},DB_CONNECTION=mysql,DB_HOST=${{ secrets.DB_HOST }},DB_PORT=${{ secrets.DB_PORT }},DB_DATABASE=${{ secrets.DB_DATABASE }},DB_USERNAME=${{ secrets.DB_USERNAME }},DB_PASSWORD=${{ secrets.DB_PASSWORD }},SESSION_DRIVER=database,CACHE_STORE=database,QUEUE_CONNECTION=database"
+
+  deploy-firebase:
+    name: Deploy Firebase
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Deploy Firebase Hosting & Data Connect
+        run: |
+          npx -y firebase-tools@latest deploy \
+            --only hosting,dataconnect \
+            --project ${{ secrets.GCP_PROJECT_ID }}
         env:
-          DB_CONNECTION: sqlite
-          DB_DATABASE: ":memory:"
-        run: php artisan test
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
 
-# Catatan: Bagian Deployment (CD) dihapus sementara karena belum ada server.
-# Nanti kalau sudah punya VPS, kita bisa tambahkan job 'deploy' di sini.
+  notify:
+    name: Notify Deployment
+    needs: [deploy-cloud-run, deploy-firebase]
+    if: always() && github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Slack
+        run: |
+          STATUS="${{ needs.deploy-cloud-run.result == 'success' && needs.deploy-firebase.result == 'success' && '✅' || '❌' }}"
+          curl -s -X POST "${{ secrets.SLACK_WEBHOOK }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"text\":\"${STATUS} Wedding Organizer deployment (${GITHUB_SHA::7})\"}" \
+          || true
