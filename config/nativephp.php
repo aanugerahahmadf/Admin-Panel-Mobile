@@ -142,7 +142,7 @@ return [
         'gradle_jdk_path' => env('NATIVEPHP_GRADLE_PATH'),
         'android_sdk_path' => env('NATIVEPHP_ANDROID_SDK_LOCATION'),
         'emulator_path' => env('ANDROID_EMULATOR'),
-        '7zip-location' => env('NATIVEPHP_7ZIP_LOCATION', 'C:\\Program Files\\7-Zip\\7z.exe'),
+        '7zip-location' => env('NATIVEPHP_7ZIP_LOCATION', PHP_OS_FAMILY === 'Windows' ? 'C:\\Program Files\\7-Zip\\7z.exe' : '/usr/bin/7z'),
         'min_sdk' => env('NATIVEPHP_ANDROID_MIN_SDK', 31),
 
         /*

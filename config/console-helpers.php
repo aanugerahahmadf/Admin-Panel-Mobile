@@ -3,5 +3,9 @@
 /** @return array<string, mixed> */
 
 return [
-    'yarn-path' => '/opt/homebrew/bin/yarn',
+    'yarn-path' => match (PHP_OS_FAMILY) {
+        'Darwin' => '/opt/homebrew/bin/yarn',
+        'Windows' => 'yarn',
+        default => '/usr/bin/yarn',
+    },
 ];

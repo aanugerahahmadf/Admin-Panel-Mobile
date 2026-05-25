@@ -116,10 +116,8 @@ class NativeRunCommand extends Command
         }
 
         if ($this->isRunningInWSL()) {
-            error('Android is not supported in WSL (Windows Subsystem for Linux).');
-            note('Please run this command from Windows CMD instead of WSL.');
-
-            return self::FAILURE;
+            $this->warn('Running in WSL. Android builds require adb and the Android SDK to be installed inside WSL.');
+            $this->line('  Install: sudo apt install adb && export ANDROID_SDK_ROOT=~/Android/Sdk');
         }
 
         if (! $os) {
