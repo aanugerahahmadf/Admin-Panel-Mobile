@@ -236,59 +236,75 @@ class PackageResource extends Resource
                 }
             })
             ->columns([
-                Tables\Columns\TextColumn::make('category.name')
-                    ->searchable()
-                    ->label(__('Kategori'))
-                    ->alignment('center'),
-                Tables\Columns\TextColumn::make('name')
-                    ->searchable()
-                    ->label(__('Nama Paket'))
-                    ->alignment('center'),
-                Tables\Columns\TextColumn::make('slug')
-                    ->label(__('Slug'))
-                    ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                Tables\Columns\TextColumn::make('description')
-                    ->label(__('Deskripsi'))
-                    ->limit(50)
-                    ->toggleable(isToggledHiddenByDefault: true),
                 SpatieMediaLibraryImageColumn::make('package_image')
                     ->label(__('Foto'))
                     ->collection('package_image')
                     ->defaultImageUrl(asset('images/placeholders/image-placeholder.png'))
                     ->height(60)
                     ->width(60)
+                    ->circular()
                     ->extraImgAttributes(['class' => 'rounded-lg object-cover'])
                     ->alignment('center'),
-                Tables\Columns\TextColumn::make('video_url')
-                    ->label(__('Video'))
-                    ->formatStateUsing(fn ($state) => $state
-                        ? new HtmlString(
-                            '<video src="'.e($state).'" class="rounded-lg" height="60" width="80" controls preload="none"></video>'
-                        )
-                        : new HtmlString('<span class="text-gray-400 text-xs">—</span>')
-                    )
-                    ->html()
+                Tables\Columns\TextColumn::make('category.name')
+                    ->searchable()
+                    ->label(__('Kategori'))
+                    ->badge()
+                    ->color('info')
+                    ->sortable()
                     ->alignment('center'),
+                Tables\Columns\TextColumn::make('name')
+                    ->searchable()
+                    ->label(__('Nama Paket'))
+                    ->sortable()
+                    ->icon('heroicon-o-gift'),
                 Tables\Columns\TextColumn::make('price')
                     ->label(__('Harga Dasar'))
-                    ->formatStateUsing(fn ($state) => 'Rp '.number_format($state, 2, ',', '.'))
-                    ->alignment('center'),
+                    ->money('IDR')
+                    ->sortable()
+                    ->alignment('end')
+                    ->icon('heroicon-o-banknotes'),
                 Tables\Columns\TextColumn::make('stock')
                     ->label(__('Stok'))
+                    ->badge()
+                    ->color(fn ($state): string => match(true) {
+                        $state <= 0 => 'danger',
+                        $state <= 5 => 'warning',
+                        default => 'success',
+                    })
                     ->numeric()
                     ->sortable()
+                    ->alignment('center'),
+                Tables\Columns\IconColumn::make('is_featured')
+                    ->label(__('Unggulan'))
+                    ->boolean()
                     ->alignment('center')
-                    ->color(fn ($state) => $state <= 0 ? 'danger' : ($state <= 5 ? 'warning' : 'success')),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: false),
+                Tables\Columns\TextColumn::make('slug')
+                    ->label(__('Slug'))
+                    ->searchable()
+                    ->badge()
+                    ->color('gray')
+                    ->copyable()
+                    ->copyableState(fn ($state) => $state)
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('description')
+                    ->label(__('Deskripsi'))
+                    ->limit(50)
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Dibuat Pada'))
                     ->dateTime()
                     ->alignment('center')
+                    ->sortable()
+                    ->icon('heroicon-o-calendar')
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label(__('Diperbarui Pada'))
                     ->dateTime()
                     ->alignment('center')
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([

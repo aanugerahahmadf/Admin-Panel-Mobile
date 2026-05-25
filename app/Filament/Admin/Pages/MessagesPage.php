@@ -15,6 +15,10 @@ class MessagesPage extends Page
 {
     protected static string $view = 'filament.pages.messages';
 
+    protected static ?string $activeNavigationIcon = 'heroicon-o-chat-bubble-left-right';
+    
+    protected static ?int $navigationSort = 1;
+
     public ?Inbox $selectedConversation;
 
     public static function getSlug(): string
@@ -80,12 +84,12 @@ class MessagesPage extends Page
 
     public static function getNavigationIcon(): string|Htmlable|null
     {
-        return config('messages.navigation.navigation_icon', 'heroicon-o-chat-bubble-left-right');
+        return config('messages.navigation.navigation_icon', static::$activeNavigationIcon);
     }
 
     public static function getNavigationSort(): ?int
     {
-        return config('messages.navigation.navigation_sort');
+        return config('messages.navigation.navigation_sort', static::$navigationSort);
     }
 
     public function mount(?int $id = null): void

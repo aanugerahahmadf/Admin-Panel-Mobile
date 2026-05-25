@@ -10,6 +10,9 @@ class AutoTranslationServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        // Force application to use root /lang directory
+        $this->app->useLangPath(base_path('lang'));
+
         // Daftarkan AutoTranslationService sebagai singleton
         $this->app->singleton(AutoTranslationService::class);
 

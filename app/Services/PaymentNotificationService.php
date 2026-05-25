@@ -44,16 +44,24 @@ class PaymentNotificationService
             ['paid', 'partial']
         );
 
-        $message = "❌ Halo Kak {$name},\n\n"
-            ."Pesanan Anda telah *dibatalkan*.\n\n"
-            ."📦 *{$itemType}:* {$itemName}\n"
-            ."🏷️ *Kategori:* {$itemCat}\n"
-            ."🔖 *No. Order:* {$order->order_number}\n"
-            ."💰 *Total:* {$amount}\n"
+        $date = $order->booking_date ? \Carbon\Carbon::parse($order->booking_date)->translatedFormat('d F Y') : '-';
+        $time = $order->booking_time ?? '-';
+
+        $message = "❌ *Pesanan Dibatalkan*\n\n"
+            ."Halo Kak {$name}, pesanan Anda telah dibatalkan.\n\n"
+            ."━━━━━━━━━━━━━━━━━━━\n"
+            ."📦 *{$itemType}*\n"
+            ."{$itemName}\n"
+            ."🏷️ {$itemCat}\n"
+            ."━━━━━━━━━━━━━━━━━━━\n"
+            ."🔖 No. Order: #{$order->order_number}\n"
+            ."📅 Booking: {$date} {$time}\n"
+            ."💰 Total: *{$amount}*\n"
             .($isRefunded
-                ? "\n💸 Dana Anda akan dikembalikan ke saldo akun.\n"
+                ? "\n💸 Dana telah dikembalikan ke saldo akun Anda.\n"
                 : '')
-            ."\nHubungi kami jika ada pertanyaan. 💬";
+            ."\nHubungi kami jika ada pertanyaan 💬\n"
+            ."Lihat detail: ".config('app.url')."/user/orders";
 
         // 1. Inbox
         $this->sendCancellationToInbox($order, $user, $itemName, $itemImage, $message, $isRefunded);
@@ -93,6 +101,13 @@ class PaymentNotificationService
 
         // 4. WhatsApp
         $this->sendWhatsApp($user, $message, $itemImage);
+
+        // 5. Native (Desktop App + Mobile App)
+        $this->sendNativeNotifications(
+            $user,
+            'Pesanan #'.$order->order_number.' Dibatalkan',
+            "Pesanan {$itemName} telah dibatalkan.".($isRefunded ? ' Dana dikembalikan ke saldo.' : '')
+        );
     }
 
     private function sendCancellationToInbox(
@@ -173,6 +188,13 @@ class PaymentNotificationService
         $this->sendBellNotification($order, $user, $itemName, $paymentLabel, $isPaid);
         $this->sendEmail($order, $user);
         $this->sendWhatsApp($user, $message, $itemImage);
+
+        // 5. Native (Desktop App + Mobile App)
+        $this->sendNativeNotifications(
+            $user,
+            'Update Pembayaran #'.$order->order_number,
+            "Status pembayaran {$itemName}: {$paymentLabel}"
+        );
     }
 
     // ── Pesan Teks ────────────────────────────────────────────────────────────
@@ -188,26 +210,44 @@ class PaymentNotificationService
     ): string {
         $name = $user->full_name ?? $user->username ?? 'Pelanggan';
         $amount = 'Rp '.number_format((float) $order->total_price, 0, ',', '.');
+        $qty = $order->quantity ?? 1;
+        $date = $order->booking_date ? \Carbon\Carbon::parse($order->booking_date)->translatedFormat('d F Y') : '-';
+        $time = $order->booking_time ?? '-';
+        $orderStatus = $order->status instanceof \App\Enums\OrderStatus
+            ? $order->status->getLabel()
+            : (string) $order->status;
 
         if ($isPaid) {
-            return "✅ Terima kasih Kak {$name}!\n\n"
-                ."Pembayaran Anda telah *berhasil* dikonfirmasi.\n\n"
-                ."📦 *{$itemType}:* {$itemName}\n"
-                ."🏷️ *Kategori:* {$itemCat}\n"
-                ."🔖 *No. Order:* {$order->order_number}\n"
-                ."💰 *Total:* {$amount}\n"
-                ."📊 *Status:* {$paymentLabel}\n\n"
-                .'Tim kami akan segera memproses pesanan Anda. 🎊';
+            return "✅ *Pembayaran Berhasil!*\n\n"
+                ."Halo Kak {$name}, pembayaran Anda telah dikonfirmasi.\n\n"
+                ."━━━━━━━━━━━━━━━━━━━\n"
+                ."📦 *{$itemType}*\n"
+                ."{$itemName}\n"
+                ."🏷️ {$itemCat}  ×{$qty}\n"
+                ."━━━━━━━━━━━━━━━━━━━\n"
+                ."🔖 No. Order: #{$order->order_number}\n"
+                ."📅 Booking: {$date} {$time}\n"
+                ."💰 Total: *{$amount}*\n"
+                ."📊 Status: {$paymentLabel}\n"
+                ."📋 Pesanan: {$orderStatus}\n\n"
+                ."Tim kami akan segera memproses pesanan Anda 🎊\n"
+                ."Lihat detail pesanan: ".config('app.url')."/user/orders";
         }
 
-        return "⚠️ Halo Kak {$name},\n\n"
-            ."Pesanan Anda *belum dibayar*. Segera lakukan pembayaran agar pesanan diproses.\n\n"
-            ."📦 *{$itemType}:* {$itemName}\n"
-            ."🏷️ *Kategori:* {$itemCat}\n"
-            ."🔖 *No. Order:* {$order->order_number}\n"
-            ."💰 *Total:* {$amount}\n"
-            ."📊 *Status:* {$paymentLabel}\n\n"
-            .'Hubungi kami jika butuh bantuan. 💬';
+        return "⚠️ *Menunggu Pembayaran*\n\n"
+            ."Halo Kak {$name}, pesanan Anda belum dibayar.\n\n"
+            ."━━━━━━━━━━━━━━━━━━━\n"
+            ."📦 *{$itemType}*\n"
+            ."{$itemName}\n"
+            ."🏷️ {$itemCat}  ×{$qty}\n"
+            ."━━━━━━━━━━━━━━━━━━━\n"
+            ."🔖 No. Order: #{$order->order_number}\n"
+            ."📅 Booking: {$date} {$time}\n"
+            ."💰 Total: *{$amount}*\n"
+            ."📊 Status: {$paymentLabel}\n\n"
+            ."Segera lakukan pembayaran agar pesanan diproses.\n"
+            ."Hubungi kami jika butuh bantuan 💬\n"
+            ."Bayar sekarang: ".config('app.url')."/user/orders";
     }
 
     // ── 1. Inbox (Messages Panel) ─────────────────────────────────────────────
@@ -372,5 +412,32 @@ class PaymentNotificationService
         // +628xxx → 628xxx (sudah di-strip oleh regex di atas)
 
         return $phone;
+    }
+
+    /**
+     * Kirim notifikasi ke Desktop App (NativePHP) dan Mobile App (Android/iOS).
+     */
+    private function sendNativeNotifications(User $user, string $title, string $body): void
+    {
+        // Desktop notification
+        try {
+            if (class_exists(\Native\Laravel\Notification::class)) {
+                \Native\Laravel\Notification::new()
+                    ->title($title)
+                    ->message(strip_tags($body))
+                    ->show();
+            }
+        } catch (\Throwable $e) {
+            Log::warning('[PaymentNotification] Desktop notification failed: '.$e->getMessage());
+        }
+
+        // Mobile toast notification
+        try {
+            if (class_exists(\Native\Mobile\Dialog::class)) {
+                \Native\Mobile\Dialog::toast(strip_tags($body), 'long');
+            }
+        } catch (\Throwable $e) {
+            Log::warning('[PaymentNotification] Mobile toast failed: '.$e->getMessage());
+        }
     }
 }

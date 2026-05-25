@@ -96,33 +96,37 @@
                         @if ($hasMeta)
                             @php
                                 $itemImage = $meta['image'] ?? null;
-                                if (!$itemImage || str_contains($itemImage, 'placeholder')) {
+                                if ($itemImage) {
+                                    $itemImage = \App\Providers\NativeServiceProvider::normalizeUrl($itemImage);
+                                }
+                                if (!$itemImage || str_contains($itemImage, 'placeholder') || str_contains((string) $itemImage, 'placeholders')) {
                                     $modelClass = $meta['type'] === 'product' ? \App\Models\Product::class : \App\Models\Package::class;
                                     $item = $modelClass::find($meta['id']);
-                                    if ($item) { $itemImage = $item->image_url; }
+                                    if ($item) {
+                                        $freshImage = $item->image_url;
+                                        $itemImage = (!str_contains((string) $freshImage, 'placeholder') && !str_contains((string) $freshImage, 'placeholders'))
+                                            ? $freshImage
+                                            : null;
+                                    } else {
+                                        $itemImage = null;
+                                    }
                                 }
-                                if (!$itemImage || $itemImage === '') {
-                                    $itemImage = 'https://ui-avatars.com/api/?name=' . urlencode($meta['name']) . '&background=f3f4f6&color=a1a1aa&size=128';
+                                if (!$itemImage || $itemImage === '' || str_contains((string) $itemImage, 'placeholder') || str_contains((string) $itemImage, 'placeholders')) {
+                                    $itemImage = 'https://ui-avatars.com/api/?name=' . urlencode($meta['name']) . '&background=1e293b&color=facc15&size=128';
                                 }
                                 $isOrderCard       = isset($meta['is_order']) && $meta['is_order'];
                                 $isCancellation    = isset($meta['is_cancellation']) && $meta['is_cancellation'];
+                                $isPaymentUpdate   = isset($meta['is_payment_update']) && $meta['is_payment_update'];
                                 $isRefunded        = isset($meta['is_refunded']) && $meta['is_refunded'];
 
                                 if ($isCancellation) {
                                     $cardBg     = 'background-color:#7f1d1d;';
                                     $labelColor = 'color:#fca5a5;';
                                     $nameColor  = 'color:#f1f5f9;';
-                                    $priceColor = 'color:#fca5a5;';
-                                } elseif ($isMine && !$isOrderCard) {
-                                    $cardBg     = 'background-color:#ca8a04;';
-                                    $labelColor = 'color:#1c1917;';
-                                    $nameColor  = 'color:#1c1917;';
-                                    $priceColor = 'color:#1c1917;';
                                 } else {
                                     $cardBg     = 'background-color:#1e293b;';
                                     $labelColor = 'color:#facc15;';
                                     $nameColor  = 'color:#f1f5f9;';
-                                    $priceColor = 'color:#fb923c;';
                                 }
                             @endphp
                             <div class="w-full rounded-xl overflow-hidden shadow-md mb-1" style="{{ $cardBg }}">
@@ -132,17 +136,17 @@
                                          alt="{{ $meta['name'] }}"
                                          onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($meta['name']) }}&background=f3f4f6&color=a1a1aa&size=128'">
                                     <div class="flex-1 min-w-0">
-                                        <p class="text-[9px] font-black tracking-tight leading-none mb-0.5" style="{{ $labelColor }}">
-                                            @if($isCancellation)
+                                        @if($isCancellation)
+                                            <p class="text-[9px] font-black tracking-tight leading-none mb-0.5" style="color:#fca5a5;">
                                                 ❌ {{ __('PESANAN DIBATALKAN') }}
-                                            @elseif($isOrderCard)
-                                                {{ __('Pesanan') }} #{{ $meta['order_number'] }}
-                                            @else
-                                                {{ __($meta['type'] == 'product' ? 'PRODUCT' : 'PACKAGE') }}
-                                            @endif
-                                        </p>
+                                            </p>
+                                        @elseif($isOrderCard || $isPaymentUpdate)
+                                            <p class="text-[9px] font-black tracking-tight leading-none mb-0.5" style="color:#facc15;">
+                                                {{ __('Pesanan') }} #{{ $meta['order_number'] ?? '-' }}
+                                            </p>
+                                        @endif
                                         <p class="text-sm font-bold truncate leading-tight" style="{{ $nameColor }}">{{ $meta['name'] }}</p>
-                                        <p class="text-xs font-black leading-none mt-0.5" style="{{ $priceColor }}">
+                                        <p class="text-xs font-black leading-none mt-0.5" style="{{ $nameColor }}">
                                             Rp {{ number_format($meta['price'], 0, ',', '.') }}
                                         </p>
                                         @if($isCancellation)
@@ -150,7 +154,7 @@
                                                   style="background-color:#dc2626;color:#fff;">
                                                 {{ $isRefunded ? __('Dana Dikembalikan') : __('Tidak Ada Refund') }}
                                             </span>
-                                        @elseif($isOrderCard)
+                                        @elseif($isOrderCard || $isPaymentUpdate)
                                             @php
                                                 // Fetch live payment status dari DB
                                                 $livePaymentStatus = null;
@@ -190,8 +194,27 @@
                                             </span>
                                         @endif
                                     </div>
-                                    {{-- Inline Details button for context cards (non-order) --}}
-                                    @if(!$isOrderCard && !empty($meta['url']))
+                                    {{-- Inline Details button --}}
+                                    @if($isPaymentUpdate)
+                                        @php
+                                            $payViewOrderId = $meta['order_id'] ?? null;
+                                            if (!$payViewOrderId && isset($meta['order_number'])) {
+                                                $payViewOrderId = \App\Models\Order::where('order_number', $meta['order_number'])->value('id');
+                                            }
+                                            $payViewUrl = $payViewOrderId
+                                                ? ($this->panelId === 'admin'
+                                                    ? route('filament.admin.resources.orders.view', ['record' => $payViewOrderId])
+                                                    : route('filament.user.resources.orders.view', ['record' => $payViewOrderId]))
+                                                : ($this->panelId === 'admin'
+                                                    ? route('filament.admin.resources.orders.index')
+                                                    : route('filament.user.resources.orders.index'));
+                                        @endphp
+                                        <a href="{{ $payViewUrl }}" wire:navigate
+                                           class="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
+                                           style="background-color:#1c1917;color:#facc15;">
+                                            {{ __('Lihat Detail') }}
+                                        </a>
+                                    @elseif(!$isOrderCard && !empty($meta['url']))
                                         <a href="{{ $meta['url'] }}" wire:navigate
                                            class="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors"
                                            style="background-color:#1c1917;color:#facc15;">
@@ -199,7 +222,7 @@
                                         </a>
                                     @endif
                                 </div>
-                                @if($isOrderCard || $isCancellation)
+                                @if($isOrderCard || $isCancellation || $isPaymentUpdate)
                                     @php
                                         $viewOrderId = $meta['order_id'] ?? null;
                                         // Fallback: cari order_id dari order_number
@@ -219,7 +242,8 @@
                                             // Jika order_id ada di meta tapi order tidak ditemukan di DB = sudah dihapus = cancelled
                                             || ($viewOrderId && $liveOrder === null);
                                         // Gabungkan: cancelled jika meta is_cancellation ATAU live status cancelled/deleted
-                                        $isCancelledCard = $isCancellation || $isLiveCancelled;
+                                        // Payment update card = hanya lihat detail, tidak bisa ubah pesanan
+                                        $isCancelledCard = $isCancellation || $isLiveCancelled || $isPaymentUpdate;
 
                                         if ($this->panelId === 'admin') {
                                             $viewOrderUrl = $viewOrderId

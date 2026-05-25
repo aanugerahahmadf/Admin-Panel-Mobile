@@ -1,0 +1,73 @@
+{
+  "rules": {
+    "orders": {
+      "$order_id": {
+        ".read": "auth.uid != null && (root.child('orders').child($order_id).child('user_id').val() == auth.uid || root.child('users').child(auth.uid).child('role').val() == 'admin')",
+        ".write": "auth.uid != null && root.child('orders').child($order_id).child('user_id').val() == auth.uid",
+        ".validate": "newData.hasChildren(['id', 'user_id', 'status', 'total_price', 'created_at'])"
+      }
+    },
+    "messages": {
+      "$message_id": {
+        ".read": "auth.uid != null && (root.child('messages').child($message_id).child('sender_id').val() == auth.uid || root.child('messages').child($message_id).child('recipient_id').val() == auth.uid)",
+        ".write": "auth.uid != null && root.child('messages').child($message_id).child('sender_id').val() == auth.uid",
+        ".validate": "newData.hasChildren(['id', 'sender_id', 'recipient_id', 'body', 'created_at'])"
+      }
+    },
+    "conversations": {
+      "$conversation_id": {
+        ".read": "auth.uid != null && (root.child('conversations').child($conversation_id).child('user1_id').val() == auth.uid || root.child('conversations').child($conversation_id).child('user2_id').val() == auth.uid)",
+        ".write": "auth.uid != null && (root.child('conversations').child($conversation_id).child('user1_id').val() == auth.uid || root.child('conversations').child($conversation_id).child('user2_id').val() == auth.uid)",
+        ".validate": "newData.hasChildren(['user1_id', 'user2_id', 'updated_at'])"
+      }
+    },
+    "notifications": {
+      "$user_id": {
+        ".read": "auth.uid == $user_id",
+        ".write": "root.child('users').child(auth.uid).child('role').val() == 'admin'",
+        "pending": {
+          "$notification_id": {
+            ".validate": "newData.hasChildren(['title', 'message', 'created_at'])"
+          }
+        }
+      }
+    },
+    "user_presence": {
+      "$user_id": {
+        ".read": "auth.uid != null",
+        ".write": "auth.uid == $user_id",
+        ".validate": "newData.hasChildren(['online', 'last_seen'])"
+      }
+    },
+    "reviews": {
+      "$review_id": {
+        ".read": "auth.uid != null",
+        ".write": "auth.uid != null && root.child('reviews').child($review_id).child('user_id').val() == auth.uid",
+        ".validate": "newData.hasChildren(['user_id', 'package_id', 'rating', 'comment', 'created_at'])"
+      }
+    },
+    "cart": {
+      "$user_id": {
+        ".read": "auth.uid == $user_id",
+        ".write": "auth.uid == $user_id",
+        ".validate": "newData.isObject()"
+      }
+    },
+    "wishlist": {
+      "$user_id": {
+        ".read": "auth.uid == $user_id",
+        ".write": "auth.uid == $user_id",
+        ".validate": "newData.isObject()"
+      }
+    },
+    "transactions": {
+      "$transaction_id": {
+        ".read": "auth.uid != null && root.child('transactions').child($transaction_id).child('user_id').val() == auth.uid || root.child('users').child(auth.uid).child('role').val() == 'admin'",
+        ".write": false,
+        ".validate": "newData.hasChildren(['user_id', 'type', 'amount', 'status', 'created_at'])"
+      }
+    },
+    ".read": false,
+    ".write": false
+  }
+}

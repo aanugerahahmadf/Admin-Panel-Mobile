@@ -28,11 +28,16 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Observers\MediaObserver;
 use App\Observers\MessageObserver;
+use App\Services\GeoLocationService;
+use App\Services\PlatformNotificationService;
 use App\Observers\OrderObserver;
 use App\Observers\TransactionObserver;
 use App\Providers\Filament\UserPanelProvider;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Forms\Components\Field;
+use Filament\Http\Responses\Auth\Contracts\LoginResponse as LoginResponseContract;
+use Filament\Http\Responses\Auth\Contracts\RegistrationResponse as RegistrationResponseContract;
+use Filament\Http\Responses\Auth\Contracts\LogoutResponse as LogoutResponseContract;
 use Filament\Infolists\Components\Entry;
 use Filament\Support\Facades\FilamentView;
 use Filament\Tables\Columns\Column;
@@ -41,6 +46,7 @@ use Filament\Tables\Filters\BaseFilter;
 use Filament\Tables\Table;
 use Filament\View\PanelsRenderHook;
 use Illuminate\Auth\Events\Login as LoginEvent;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -62,6 +68,54 @@ class AppServiceProvider extends ServiceProvider
         if (! function_exists('nativephp_call')) {
             require_once __DIR__.'/../../bootstrap/nativephp_shim.php';
         }
+
+        // ═══════════════════════════════════════════════════════════
+        // FIX: Filament LoginResponse / RegisterResponse / LogoutResponse
+        // returns Livewire\Redirector in NativePHP context which causes
+        // "setContent(): Argument must be of type ?string" fatal error.
+        // Override with implementations that always return RedirectResponse.
+        // ═══════════════════════════════════════════════════════════
+        $this->app->bind(LoginResponseContract::class, function () {
+            return new class implements LoginResponseContract {
+                public function toResponse($request)
+                {
+                    $panel = filament()->getCurrentPanel();
+                    $url   = $panel
+                        ? $panel->getUrl()
+                        : (session()->pull('url.intended') ?? '/');
+
+                    return redirect()->to($url);
+                }
+            };
+        });
+
+        $this->app->bind(RegistrationResponseContract::class, function () {
+            return new class implements RegistrationResponseContract {
+                public function toResponse($request)
+                {
+                    $panel = filament()->getCurrentPanel();
+                    $url   = $panel
+                        ? $panel->getUrl()
+                        : (session()->pull('url.intended') ?? '/');
+
+                    return redirect()->to($url);
+                }
+            };
+        });
+
+        $this->app->bind(LogoutResponseContract::class, function () {
+            return new class implements LogoutResponseContract {
+                public function toResponse($request)
+                {
+                    $panel = filament()->getCurrentPanel();
+                    $url   = $panel
+                        ? $panel->getLoginUrl()
+                        : route('filament.user.auth.login');
+
+                    return redirect()->to($url);
+                }
+            };
+        });
 
         // 🌉 Register MySQL Proxy Driver (For Mobile without pdo_mysql)
         $this->app->resolving('db', function ($db): void {
@@ -142,6 +196,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Register Firebase Service Provider
+        $this->app->register(FirebaseServiceProvider::class);
+
         $isMobile = NativeServiceProvider::isNativeMobile();
 
         // 🚀 Force HTTPS for Ngrok/Production Assets
@@ -183,25 +240,51 @@ class AppServiceProvider extends ServiceProvider
         Gate::before(function ($user, $ability) {
             return $user->hasRole('super_admin') ? true : null;
         });
-
-        // Automatically activate user on login
         Event::listen(
             LoginEvent::class,
             function ($event): void {
                 $user = $event->user;
-                if ($user instanceof User && ! $user->active_status) {
-                    $user->update(['active_status' => true]);
+                if ($user instanceof User) {
+                    if (! $user->active_status) {
+                        $user->update(['active_status' => true]);
+                    }
+
+                    $ip = request()->ip();
+                    $location = app(GeoLocationService::class)->lookup($ip);
+
+                    $user->update(array_filter([
+                        'ip_address' => $ip,
+                        'login_city' => $location['city'] ?? null,
+                        'login_region' => $location['region'] ?? null,
+                        'login_country' => $location['country'] ?? null,
+                    ]));
+
+                    $locationParts = array_filter([
+                        $location['city'] ?? null,
+                        $location['region'] ?? null,
+                        $location['country'] ?? null,
+                    ]);
+
+                    $locationText = $locationParts
+                        ? implode(', ', $locationParts)
+                        : __('Lokasi tidak diketahui');
+
+                    PlatformNotificationService::send(
+                        $user,
+                        __('Login Terdeteksi'),
+                        __('Akun Anda telah digunakan dari :ip (:location) pada :time.', [
+                            'ip' => $ip,
+                            'location' => $locationText,
+                            'time' => now()->format('d M Y H:i:s'),
+                        ])
+                    );
                 }
             }
         );
-
-        // Observers — MediaObserver sudah skip CBIR di mobile
         Media::observe(MediaObserver::class);
         Message::observe(MessageObserver::class);
         Order::observe(OrderObserver::class);
         Transaction::observe(TransactionObserver::class);
-
-        // Livewire components
         Livewire::component('edit_password_form', EditPasswordComponent::class);
         Livewire::component('delete_account_form', DeleteAccountComponent::class);
         Livewire::component('browser_sessions_form', BrowserSessionsComponent::class);
@@ -209,8 +292,6 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component('fm-messages', Messages::class);
         Livewire::component('fm-search', Search::class);
         Livewire::component('username-component', UsernameComponent::class);
-
-        // Auth components
         Livewire::component('app.filament.admin.auth.login', AdminLogin::class);
         Livewire::component('app.filament.admin.auth.register', AdminRegister::class);
         Livewire::component('app.filament.admin.auth.otp-request-password-reset', AdminOtpRequestPasswordReset::class);
@@ -296,7 +377,7 @@ class AppServiceProvider extends ServiceProvider
         FilamentView::registerRenderHook(
             PanelsRenderHook::BODY_END,
             fn (): string => Blade::render('
-                <div id="snap-container"></div>
+                <div id="snap-container" style="display:none; width:100%; max-width:500px; margin:1rem auto; min-height:480px;"></div>
                 @include("filament.snap-script")
             '),
         );

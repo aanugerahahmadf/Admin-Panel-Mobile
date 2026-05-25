@@ -137,32 +137,46 @@ class ReviewResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('user.full_name')
                     ->label(__('Pengulas'))
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable()
+                    ->icon('heroicon-o-user'),
                 Tables\Columns\TextColumn::make('item_name')
                     ->label(__('Layanan/Produk'))
                     ->getStateUsing(fn ($record) => $record->package?->name ?? $record->product?->name ?? '-')
-                    ->searchable(['package.name', 'product.name']),
+                    ->searchable(['package.name', 'product.name'])
+                    ->sortable()
+                    ->badge()
+                    ->color('info'),
                 Tables\Columns\TextColumn::make('rating')
                     ->label(__('Rating'))
-                    ->icon('heroicon-s-star')
-                    ->iconColor('warning')
-                    ->formatStateUsing(fn ($state) => str_repeat(' ', $state)) // Visual spacer if needed, but icon handles it
-                    ->color('warning')
-                    ->alignment('center'),
+                    ->badge()
+                    ->color(fn ($state): string => match(true) {
+                        $state >= 5 => 'success',
+                        $state >= 4 => 'info',
+                        $state >= 3 => 'warning',
+                        default => 'danger',
+                    })
+                    ->formatStateUsing(fn ($state) => '⭐ '.$state.'/5')
+                    ->alignment('center')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('comment')
                     ->label(__('Komentar Ulasan'))
                     ->searchable()
                     ->limit(50)
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Tanggal'))
                     ->dateTime()
                     ->alignment('center')
+                    ->sortable()
+                    ->icon('heroicon-o-calendar')
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label(__('Terakhir Diperbarui'))
                     ->dateTime()
                     ->alignment('center')
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([

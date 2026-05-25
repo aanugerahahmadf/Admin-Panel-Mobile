@@ -3,7 +3,10 @@
 namespace App\Filament\Admin\Auth;
 
 use App\Models\User;
+use App\Services\GeoLocationService;
+use App\Services\PlatformNotificationService;
 use Filament\Forms\Components\Component;
+use Filament\Notifications\Notification;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Wizard;
@@ -97,6 +100,8 @@ class Register extends BaseRegister
 
     protected function handleRegistration(array $data): User
     {
+        $ip = request()->ip();
+
         $user = User::create([
             'full_name' => trim(($data['first_name'] ?? '').' '.($data['last_name'] ?? '')),
             'first_name' => $data['first_name'],
@@ -106,6 +111,7 @@ class Register extends BaseRegister
             'password' => Hash::make($data['password']),
             'phone' => $data['phone'] ?? null,
             'address' => $data['address'] ?? null,
+            'ip_address' => $ip,
         ]);
 
         // Assign customer role automatically
@@ -113,6 +119,42 @@ class Register extends BaseRegister
         if ($customerRole) {
             $user->assignRole($customerRole);
         }
+
+        $location = app(GeoLocationService::class)->lookup($ip);
+        $locationParts = array_filter([
+            $location['city'] ?? null,
+            $location['region'] ?? null,
+            $location['country'] ?? null,
+        ]);
+        $locationText = $locationParts
+            ? implode(', ', $locationParts)
+            : __('Lokasi tidak diketahui');
+
+        PlatformNotificationService::send(
+            $user,
+            __('Pendaftaran Berhasil'),
+            __('Akun Anda telah terdaftar dari :ip (:location) pada :time.', [
+                'ip' => $ip,
+                'location' => $locationText,
+                'time' => now()->format('d M Y H:i:s'),
+            ])
+        );
+
+        Notification::make()
+            ->title(__('Pendaftaran Berhasil'))
+            ->body(__('Akun Anda Telah Terdaftar :ip (:location) pada :time.', [
+                'ip' => $ip,
+                'location' => $locationText,
+                'time' => now()->format('d M Y H:i:s'),
+            ]))
+            ->success()
+            ->send();
+
+        Notification::make()
+            ->title(__('Perhatian'))
+            ->body(__('Account Anda Sudah Terdaftar Silahkan Ke Halaman Login.'))
+            ->warning()
+            ->send();
 
         return $user;
     }

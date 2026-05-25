@@ -23,6 +23,7 @@ class DatabaseSeeder extends Seeder
             BannerSeeder::class,
             ArticleSeeder::class,
             TermsAndConditionsSeeder::class,
+            VoucherSeeder::class,           // Voucher public & per-user
         ]);
     }
 }

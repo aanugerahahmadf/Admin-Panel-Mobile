@@ -33,7 +33,7 @@
         {{ $attributes->class(['fi-ta-filters-modal']) }}
     >
         <x-slot name="trigger">
-            {{ $triggerAction->badge($activeFiltersCount > 0 ? $activeFiltersCount : null) }}
+            {{ $triggerAction->badge($activeFiltersCount) }}
         </x-slot>
 
         {{ $triggerAction->getModalContent() }}
@@ -52,7 +52,7 @@
         {{ $attributes->class(['fi-ta-filters-dropdown']) }}
     >
         <x-slot name="trigger">
-            {{ $triggerAction->badge($activeFiltersCount > 0 ? $activeFiltersCount : null) }}
+            {{ $triggerAction->badge($activeFiltersCount) }}
         </x-slot>
 
         <x-filament-tables::filters

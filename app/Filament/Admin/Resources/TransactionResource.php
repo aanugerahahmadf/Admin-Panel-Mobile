@@ -61,40 +61,94 @@ class TransactionResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->columns([
                 TextColumn::make('reference_number')
-                    ->label('Reference')
+                    ->label(__('Referensi'))
                     ->searchable()
                     ->sortable()
-                    ->copyable(),
+                    ->copyable()
+                    ->copyableState(fn ($state) => $state)
+                    ->icon('heroicon-o-document-text'),
                 TextColumn::make('user.full_name')
-                    ->label('User')
-                    ->searchable(),
+                    ->label(__('Pengguna'))
+                    ->searchable()
+                    ->sortable()
+                    ->icon('heroicon-o-user'),
                 TextColumn::make('type')
+                    ->label(__('Tipe'))
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'order' => 'primary',
+                        'order' => 'info',
                         'topup' => 'success',
                         default => 'gray',
-                    }),
+                    })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'order' => __('Pesanan'),
+                        'topup' => __('Top Up'),
+                        default => $state,
+                    })
+                    ->alignment('center')
+                    ->sortable(),
                 TextColumn::make('total_amount')
-                    ->label('Amount')
+                    ->label(__('Jumlah'))
                     ->money('idr')
-                    ->sortable(),
+                    ->sortable()
+                    ->alignment('end')
+                    ->icon('heroicon-o-banknotes'),
                 TextColumn::make('payment_gateway')
-                    ->label('Gateway')
-                    ->searchable(),
+                    ->label(__('Gateway Pembayaran'))
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'midtrans' => 'primary',
+                        'stripe' => 'warning',
+                        default => 'gray',
+                    })
+                    ->searchable()
+                    ->sortable()
+                    ->alignment('center'),
                 TextColumn::make('payment_method')
-                    ->label('Method')
-                    ->searchable(),
+                    ->label(__('Metode'))
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'credit_card' => 'info',
+                        'bank_transfer' => 'warning',
+                        'e_wallet' => 'success',
+                        default => 'gray',
+                    })
+                    ->searchable()
+                    ->alignment('center'),
                 TextColumn::make('status')
-                    ->badge(),
+                    ->label(__('Status'))
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'pending' => 'warning',
+                        'success' => 'success',
+                        'failed' => 'danger',
+                        'expired' => 'danger',
+                        'cancelled' => 'gray',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'pending' => __('Menunggu'),
+                        'success' => __('Berhasil'),
+                        'failed' => __('Gagal'),
+                        'expired' => __('Kadaluarsa'),
+                        'cancelled' => __('Dibatalkan'),
+                        default => $state,
+                    })
+                    ->alignment('center')
+                    ->sortable(),
                 TextColumn::make('paid_at')
-                    ->label('Paid At')
+                    ->label(__('Waktu Pembayaran'))
                     ->dateTime()
-                    ->sortable(),
+                    ->sortable()
+                    ->alignment('center')
+                    ->icon('heroicon-o-calendar')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('created_at')
-                    ->label('Created')
+                    ->label(__('Dibuat Pada'))
                     ->dateTime()
-                    ->sortable(),
+                    ->sortable()
+                    ->alignment('center')
+                    ->icon('heroicon-o-calendar'),
             ])
             ->filters([
                 SelectFilter::make('type')

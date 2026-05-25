@@ -31,6 +31,11 @@ class ViewOrder extends ViewRecord
         }
     }
 
+    public function getTitle(): string
+    {
+        return $this->record->name;
+    }
+
     protected function getHeaderActions(): array
     {
         $fromMessages = request()->query('from') === 'messages';

@@ -139,7 +139,7 @@ class Package extends Model implements HasMedia
 
     public function getImageUrlAttribute()
     {
-        $fallback = asset('images/placeholders/image-placeholder.png');
+        $fallback = NativeServiceProvider::normalizeUrl(asset('images/placeholders/image-placeholder.png'));
 
         $url = $this->getValidMediaUrl($this->getFirstMedia('package_image'))
             ?: $this->getValidMediaUrl($this->weddingOrganizer?->getFirstMedia('gallery'))
@@ -247,7 +247,7 @@ class Package extends Model implements HasMedia
 
         // If it starts with a slash, check if it's already a public path
         if (Str::startsWith($url, '/')) {
-            return $url;
+            return NativeServiceProvider::normalizeUrl(url($url));
         }
 
         // Otherwise, resolve via the public storage disk

@@ -7,14 +7,12 @@ use App\Enums\OrderStatus;
 use App\Models\History;
 use App\Models\Order;
 use App\Services\PaymentNotificationService;
+use App\Services\PlatformNotificationService;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 
 class OrderObserver
 {
-    /**
-     * Handle the Order "created" event.
-     */
     public function created(Order $order): void
     {
         History::create([
@@ -30,12 +28,8 @@ class OrderObserver
         ]);
     }
 
-    /**
-     * Handle the Order "updated" event.
-     */
     public function updated(Order $order): void
     {
-        // Fitur Otomatis: Auto-Refund jika Order Dibatalkan tapi sudah Dibayar
         if ($order->isDirty('status') && $order->status === OrderStatus::CANCELLED) {
             if (in_array($order->payment_status, [OrderPaymentStatus::PAID, OrderPaymentStatus::PARTIAL])) {
                 $user = $order->user;
@@ -59,21 +53,27 @@ class OrderObserver
                             ->body(__('Dana sebesar Rp ').number_format($order->total_price, 2, ',', '.').__(' telah dikembalikan ke saldo Anda karena pembatalan Order #').$order->order_number)
                             ->success()
                             ->sendToDatabase($user);
+
+                        PlatformNotificationService::send(
+                            $user,
+                            __('Refund Berhasil'),
+                            __('Dana sebesar Rp :amount telah dikembalikan ke saldo Anda karena pembatalan Order #:order', [
+                                'amount' => number_format($order->total_price, 0, ',', '.'),
+                                'order' => $order->order_number,
+                            ])
+                        );
                     } catch (\Throwable $e) {
                         Log::warning('[OrderObserver] Notification failed: '.$e->getMessage());
                     }
                 }
             } else {
-                // Belum bayar → set payment_status ke CANCELLED
                 $order->updateQuietly(['payment_status' => OrderPaymentStatus::CANCELLED]);
             }
         }
 
-        // 🔔 Notify User: Status Change (Hanya jika status berubah)
         if ($order->isDirty('status')) {
             $user = $order->user;
             if ($user) {
-                // 📣 Notifikasi Pembatalan: Inbox + Bell + Email + WhatsApp
                 if ($order->status === OrderStatus::CANCELLED) {
                     app(PaymentNotificationService::class)
                         ->sendCancellationNotification($order, $user);
@@ -94,13 +94,18 @@ class OrderObserver
                         ->info()
                         ->icon($statusIcon)
                         ->sendToDatabase($user);
+
+                    PlatformNotificationService::send(
+                        $user,
+                        __('Update Pesanan #:order', ['order' => $order->order_number]),
+                        __('Status pesanan Anda kini: :status', ['status' => $statusLabel])
+                    );
                 } catch (\Throwable $e) {
                     Log::warning('[OrderObserver] Status notification failed: '.$e->getMessage());
                 }
             }
         }
 
-        // 💰 Notifikasi Otomatis: Update Status Pembayaran (Inbox + Bell + Email + WhatsApp)
         if ($order->isDirty('payment_status')) {
             $user = $order->user;
             if ($user) {
@@ -120,10 +125,6 @@ class OrderObserver
         );
     }
 
-    /**
-     * Handle the Order "deleting" event — fired BEFORE the record is deleted.
-     * Update History status to cancelled so it's visible in Transaction History.
-     */
     public function deleting(Order $order): void
     {
         History::where('type', 'order')
@@ -131,18 +132,8 @@ class OrderObserver
             ->update(['status' => 'cancelled']);
     }
 
-    /**
-     * Handle the Order "deleted" event.
-     */
-    public function deleted(Order $order): void
-    {
-        // History already updated to cancelled in deleting() event
-        // Nothing else needed here
-    }
+    public function deleted(Order $order): void {}
 
-    /**
-     * Handle the Order "restored" event.
-     */
     public function restored(Order $order): void
     {
         History::withTrashed()
@@ -151,9 +142,6 @@ class OrderObserver
             ->restore();
     }
 
-    /**
-     * Handle the Order "force deleted" event.
-     */
     public function forceDeleted(Order $order): void
     {
         History::withTrashed()

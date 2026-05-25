@@ -134,28 +134,47 @@ class ProductResource extends Resource
             ->columns([
                 Tables\Columns\SpatieMediaLibraryImageColumn::make('product_image')
                     ->label(__('Foto'))
-                    ->collection('product_image'),
+                    ->collection('product_image')
+                    ->circular(),
                 Tables\Columns\TextColumn::make('name')
-                    ->label(__('Nama Product'))
+                    ->label(__('Nama Produk'))
                     ->searchable()
-                    ->sortable(),
+                    ->sortable()
+                    ->icon('heroicon-o-sparkles'),
                 Tables\Columns\TextColumn::make('category.name')
                     ->label(__('Kategori'))
+                    ->badge()
+                    ->color('info')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('price')
                     ->label(__('Harga'))
                     ->money('IDR')
-                    ->sortable(),
+                    ->sortable()
+                    ->alignment('end')
+                    ->icon('heroicon-o-banknotes'),
                 Tables\Columns\TextColumn::make('discount_price')
                     ->label(__('Harga Diskon'))
                     ->money('IDR')
-                    ->sortable(),
+                    ->sortable()
+                    ->alignment('end')
+                    ->color('success')
+                    ->icon('heroicon-o-tag')
+                    ->toggleable(isToggledHiddenByDefault: false),
                 Tables\Columns\TextColumn::make('stock')
                     ->label(__('Stok'))
-                    ->sortable(),
+                    ->badge()
+                    ->color(fn ($state): string => match(true) {
+                        $state > 10 => 'success',
+                        $state > 0 => 'warning',
+                        default => 'danger',
+                    })
+                    ->sortable()
+                    ->alignment('center'),
                 Tables\Columns\IconColumn::make('is_active')
-                    ->label(__('Aktif'))
-                    ->boolean(),
+                    ->label(__('Status'))
+                    ->boolean()
+                    ->sortable()
+                    ->alignment('center'),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('category')
@@ -163,6 +182,7 @@ class ProductResource extends Resource
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()
+                    ->url(fn (Product $record): string => static::getUrl('view', ['record' => $record]))
                     ->button()
                     ->color('info')
                     ->size('lg'),
@@ -210,6 +230,7 @@ class ProductResource extends Resource
         return [
             'index' => Pages\ListProducts::route('/'),
             'create' => Pages\CreateProduct::route('/create'),
+            'view' => Pages\ViewProduct::route('/{record}'),
             'edit' => Pages\EditProduct::route('/{record}/edit'),
         ];
     }

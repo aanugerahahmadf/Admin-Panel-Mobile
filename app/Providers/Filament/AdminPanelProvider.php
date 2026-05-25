@@ -55,7 +55,7 @@ class AdminPanelProvider extends PanelProvider
             ->emailVerification(OtpEmailVerificationPrompt::class)
             // ->sidebarFullyCollapsibleOnDesktop()
             ->brandName(fn () => __('Dekorasi Bunga Pernikahan'))
-            ->brandLogo(asset('images/logo.png'))
+            ->brandLogo(fn () => '/images/logo.png')
             ->brandLogoHeight('3rem')
             // ->simplePageMaxContentWidth(MaxWidth::Small)
             ->colors([
@@ -91,10 +91,6 @@ class AdminPanelProvider extends PanelProvider
             ->renderHook(
                 'panels::footer',
                 fn (): ?View => ! str_contains(request()->route()?->getName() ?? '', 'auth') ? view('filament.footer') : null
-            )
-            ->renderHook(
-                'panels::auth.login.form.after',
-                fn (): View => view('filament.footer')
             )
             ->userMenuItems([
                 'profile' => MenuItem::make()

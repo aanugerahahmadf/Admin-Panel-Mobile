@@ -40,6 +40,8 @@ class OrderResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-shopping-bag';
 
+    protected static ?int $navigationSort = 2;
+
     public static function getGloballySearchableAttributes(): array
     {
         return ['order_number', 'package.name', 'product.name', 'package.weddingOrganizer.name', 'user.full_name', 'user.phone', 'notes', 'status', 'payment_status'];
@@ -124,7 +126,6 @@ class OrderResource extends Resource
                                         ->required()
                                         ->default(1)
                                         ->minValue(1)
-                                        ->suffix(__('Paket / Item'))
                                         ->columnSpanFull(),
                                     Forms\Components\Textarea::make('notes')
                                         ->label(__('Alamat Lokasi'))
@@ -317,7 +318,8 @@ class OrderResource extends Resource
                 Tables\Columns\Layout\Stack::make([
                     // Image Section with Status Overlay
                     Tables\Columns\Layout\Stack::make([
-                        Tables\Columns\ImageColumn::make('package.image_url')
+                        Tables\Columns\ImageColumn::make('item_image')
+                            ->state(fn ($record) => $record->package?->image_url ?? $record->product?->image_url)
                             ->label('')
                             ->height('140px')
                             ->width('100%')
@@ -331,7 +333,8 @@ class OrderResource extends Resource
 
                     Tables\Columns\Layout\Stack::make([
                         // Category Badge
-                        Tables\Columns\TextColumn::make('package.category.name')
+                        Tables\Columns\TextColumn::make('item_category')
+                            ->state(fn ($record) => $record->package?->category?->name ?? $record->product?->category?->name)
                             ->formatStateUsing(fn ($state) => __($state))
                             ->badge()
                             ->color('warning')
@@ -340,14 +343,16 @@ class OrderResource extends Resource
                             ->extraAttributes(['class' => 'mt-1 mb-1']),
 
                         // Store Info
-                        Tables\Columns\TextColumn::make('package.weddingOrganizer.name')
+                        Tables\Columns\TextColumn::make('item_organizer')
+                            ->state(fn ($record) => $record->package?->weddingOrganizer?->name ?? $record->product?->weddingOrganizer?->name)
                             ->color('gray')
                             ->size('xs')
                             ->weight('bold')
                             ->alignCenter(),
 
                         // Package Name
-                        Tables\Columns\TextColumn::make('package.name')
+                        Tables\Columns\TextColumn::make('item_name')
+                            ->state(fn ($record) => $record->package?->name ?? $record->product?->name)
                             ->formatStateUsing(fn ($state) => __($state))
                             ->weight('bold')
                             ->size('xs')
@@ -387,7 +392,7 @@ class OrderResource extends Resource
                                 ->alignCenter(),
                         ])->space(2)->extraAttributes(['class' => 'mt-3']),
                         Tables\Columns\TextColumn::make('avg_rating')
-                            ->state(fn ($record) => $record?->package ? number_format($record->package->reviews()->avg('rating') ?: 0, 1) : '5.0')
+                            ->state(fn ($record) => $record?->package ? number_format($record->package->reviews()->avg('rating') ?: 0, 1) : ($record?->product ? number_format($record->product->reviews()->avg('rating') ?: 0, 1) : '5.0'))
                             ->icon('heroicon-m-star')
                             ->iconColor('warning')
                             ->size('xs')
@@ -686,19 +691,22 @@ class OrderResource extends Resource
                     ->compact()
                     ->schema([
                         Infolists\Components\Grid::make()->schema([
-                            Infolists\Components\ImageEntry::make('package.image_url')
+                            Infolists\Components\ImageEntry::make('item_image')
+                                ->state(fn ($record) => $record->package?->image_url ?? $record->product?->image_url)
                                 ->hiddenLabel()
                                 ->height('6rem')
                                 ->width('6rem')
                                 ->extraImgAttributes(['class' => 'rounded-xl object-cover shadow-sm'])
                                 ->grow(false),
                             Infolists\Components\Group::make([
-                                Infolists\Components\TextEntry::make('package.name')
+                                Infolists\Components\TextEntry::make('item_name')
+                                    ->state(fn ($record) => $record->package?->name ?? $record->product?->name)
                                     ->formatStateUsing(fn ($state) => __($state))
                                     ->hiddenLabel()
                                     ->weight(FontWeight::Bold)
                                     ->size(Infolists\Components\TextEntry\TextEntrySize::Large),
-                                Infolists\Components\TextEntry::make('package.weddingOrganizer.name')
+                                Infolists\Components\TextEntry::make('item_organizer')
+                                    ->state(fn ($record) => $record->package?->weddingOrganizer?->name ?? $record->product?->weddingOrganizer?->name)
                                     ->hiddenLabel()
                                     ->icon('govicon-building')
                                     ->color('gray'),

@@ -22,6 +22,8 @@ class WishlistResource extends Resource
 {
     protected static ?string $model = Wishlist::class;
 
+    protected static ?int $navigationSort = 3;
+
     protected static ?string $navigationIcon = 'heroicon-o-heart';
 
     public static function getGloballySearchableAttributes(): array

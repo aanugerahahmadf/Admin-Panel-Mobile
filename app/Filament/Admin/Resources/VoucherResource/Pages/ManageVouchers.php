@@ -15,6 +15,11 @@ class ManageVouchers extends ManageRecords
 {
     protected static string $resource = VoucherResource::class;
 
+    public function getTitle(): string
+    {
+        return static::$title ?? static::getResource()::getTitleCasePluralModelLabel();
+    }
+
     protected function getHeaderActions(): array
     {
         return [

@@ -16,4 +16,9 @@ class ManageReviews extends ManageRecords
     {
         return [];
     }
+
+    public function getTitle(): string
+    {
+        return 'Ulasan Saya';
+    }
 }

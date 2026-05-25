@@ -15,8 +15,21 @@ class ManageWeddingOrganizers extends ManageRecords
 
     protected function getHeaderActions(): array
     {
+        return [];
+    }
+
+    public function getHeaderWidgets(): array
+    {
         return [
-            Actions\CreateAction::make(),
+            \App\Filament\User\Widgets\StatsOverview::class,
+            // \App\Filament\User\Widgets\UserOrdersChart::class,
+            // \App\Filament\User\Widgets\UserSpendingChart::class,
         ];
     }
+
+    public function getTitle(): string
+    {
+        return __('Beranda');
+    }
+
 }

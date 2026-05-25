@@ -2,37 +2,31 @@
 
 namespace App\Filament\User\Pages;
 
-use App\Filament\User\Resources\WeddingOrganizerResource;
-use App\Filament\User\Widgets\LatestBookings;
+use App\Filament\User\Widgets\CombinedCatalogWidget;
 use App\Filament\User\Widgets\StatsOverview;
-use App\Filament\User\Widgets\UserOrdersChart;
-use App\Filament\User\Widgets\UserSpendingChart;
-use App\Models\WeddingOrganizer;
 use Filament\Pages\Dashboard as BaseDashboard;
 
 class Dashboard extends BaseDashboard
 {
+    protected static string $routePath = 'home';
+
     protected static ?string $navigationIcon = 'heroicon-o-home';
+
+    protected static ?int $navigationSort = 1;
 
     public static function shouldRegisterNavigation(): bool
     {
-        return false;
+        return true;
     }
 
-    public static function getNavigationBadge(): ?string
+    public static function getRouteBaseName(): string
     {
-        return (string) WeddingOrganizer::query()->count('*');
+        return 'filament.user.pages.home';
     }
 
-    public static function getNavigationBadgeTooltip(): ?string
+    public static function getSlug(): string
     {
-        return static::getNavigationLabel();
-    }
-
-    public function mount(): void
-    {
-        // Redirect dashboard to studio profile since it's a one-studio application
-        redirect()->to(WeddingOrganizerResource::getUrl('index', ['record' => 1]));
+        return 'home';
     }
 
     public static function getNavigationGroup(): ?string
@@ -40,25 +34,21 @@ class Dashboard extends BaseDashboard
         return __('Beranda');
     }
 
-    protected static ?int $navigationSort = 1;
+    public static function getNavigationLabel(): string
+    {
+        return __('Beranda');
+    }
 
     public static function getNavigationIcon(): ?string
     {
         return static::$navigationIcon;
     }
 
-    public static function getNavigationLabel(): string
-    {
-        return __('Beranda');
-    }
-
     public function getWidgets(): array
     {
         return [
             StatsOverview::class,
-            UserOrdersChart::class,
-            UserSpendingChart::class,
-            LatestBookings::class,
+            CombinedCatalogWidget::class,
         ];
     }
 

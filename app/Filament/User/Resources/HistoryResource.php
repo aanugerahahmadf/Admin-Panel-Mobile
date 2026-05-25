@@ -22,7 +22,7 @@ class HistoryResource extends Resource
 {
     protected static ?string $model = History::class;
 
-    protected static ?int $navigationSort = 6;
+    protected static ?int $navigationSort = 5;
 
     protected static ?string $navigationIcon = 'heroicon-o-clock';
 

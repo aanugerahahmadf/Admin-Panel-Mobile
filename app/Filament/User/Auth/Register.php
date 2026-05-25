@@ -3,7 +3,8 @@
 namespace App\Filament\User\Auth;
 
 use App\Models\User;
-use App\Providers\NativeServiceProvider;
+use App\Services\GeoLocationService;
+use App\Services\PlatformNotificationService;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\FileUpload;
@@ -15,13 +16,13 @@ use Filament\Forms\Components\Wizard;
 use Filament\Forms\Components\Wizard\Step;
 use Filament\Forms\Form;
 use Filament\Forms\Set;
+use Filament\Notifications\Notification;
 use Filament\Pages\Auth\Register as BaseRegister;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\HtmlString;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
-use Native\Mobile\Notification;
 use Spatie\Permission\Models\Role;
 
 class Register extends BaseRegister
@@ -91,9 +92,7 @@ class Register extends BaseRegister
                                     ->mixedCase()
                                     ->numbers()
                                     ->symbols()
-                                    ->uncompromised()
                                 )
-                                ->dehydrateStateUsing(fn ($state) => Hash::make($state))
                                 ->same('password_confirmation')
                                 ->validationAttribute(__('Kata Sandi')),
                             TextInput::make('password_confirmation')
@@ -152,7 +151,7 @@ class Register extends BaseRegister
                                 ->columnSpanFull(),
                         ]),
                 ])
-                    ->submitAction(new HtmlString('<button type="submit" style="background-color: #e11d48; color: white; padding: 0.5rem 1.5rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; border: none; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor=\'#be123c\'" onmouseout="this.style.backgroundColor=\'#e11d48\'">'.__('Daftar').'</button>')),
+                    ->submitAction(new HtmlString('<button type="submit" style="background-color: #e11d48; color: white; padding: 0.5rem 1.5rem; border-radius: 0.5rem; font-weight: 600; cursor: pointer; border: none; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor=\'#be123c\'" onmouseout="this.style.backgroundColor=\'#e11d48\'">'.__("Daftar").'</button>')),
                 Hidden::make('agreement'),
                 Hidden::make('remember'),
             ])
@@ -168,16 +167,28 @@ class Register extends BaseRegister
     {
         // Enforce mandatory checkboxes (Agreement & Remember)
         if (! ($data['agreement'] ?? false)) {
+            Notification::make()
+                ->title(__('Perhatian'))
+                ->body(__('Anda harus menyetujui syarat dan ketentuan untuk melanjutkan.'))
+                ->warning()
+                ->send();
             throw ValidationException::withMessages([
                 'data.agreement' => __('Anda harus menyetujui syarat dan ketentuan untuk melanjutkan.'),
             ]);
         }
 
         if (! ($data['remember'] ?? false)) {
+            Notification::make()
+                ->title(__('Perhatian'))
+                ->body(__('Anda harus mencentang Ingat Saya untuk melanjutkan.'))
+                ->warning()
+                ->send();
             throw ValidationException::withMessages([
                 'data.remember' => __('Anda harus mencentang Ingat Saya untuk melanjutkan.'),
             ]);
         }
+
+        $ip = request()->ip();
 
         $user = User::create([
             'avatar_url' => $data['avatar_url'] ?? null,
@@ -187,10 +198,11 @@ class Register extends BaseRegister
             'last_name' => $data['last_name'] ?? null,
             'username' => $data['username'],
             'email' => $data['email'],
-            'password' => Hash::make($data['password']),
+            'password' => Hash::make($data['password'] ?? ''),
             'phone' => $data['phone'] ?? null,
             'gender' => $data['gender'] ?? null,
             'address' => $data['address'] ?? null,
+            'ip_address' => $ip,
         ]);
 
         // Assign customer role automatically
@@ -199,13 +211,41 @@ class Register extends BaseRegister
             $user->assignRole($customerRole);
         }
 
-        // Notifikasi Native jika di mobile
-        if (app()->environment('mobile') || NativeServiceProvider::isNativeMobile()) {
-            Notification::new()
-                ->title(__('Pendaftaran Berhasil!'))
-                ->message(__('Halo :name, akun Anda sudah aktif dan siap digunakan.', ['name' => $user->first_name]))
-                ->show();
-        }
+        $location = app(GeoLocationService::class)->lookup($ip);
+        $locationParts = array_filter([
+            $location['city'] ?? null,
+            $location['region'] ?? null,
+            $location['country'] ?? null,
+        ]);
+        $locationText = $locationParts
+            ? implode(', ', $locationParts)
+            : __('Lokasi tidak diketahui');
+
+        PlatformNotificationService::send(
+            $user,
+            __('Pendaftaran Berhasil'),
+            __('Akun Anda telah terdaftar dari :ip (:location) pada :time.', [
+                'ip' => $ip,
+                'location' => $locationText,
+                'time' => now()->format('d M Y H:i:s'),
+            ])
+        );
+
+        Notification::make()
+            ->title(__('Pendaftaran Berhasil'))
+            ->body(__('Akun Anda Telah Terdaftar :ip (:location) pada :time.', [
+                'ip' => $ip,
+                'location' => $locationText,
+                'time' => now()->format('d M Y H:i:s'),
+            ]))
+            ->success()
+            ->send();
+
+        Notification::make()
+            ->title(__('Perhatian'))
+            ->body(__('Account Anda Sudah Terdaftar Silahkan Ke Halaman Login.'))
+            ->warning()
+            ->send();
 
         return $user;
     }

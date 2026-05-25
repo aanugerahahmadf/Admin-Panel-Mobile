@@ -19,6 +19,11 @@ class ManageWithdrawals extends ManageRecords
 {
     protected static string $resource = WithdrawalResource::class;
 
+    public function getTitle(): string
+    {
+        return static::$title ?? static::getResource()::getTitleCasePluralModelLabel();
+    }
+
     public function getTabs(): array
     {
         return [

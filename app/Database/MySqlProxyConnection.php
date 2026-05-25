@@ -31,7 +31,7 @@ class MySqlProxyConnection extends MySqlConnection
 
     protected ?string $proxySecret;
 
-    protected int $lastInsertId = 0;
+    protected $lastInsertId = 0;
 
     public function __construct($pdo, $database = '', $tablePrefix = '', array $config = [])
     {

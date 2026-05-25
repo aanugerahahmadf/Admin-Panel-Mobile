@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\Message;
 use App\Models\User;
+use App\Services\PlatformNotificationService;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -60,13 +61,20 @@ class MessageObserver
     private function sendBellNotification(User $recipient, string $senderName, string $preview, int $inboxId): void
     {
         try {
+            $title = __('Pesan baru dari :name', ['name' => $senderName]);
             Notification::make()
-                ->title(__('Pesan baru dari :name', ['name' => $senderName]))
+                ->title($title)
                 ->body($preview)
                 ->icon('heroicon-o-chat-bubble-left-ellipsis')
                 ->color('info')
                 ->info()
                 ->sendToDatabase($recipient);
+
+            PlatformNotificationService::send(
+                $recipient,
+                $title,
+                $preview
+            );
         } catch (\Throwable $e) {
             Log::warning('[MessageObserver] Bell notification failed: '.$e->getMessage());
         }

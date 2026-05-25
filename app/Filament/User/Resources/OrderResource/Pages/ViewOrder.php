@@ -4,6 +4,7 @@ namespace App\Filament\User\Resources\OrderResource\Pages;
 
 use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
+use App\Filament\User\Pages\MessagesPage;
 use App\Filament\User\Resources\OrderResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
@@ -11,6 +12,11 @@ use Filament\Resources\Pages\ViewRecord;
 class ViewOrder extends ViewRecord
 {
     protected static string $resource = OrderResource::class;
+
+    public function getTitle(): string
+    {
+        return $this->record->name;
+    }
 
     public function mount(int|string $record): void
     {
@@ -37,7 +43,22 @@ class ViewOrder extends ViewRecord
                 ->label(__('Kembali'))
                 ->icon('heroicon-o-arrow-left')
                 ->color('gray')
-                ->url(OrderResource::getUrl('index'))
+                ->url(function () {
+                    $from = request()->query('from');
+                    $inboxId = request()->query('inbox');
+
+                    if ($from === 'messages') {
+                        return $inboxId
+                            ? MessagesPage::getUrl(['id' => $inboxId])
+                            : MessagesPage::getUrl();
+                    }
+
+                    if ($from === 'view') {
+                        return OrderResource::getUrl('view', ['record' => $this->record]);
+                    }
+
+                    return OrderResource::getUrl('index');
+                })
                 ->extraAttributes(['wire:navigate' => true]),
 
             Actions\EditAction::make()

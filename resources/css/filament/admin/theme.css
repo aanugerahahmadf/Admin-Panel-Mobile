@@ -5,8 +5,6 @@
 /* 🛠️ Modern Filament Look (Tailwind 4) */
 @import '../../../../vendor/filament/filament/resources/css/base.css';
 
-/* 📱 Filament Mobile Table Cards & Responsiveness Fixes */
-/* @import "../../mobile-cards.css"; */
 
 /* 🛠️ Explicitly Scan Filament components */
 @source "../../../../vendor/filament/**/*.blade.php";

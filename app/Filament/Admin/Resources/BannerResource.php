@@ -123,31 +123,44 @@ class BannerResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-
             ->columns([
-                Tables\Columns\TextColumn::make('title')->searchable()
-                    ->label(__('Judul Banner'))
-                    ->alignment('center'),
                 Tables\Columns\ImageColumn::make('image_url')
                     ->label(__('Pratinjau Gambar'))
+                    ->circular()
+                    ->alignment('center'),
+                Tables\Columns\TextColumn::make('title')
+                    ->searchable()
+                    ->label(__('Judul Banner'))
+                    ->sortable()
+                    ->icon('heroicon-o-megaphone'),
+                Tables\Columns\TextColumn::make('sort_order')
+                    ->label(__('Prioritas'))
+                    ->badge()
+                    ->color(fn ($state): string => match(true) {
+                        $state == 1 => 'success',
+                        $state <= 3 => 'info',
+                        default => 'warning',
+                    })
+                    ->numeric()
+                    ->sortable()
                     ->alignment('center'),
                 Tables\Columns\IconColumn::make('is_active')
                     ->label(__('Status'))
+                    ->boolean()
                     ->alignment('center')
-                    ->boolean(),
-                Tables\Columns\TextColumn::make('sort_order')
-                    ->label(__('Prioritas'))
-                    ->numeric()
-                    ->alignment('center'),
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Dibuat Pada'))
                     ->dateTime()
                     ->alignment('center')
+                    ->sortable()
+                    ->icon('heroicon-o-calendar')
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label(__('Terakhir Diperbarui'))
                     ->dateTime()
                     ->alignment('center')
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([

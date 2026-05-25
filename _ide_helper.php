@@ -5,7 +5,7 @@
 
 /**
  * A helper file for Laravel, to provide autocomplete information to your IDE
- * Generated for Laravel 12.58.0.
+ * Generated for Laravel 12.60.0.
  *
  * This file should not be included in your code, only analyzed by your IDE!
  *
@@ -5336,7 +5336,7 @@ namespace Illuminate\Support\Facades {
          */
         public static function lock($name, $seconds = 0, $owner = null)
         {
-            /** @var \Illuminate\Cache\FileStore $instance */
+            /** @var \Illuminate\Cache\DatabaseStore $instance */
             return $instance->lock($name, $seconds, $owner);
         }
 
@@ -5350,8 +5350,21 @@ namespace Illuminate\Support\Facades {
          */
         public static function restoreLock($name, $owner)
         {
-            /** @var \Illuminate\Cache\FileStore $instance */
+            /** @var \Illuminate\Cache\DatabaseStore $instance */
             return $instance->restoreLock($name, $owner);
+        }
+
+        /**
+         * Remove an item from the cache if it is expired.
+         *
+         * @param string $key
+         * @return bool
+         * @static
+         */
+        public static function forgetIfExpired($key)
+        {
+            /** @var \Illuminate\Cache\DatabaseStore $instance */
+            return $instance->forgetIfExpired($key);
         }
 
         /**
@@ -5362,71 +5375,58 @@ namespace Illuminate\Support\Facades {
          */
         public static function flush()
         {
-            /** @var \Illuminate\Cache\FileStore $instance */
+            /** @var \Illuminate\Cache\DatabaseStore $instance */
             return $instance->flush();
         }
 
         /**
-         * Get the full path for the given cache key.
+         * Get the underlying database connection.
          *
-         * @param string $key
-         * @return string
+         * @return \Illuminate\Database\MySqlConnection
          * @static
          */
-        public static function path($key)
+        public static function getConnection()
         {
-            /** @var \Illuminate\Cache\FileStore $instance */
-            return $instance->path($key);
+            /** @var \Illuminate\Cache\DatabaseStore $instance */
+            return $instance->getConnection();
         }
 
         /**
-         * Get the Filesystem instance.
+         * Set the underlying database connection.
          *
-         * @return \Illuminate\Filesystem\Filesystem
+         * @param \Illuminate\Database\ConnectionInterface $connection
+         * @return \Illuminate\Cache\DatabaseStore
          * @static
          */
-        public static function getFilesystem()
+        public static function setConnection($connection)
         {
-            /** @var \Illuminate\Cache\FileStore $instance */
-            return $instance->getFilesystem();
+            /** @var \Illuminate\Cache\DatabaseStore $instance */
+            return $instance->setConnection($connection);
         }
 
         /**
-         * Get the working directory of the cache.
+         * Get the connection used to manage locks.
          *
-         * @return string
+         * @return \Illuminate\Database\MySqlConnection
          * @static
          */
-        public static function getDirectory()
+        public static function getLockConnection()
         {
-            /** @var \Illuminate\Cache\FileStore $instance */
-            return $instance->getDirectory();
+            /** @var \Illuminate\Cache\DatabaseStore $instance */
+            return $instance->getLockConnection();
         }
 
         /**
-         * Set the working directory of the cache.
+         * Specify the connection that should be used to manage locks.
          *
-         * @param string $directory
-         * @return \Illuminate\Cache\FileStore
+         * @param \Illuminate\Database\ConnectionInterface $connection
+         * @return \Illuminate\Cache\DatabaseStore
          * @static
          */
-        public static function setDirectory($directory)
+        public static function setLockConnection($connection)
         {
-            /** @var \Illuminate\Cache\FileStore $instance */
-            return $instance->setDirectory($directory);
-        }
-
-        /**
-         * Set the cache directory where locks should be stored.
-         *
-         * @param string|null $lockDirectory
-         * @return \Illuminate\Cache\FileStore
-         * @static
-         */
-        public static function setLockDirectory($lockDirectory)
-        {
-            /** @var \Illuminate\Cache\FileStore $instance */
-            return $instance->setLockDirectory($lockDirectory);
+            /** @var \Illuminate\Cache\DatabaseStore $instance */
+            return $instance->setLockConnection($connection);
         }
 
         /**
@@ -5437,8 +5437,21 @@ namespace Illuminate\Support\Facades {
          */
         public static function getPrefix()
         {
-            /** @var \Illuminate\Cache\FileStore $instance */
+            /** @var \Illuminate\Cache\DatabaseStore $instance */
             return $instance->getPrefix();
+        }
+
+        /**
+         * Set the cache key prefix.
+         *
+         * @param string $prefix
+         * @return void
+         * @static
+         */
+        public static function setPrefix($prefix)
+        {
+            /** @var \Illuminate\Cache\DatabaseStore $instance */
+            $instance->setPrefix($prefix);
         }
 
             }
@@ -13416,7 +13429,6 @@ namespace Illuminate\Support\Facades {
 
             }
     /**
-     * @method static \BackedEnum|(\BackedEnum|null enum(string $key, string $enumClass, \BackedEnum|null $default = null)
      * @see \Illuminate\Http\Request
      */
     class Request {
@@ -24422,6 +24434,49 @@ namespace Jenssegers\Agent\Facades {
             }
     }
 
+namespace Kreait\Laravel\Firebase\Facades {
+    /**
+     * @method static AppCheck appCheck()
+     * @method static Auth auth()
+     * @method static Database database()
+     * @method static Firestore firestore()
+     * @method static Messaging messaging()
+     * @method static RemoteConfig remoteConfig()
+     * @method static Storage storage()
+     * @see FirebaseProjectManager
+     * @see FirebaseProject
+     */
+    class Firebase {
+        /**
+         * @static
+         */
+        public static function project($name = null)
+        {
+            /** @var \Kreait\Laravel\Firebase\FirebaseProjectManager $instance */
+            return $instance->project($name);
+        }
+
+        /**
+         * @static
+         */
+        public static function getDefaultProject()
+        {
+            /** @var \Kreait\Laravel\Firebase\FirebaseProjectManager $instance */
+            return $instance->getDefaultProject();
+        }
+
+        /**
+         * @static
+         */
+        public static function setDefaultProject($name)
+        {
+            /** @var \Kreait\Laravel\Firebase\FirebaseProjectManager $instance */
+            return $instance->setDefaultProject($name);
+        }
+
+            }
+    }
+
 namespace Laravel\Socialite\Facades {
     /**
      */
@@ -30350,6 +30405,10 @@ namespace App\Filament\Admin\Resources\ProductResource\Pages {
      */
     class ListProducts extends \Filament\Resources\Pages\ListRecords {
             }
+    /**
+     */
+    class ViewProduct extends \Filament\Resources\Pages\ViewRecord {
+            }
     }
 
 namespace App\Filament\Admin\Resources\ReviewResource\Pages {
@@ -30602,6 +30661,10 @@ namespace App\Filament\User\Resources\OrderResource\Pages {
 namespace App\Filament\User\Resources\PackageResource\Pages {
     /**
      */
+    class CheckoutPackage extends \Filament\Resources\Pages\Page {
+            }
+    /**
+     */
     class ManagePackages extends \Filament\Resources\Pages\ManageRecords {
             }
     /**
@@ -30611,6 +30674,10 @@ namespace App\Filament\User\Resources\PackageResource\Pages {
     }
 
 namespace App\Filament\User\Resources\ProductResource\Pages {
+    /**
+     */
+    class CheckoutProduct extends \Filament\Resources\Pages\Page {
+            }
     /**
      */
     class ManageProducts extends \Filament\Resources\Pages\ManageRecords {
@@ -30693,6 +30760,10 @@ namespace App\Filament\User\Pages {
     }
 
 namespace App\Filament\User\Widgets {
+    /**
+     */
+    class CombinedCatalogWidget extends \Filament\Widgets\TableWidget {
+            }
     /**
      */
     class LatestBookings extends \Filament\Widgets\TableWidget {
@@ -31550,7 +31621,7 @@ namespace  {
          * @param string $pageName
          * @param int|null $page
          * @param \Closure|int|null $total
-         * @return \Illuminate\Pagination\LengthAwarePaginator
+         * @return \Illuminate\Pagination\LengthAwarePaginator<int, TModel>
          * @throws \InvalidArgumentException
          * @static
          */
@@ -31567,7 +31638,7 @@ namespace  {
          * @param array|string $columns
          * @param string $pageName
          * @param int|null $page
-         * @return \Illuminate\Contracts\Pagination\Paginator
+         * @return \Illuminate\Pagination\Paginator<int, TModel>
          * @static
          */
         public static function simplePaginate($perPage = null, $columns = [], $pageName = 'page', $page = null)
@@ -31583,7 +31654,7 @@ namespace  {
          * @param array|string $columns
          * @param string $cursorName
          * @param \Illuminate\Pagination\Cursor|string|null $cursor
-         * @return \Illuminate\Contracts\Pagination\CursorPaginator
+         * @return \Illuminate\Pagination\CursorPaginator<int, TModel>
          * @static
          */
         public static function cursorPaginate($perPage = null, $columns = [], $cursorName = 'cursor', $cursor = null)
@@ -36430,6 +36501,7 @@ namespace  {
     class EloquentSerialize extends \AnourValar\EloquentSerialize\Facades\EloquentSerializeFacade {}
     class FilamentBreezy extends \Jeffgreco13\FilamentBreezy\Facades\FilamentBreezy {}
     class Agent extends \Jenssegers\Agent\Facades\Agent {}
+    class Firebase extends \Kreait\Laravel\Firebase\Facades\Firebase {}
     class Socialite extends \Laravel\Socialite\Facades\Socialite {}
     class Flux extends \Flux\Flux {}
     class Livewire extends \Livewire\Livewire {}
@@ -36454,11 +36526,6 @@ namespace  {
 }
 
 
-namespace Facades\Livewire\Features\SupportFileUploads {
-    /**
-     * @mixin \Livewire\Features\SupportFileUploads\GenerateSignedUploadUrl     */
-    class GenerateSignedUploadUrl extends \Livewire\Features\SupportFileUploads\GenerateSignedUploadUrl {}
-}
 
 namespace {
     

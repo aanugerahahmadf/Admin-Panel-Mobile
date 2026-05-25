@@ -78,7 +78,7 @@ class ManagePackages extends ManageRecords
             ->success()
             ->send();
 
-        return redirect()->to(PackageResource::getUrl('index')."?tableAction=buy_now&tableActionRecord={$id}");
+        return redirect()->to(PackageResource::getUrl('checkout', ['record' => $id]));
     }
 
     public function toggleWishlist($id)

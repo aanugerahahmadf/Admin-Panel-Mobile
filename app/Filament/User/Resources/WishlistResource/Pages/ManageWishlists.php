@@ -16,4 +16,9 @@ class ManageWishlists extends ManageRecords
     {
         return [];
     }
+
+    public function getTitle(): string
+    {
+        return static::$title ?? static::getResource()::getTitleCasePluralModelLabel();
+    }
 }

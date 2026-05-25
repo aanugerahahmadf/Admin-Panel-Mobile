@@ -119,21 +119,35 @@ class CategoryResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('name')->searchable()
-                    ->label(__('Nama Kategori')),
+                Tables\Columns\TextColumn::make('name')
+                    ->searchable()
+                    ->label(__('Nama Kategori'))
+                    ->sortable()
+                    ->icon('heroicon-o-bookmark'),
                 Tables\Columns\TextColumn::make('slug')
-                    ->label(__('Slug URL')),
+                    ->label(__('URL Slug'))
+                    ->badge()
+                    ->color('info')
+                    ->copyable()
+                    ->copyableState(fn ($state) => $state)
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('icon')
                     ->label(__('Ikon'))
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->badge()
+                    ->color('warning')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: false),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Dibuat Pada'))
                     ->dateTime()
-                    ->alignment('center'),
+                    ->alignment('center')
+                    ->sortable()
+                    ->icon('heroicon-o-calendar'),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label(__('Terakhir Diperbarui'))
                     ->dateTime()
                     ->alignment('center')
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([

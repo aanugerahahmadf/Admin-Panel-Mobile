@@ -26,6 +26,11 @@ class ArticleResource extends Resource
 
     protected static ?int $navigationSort = 5;
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     protected static ?string $recordTitleAttribute = 'title';
 
     public static function getModelLabel(): string
@@ -170,47 +175,62 @@ class ArticleResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\TextColumn::make('author.full_name')
-                    ->searchable()
-                    ->label(__('Penulis')),
-                Tables\Columns\TextColumn::make('title')
-                    ->searchable()
-                    ->label(__('Judul Artikel'))
-                    ->description(fn (Article $record): string => $record->excerpt ?? ''),
-                Tables\Columns\TextColumn::make('category.name')
-                    ->searchable()
-                    ->label(__('Kategori'))
-                    ->badge()
-                    ->color('info'),
-                Tables\Columns\TextColumn::make('slug')
-                    ->label(__('Slug'))
-                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\ImageColumn::make('image_url')
                     ->label(__('Gambar Utama'))
                     ->circular()
                     ->alignment('center'),
-                Tables\Columns\IconColumn::make('is_published')
-                    ->label(__('Diterbitkan'))
-                    ->alignment('center')
-                    ->boolean(),
-                Tables\Columns\IconColumn::make('video_url')
-                    ->label(__('Video'))
-                    ->icon('heroicon-m-video-camera')
+                Tables\Columns\TextColumn::make('title')
+                    ->searchable()
+                    ->label(__('Judul Artikel'))
+                    ->sortable()
+                    ->icon('heroicon-o-document-text'),
+                Tables\Columns\TextColumn::make('author.full_name')
+                    ->searchable()
+                    ->label(__('Penulis'))
+                    ->badge()
+                    ->color('info')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('category.name')
+                    ->searchable()
+                    ->label(__('Kategori'))
+                    ->badge()
                     ->color('warning')
-                    ->alignment('center'),
+                    ->sortable(),
+                Tables\Columns\IconColumn::make('is_published')
+                    ->label(__('Status Terbit'))
+                    ->boolean()
+                    ->alignment('center')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('published_at')
                     ->label(__('Tanggal Terbit'))
                     ->dateTime()
-                    ->alignment('center'),
+                    ->alignment('center')
+                    ->sortable()
+                    ->icon('heroicon-o-calendar'),
+                Tables\Columns\TextColumn::make('slug')
+                    ->label(__('Slug'))
+                    ->badge()
+                    ->color('gray')
+                    ->copyable()
+                    ->copyableState(fn ($state) => $state)
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\IconColumn::make('video_url')
+                    ->label(__('Ada Video'))
+                    ->icon(fn ($state): string => $state ? 'heroicon-m-video-camera' : 'heroicon-m-x-mark')
+                    ->color(fn ($state): string => $state ? 'warning' : 'gray')
+                    ->alignment('center')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Dibuat Pada'))
                     ->dateTime()
                     ->alignment('center')
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label(__('Terakhir Diperbarui'))
                     ->dateTime()
                     ->alignment('center')
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([

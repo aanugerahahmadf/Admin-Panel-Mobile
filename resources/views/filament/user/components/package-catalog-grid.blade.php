@@ -7,9 +7,9 @@
     box-shadow:0 1px 4px rgba(0,0,0,.1);
     text-decoration:none;
     display:flex;flex-direction:column;
-    border:1px solid var(--catalog-card-border, rgba(0,0,0,.08));
+    border:1px solid var(--catalog-card-border, rgba(0,0,0,.06));
     width:calc(50% - 3px);
-    transition: background 0.2s, border-color 0.2s;
+    transition: background 0.2s;
 }
 @media(min-width:481px){.catalog-card{width:calc(25% - 5px);}}
 @media(min-width:769px){.catalog-card{width:calc(20% - 5px);}}
@@ -54,14 +54,14 @@
 /* Filament dark mode class override */
 .dark .catalog-card{
     background:#1a1a2e !important;
-    border-color:rgba(255,255,255,.07) !important;
+    border-color:rgba(255,255,255,.06) !important;
 }
 .dark .catalog-name{color:#e5e7eb !important;}
 .dark .catalog-img{background:#111827 !important;}
 /* Filament light mode class override */
 .light .catalog-card, html:not(.dark) .catalog-card{
     background:#ffffff;
-    border-color:rgba(0,0,0,.08);
+    border-color:rgba(0,0,0,.06);
 }
 .light .catalog-name, html:not(.dark) .catalog-name{color:#111827;}
 .light .catalog-img, html:not(.dark) .catalog-img{background:#f3f4f6;}
@@ -74,7 +74,14 @@
     $fp  = $record->discount_price > 0 ? $record->discount_price : $record->price;
     $pct = $record->discount_price > 0 ? round(($record->price - $record->discount_price) / $record->price * 100) : null;
     $url = \App\Filament\User\Resources\PackageResource::getUrl('view', ['record' => $record]);
-    $img = str_starts_with($record->image_url ?? '', 'http') ? $record->image_url : asset('storage/'.($record->image_url ?? ''));
+    $imgUrl = $record->image_url ?? '';
+    if (str_starts_with($imgUrl, 'http://') || str_starts_with($imgUrl, 'https://') || str_starts_with($imgUrl, 'data:image')) {
+        $img = $imgUrl;
+    } elseif (str_starts_with($imgUrl, '/')) {
+        $img = str_starts_with($imgUrl, '/storage/') ? asset(ltrim($imgUrl, '/')) : asset('storage/' . ltrim($imgUrl, '/'));
+    } else {
+        $img = asset('storage/' . $imgUrl);
+    }
     $rating = number_format($record->reviews()->avg('rating') ?: 0, 1);
     $stock  = $record->stock ?? 0;
     $stockClass = $stock <= 0 ? 'catalog-stock-out' : ($stock <= 3 ? 'catalog-stock-low' : 'catalog-stock-ok');

@@ -78,7 +78,7 @@ class Product extends Model implements HasMedia
         }
 
         if (Str::startsWith($url, '/')) {
-            return $url;
+            return NativeServiceProvider::normalizeUrl(url($url));
         }
 
         return NativeServiceProvider::normalizeUrl(asset('storage/'.ltrim($url, '/')));

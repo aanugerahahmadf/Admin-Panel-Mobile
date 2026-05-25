@@ -1,0 +1,40 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\User;
+use Filament\Notifications\Notification as FilamentNotification;
+
+class PlatformNotificationService
+{
+    public static function send(User $user, string $title, string $body): void
+    {
+        // 1. Filament database notification (website — all browsers)
+        FilamentNotification::make()
+            ->title($title)
+            ->body($body)
+            ->warning()
+            ->sendToDatabase($user);
+
+        // 2. NativePHP desktop notification (desktop app)
+        try {
+            if (class_exists(\Native\Laravel\Notification::class)) {
+                \Native\Laravel\Notification::new()
+                    ->title($title)
+                    ->message(strip_tags($body))
+                    ->show();
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        // 3. NativePHP mobile toast notification (Android / iOS app)
+        try {
+            if (class_exists(\Native\Mobile\Dialog::class)) {
+                \Native\Mobile\Dialog::toast(strip_tags($body), 'long');
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+}

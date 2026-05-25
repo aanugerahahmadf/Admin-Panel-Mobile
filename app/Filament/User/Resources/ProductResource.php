@@ -44,6 +44,8 @@ class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
 
+    protected static ?int $navigationSort = 1;
+
     protected static ?string $navigationIcon = 'ri-flower-line';
 
     public static function getGloballySearchableAttributes(): array
@@ -108,211 +110,6 @@ class ProductResource extends Resource
         return $table
             ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
             ->poll(NativeServiceProvider::isNativeMobile() ? null : '30s')
-            // ->headerActions([
-            //     Tables\Actions\Action::make('visual_search')
-            //         ->label(__('Pencarian Bunga Cerdas'))
-            //         ->icon('heroicon-o-camera')
-            //         ->color('primary')
-            //         ->slideOver()
-            //         ->modalWidth('full')
-            //         ->modalHeading(__('Pencarian Visual Cerdas'))
-            //         ->modalDescription(__('Temukan dekorasi impian Anda dengan mudah. Unggah foto atau ambil gambar langsung untuk melihat koleksi terbaik dari Weeding Flower Decoration.'))
-            //         ->action(fn () => null)
-            //         ->modalSubmitActionLabel(__('Tampilkan di Katalog Utama'))
-            //         ->modalCancelActionLabel(__('Tutup'))
-            //         ->extraModalWindowAttributes(['class' => 'bg-gray-50/50 backdrop-blur-3xl'])
-            //         ->form([
-            //             Forms\Components\Section::make('')
-            //                 ->compact()
-            //                 ->schema([
-            //                     Forms\Components\TextInput::make('search')
-            //                         ->label(__('Cari Visual'))
-            //                         ->placeholder(__('Ketik, ambil foto, atau galeri...'))
-            //                         ->prefixIcon('heroicon-m-magnifying-glass')
-            //                         ->prefixIconColor('gray')
-            //                         ->live(debounce: 500)
-            //                         ->afterStateUpdated(function (Component $livewire, $state, Forms\Set $set) {
-            //                             if (empty($state)) {
-            //                                 session()->forget(['cbir_mixed_results', 'cbir_product_results_ids', 'cbir_search_time', 'cbir_context']);
-            //                                 $set('status_message', null);
-            //                                 $livewire->dispatch('refresh_items');
-            //                                 $livewire->dispatch('refresh_catalog');
-
-            //                                 return;
-            //                             }
-
-            //                             $products = Product::query()
-            //                                 ->where('name', 'like', "%{$state}%")
-            //                                 ->orWhere('description', 'like', "%{$state}%")
-            //                                 ->orWhereHas('category', fn ($q) => $q->where('name', 'like', "%{$state}%"))
-            //                                 ->with(['weddingOrganizer', 'category'])
-            //                                 ->limit(20)
-            //                                 ->get();
-
-            //                             if ($products->isEmpty()) {
-            //                                 session()->forget(['cbir_mixed_results', 'cbir_product_results_ids', 'cbir_search_time', 'cbir_context']);
-            //                                 $set('status_message', __('Tidak ada produk yang cocok untuk pencarian teks.'));
-            //                                 $livewire->dispatch('refresh_items');
-            //                                 $livewire->dispatch('refresh_catalog');
-
-            //                                 return;
-            //                             }
-
-            //                             $mixedResults = $products->map(function ($model) {
-            //                                 return [
-            //                                     'type' => 'product',
-            //                                     'similarity' => 100,
-            //                                     'data' => array_merge($model->toArray(), [
-            //                                         'image_url' => $model->image_url,
-            //                                         'wedding_organizer' => $model->weddingOrganizer?->toArray(),
-            //                                     ]),
-            //                                 ];
-            //                             })->all();
-
-            //                             session()->put('cbir_mixed_results', $mixedResults);
-            //                             session()->put('cbir_product_results_ids', collect($mixedResults)->pluck('data.id')->all());
-            //                             session()->put('cbir_search_time', 0);
-            //                             session()->put('cbir_context', 'product');
-
-            //                             $set('status_message', __('Berhasil menemukan :count hasil teks!', ['count' => count($mixedResults)]));
-            //                             $livewire->dispatch('refresh_items');
-            //                             $livewire->dispatch('refresh_catalog');
-            //                         })
-            //                         ->suffixActions([
-            //                             Forms\Components\Actions\Action::make('toggle_camera_search')
-            //                                 ->icon('heroicon-o-camera')
-            //                                 ->color('gray')
-            //                                 ->tooltip(__('Ambil Foto'))
-            //                                 ->action(fn (Forms\Set $set, Forms\Get $get) => $set('show_camera', ! $get('show_camera'))),
-            //                             Forms\Components\Actions\Action::make('toggle_gallery_search')
-            //                                 ->icon('heroicon-o-photo')
-            //                                 ->color('gray')
-            //                                 ->tooltip(__('Pilih Galeri'))
-            //                                 ->action(fn (Forms\Set $set, Forms\Get $get) => $set('show_upload', ! $get('show_upload'))),
-            //                         ]),
-            //                 ]),
-
-            //             Forms\Components\Grid::make(1)
-            //                 ->schema([
-            //                     TakePicture::make('camera_image')
-            //                         ->hiddenLabel()
-            //                         ->visible(fn (Forms\Get $get) => $get('show_camera'))
-            //                         ->live()
-            //                         ->disk('public')
-            //                         ->directory('cbir-camera')
-            //                         ->afterStateUpdated(function (Component $livewire, $state, Forms\Set $set, CBIRService $cbirService) {
-            //                             if (! $state) {
-            //                                 return;
-            //                             }
-            //                             $filePath = storage_path('app/public/'.$state);
-            //                             if (! file_exists($filePath)) {
-            //                                 return;
-            //                             }
-            //                             $file = new File($filePath);
-            //                             $response = $cbirService->searchByImage($file, 20);
-
-            //                             if (isset($response['error']) || ! ($response['success'] ?? false)) {
-            //                                 $set('status_message', $response['message'] ?? __('Server AI Offline.'));
-
-            //                                 return;
-            //                             }
-
-            //                             $results = $response['results'] ?? [];
-            //                             if (! empty($results)) {
-            //                                 $searchTime = $response['query_time_seconds'] ?? 0;
-            //                                 $mixedResults = PackageResource::buildCbirMixedResults($results);
-
-            //                                 session()->put('cbir_mixed_results', $mixedResults);
-            //                                 session()->put('cbir_product_results_ids', collect($mixedResults)->where('type', 'product')->pluck('data.id')->all());
-            //                                 session()->put('cbir_search_time', $searchTime);
-            //                                 session()->put('cbir_context', 'product');
-
-            //                                 $topScore = number_format(($mixedResults[0]['similarity'] ?? 0), 1);
-            //                                 $set('status_message', __('Berhasil menemukan :count hasil! Akurasi: :score%', ['count' => count($mixedResults), 'score' => $topScore]));
-            //                                 $livewire->dispatch('refresh_items');
-            //                                 $livewire->dispatch('refresh_catalog');
-            //                             } else {
-            //                                 session()->forget(['cbir_mixed_results', 'cbir_product_results_ids', 'cbir_search_time', 'cbir_context']);
-            //                                 $set('status_message', __('Tidak ada product yang cocok.'));
-            //                                 $livewire->dispatch('refresh_items');
-            //                                 $livewire->dispatch('refresh_catalog');
-            //                             }
-            //                         }),
-
-            //                     Forms\Components\FileUpload::make('search_image')
-            //                         ->hiddenLabel()
-            //                         ->image()
-            //                         ->imageEditor()
-            //                         ->visible(fn (Forms\Get $get) => $get('show_upload'))
-            //                         ->directory('cbir-queries')
-            //                         ->live()
-            //                         ->afterStateUpdated(function (Component $livewire, $state, Forms\Set $set, CBIRService $cbirService) {
-            //                             if (! $state) {
-            //                                 return;
-            //                             }
-            //                             $fileObj = is_array($state) ? reset($state) : $state;
-            //                             $filePath = $fileObj instanceof TemporaryUploadedFile
-            //                                 ? $fileObj->getRealPath()
-            //                                 : storage_path('app/public/'.$fileObj);
-
-            //                             if (! file_exists($filePath)) {
-            //                                 return;
-            //                             }
-
-            //                             $file = new File($filePath);
-            //                             $response = $cbirService->searchByImage($file, 20);
-
-            //                             if (isset($response['error']) || ! ($response['success'] ?? false)) {
-            //                                 $set('status_message', $response['message'] ?? __('Server AI Offline.'));
-
-            //                                 return;
-            //                             }
-
-            //                             $results = $response['results'] ?? [];
-            //                             if (! empty($results)) {
-            //                                 $searchTime = $response['query_time_seconds'] ?? 0;
-            //                                 $mixedResults = PackageResource::buildCbirMixedResults($results);
-
-            //                                 session()->put('cbir_mixed_results', $mixedResults);
-            //                                 session()->put('cbir_product_results_ids', collect($mixedResults)->where('type', 'product')->pluck('data.id')->all());
-            //                                 session()->put('cbir_search_time', $searchTime);
-            //                                 session()->put('cbir_context', 'product');
-
-            //                                 $topScore = number_format(($mixedResults[0]['similarity'] ?? 0), 1);
-            //                                 $set('status_message', __('Berhasil menemukan :count hasil! Akurasi: :score%', ['count' => count($mixedResults), 'score' => $topScore]));
-            //                                 $livewire->dispatch('refresh_items');
-            //                                 $livewire->dispatch('refresh_catalog');
-            //                             } else {
-            //                                 session()->forget(['cbir_mixed_results', 'cbir_product_results_ids', 'cbir_search_time', 'cbir_context']);
-            //                                 $set('status_message', __('Product tidak ditemukan.'));
-            //                                 $livewire->dispatch('refresh_items');
-            //                                 $livewire->dispatch('refresh_catalog');
-            //                             }
-            //                         }),
-
-            //                     Forms\Components\Placeholder::make('status_message')
-            //                         ->label('')
-            //                         ->content(fn (Forms\Get $get) => new HtmlString(
-            //                             '<div class="text-sm">'.e($get('status_message')).'</div>'
-            //                         ))
-            //                         ->visible(fn (Forms\Get $get) => (bool) $get('status_message'))
-            //                         ->extraAttributes(['class' => 'text-center p-3 bg-primary-600 rounded-xl text-white font-medium shadow-md']),
-
-            //                     // ── CBIR Results Preview ──
-            //                     Forms\Components\View::make('filament.user.components.cbir-results-preview')
-            //                         ->visible(fn () => ! empty(session('cbir_mixed_results'))),
-            //                 ]),
-            //         ]),
-            //     Tables\Actions\Action::make('clear_visual_search')
-            //         ->label(__('Reset'))
-            //         ->icon('heroicon-o-x-circle')
-            //         ->color('danger')
-            //         ->action(function (Component $livewire) {
-            //             session()->forget(['cbir_mixed_results', 'cbir_product_results_ids', 'cbir_search_time', 'cbir_context']);
-            //             $livewire->dispatch('refresh_items');
-            //         })
-            //         ->visible(fn () => session()->has('cbir_mixed_results')),
-            // ])
             ->emptyStateHeading(__('Belum ada product tersedia'))
             ->emptyStateDescription(function () {
                 if (session()->has('cbir_product_results_ids')) {
@@ -390,63 +187,6 @@ class ProductResource extends Resource
                     ->color(fn ($livewire) => count($livewire->getTable()->getFilterIndicators()) > 0 ? 'primary' : 'gray')
                     ->badge(fn ($livewire) => count($livewire->getTable()->getFilterIndicators()) > 0 ? count($livewire->getTable()->getFilterIndicators()) : null)
             )
-            // ->actions([
-            //     Tables\Actions\Action::make('view_detail')
-            //         ->label(__('Lihat Detail'))
-            //         ->color('warning')
-            //         ->button()
-            //         ->size('sm')
-            //         ->url(fn ($record) => static::getUrl('view', ['record' => $record])),
-
-            //     Tables\Actions\Action::make('buy_now')
-            //         ->label(__('Beli'))
-            //         ->button()
-            //         ->color('success')
-            //         ->icon('heroicon-m-bolt')
-            //         ->size('sm')
-            //         ->extraAttributes(['class' => 'flex-1 justify-center rounded-lg shadow-sm font-bold'])
-            //         ->disabled(fn (Product $record) => $record->stock <= 0)
-            //         ->slideOver()
-            //         ->modalWidth('2xl')
-            //         ->modalHeading(__('Checkout Produk'))
-            //         ->steps(fn (Product $record) => static::getCheckoutWizardSteps($record))
-            //         ->action(function (Product $record, array $data, Component $livewire) {
-            //             return static::handleCheckout($record, $data, $livewire);
-            //         }),
-
-            //     Tables\Actions\Action::make('add_to_cart')
-            //         ->label('')
-            //         ->button()
-            //         ->size('sm')
-            //         ->icon('heroicon-o-shopping-cart')
-            //         ->color('warning')
-            //         ->extraAttributes(['class' => 'justify-center rounded-lg shadow-sm'])
-            //         ->action(function ($record) {
-            //             Cart::updateOrCreate([
-            //                 'user_id' => auth()->id(),
-            //                 'product_id' => $record->id,
-            //             ], [
-            //                 'quantity' => DB::raw('quantity + 1'),
-            //             ]);
-
-            //             Notification::make()
-            //                 ->title(__('Berhasil masuk keranjang'))
-            //                 ->success()
-            //                 ->icon('heroicon-o-shopping-cart')
-            //                 ->send();
-            //         })
-            //         ->tooltip(__('Masukkan ke Keranjang')),
-
-            //     Tables\Actions\Action::make('toggle_wishlist')
-            //         ->label('')
-            //         ->button()
-            //         ->size('sm')
-            //         ->icon(fn ($record) => $record->is_wishlisted ? 'heroicon-s-heart' : 'heroicon-o-heart')
-            //         ->color(fn ($record) => $record->is_wishlisted ? 'danger' : 'gray')
-            //         ->extraAttributes(['class' => 'justify-center rounded-lg shadow-sm'])
-            //         ->action(fn ($record, Component $livewire) => $livewire->dispatch('toggle_wishlist', id: $record->id))
-            //         ->tooltip(__('Simpan Favorit')),
-            // ])
             ->actionsAlignment('center')
             ->extraAttributes([
                 'class' => 'filament-table-actions-container !flex !flex-row !gap-1 !p-3 !bg-gray-50/50 dark:!bg-white/5 !border-0',
@@ -542,13 +282,7 @@ class ProductResource extends Resource
                                             ->disabled(fn ($record) => $record->stock <= 0)
                                             ->size(ActionSize::Large)
                                             ->extraAttributes(['class' => 'w-full py-2 text-sm rounded-xl shadow-sm transition-all'])
-                                            ->slideOver()
-                                            ->modalWidth('full')
-                                            ->modalHeading(__('Checkout Product'))
-                                            ->steps(fn ($record) => static::getCheckoutWizardSteps($record))
-                                            ->action(function ($record, array $data, Component $livewire) {
-                                                return static::handleCheckout($record, $data, $livewire);
-                                            }),
+                                            ->url(fn ($record) => static::getUrl('checkout', ['record' => $record->id])),
 
                                         Action::make('add_to_cart_detail')
                                             ->label(__('Masukkan ke Keranjang'))
@@ -565,8 +299,7 @@ class ProductResource extends Resource
                                                     ->required()
                                                     ->default(1)
                                                     ->minValue(1)
-                                                    ->maxValue(fn ($record) => $record->stock)
-                                                    ->suffix(__('Item')),
+                                                    ->maxValue(fn ($record) => $record->stock),
                                             ])
                                             ->action(function ($record, array $data) {
                                                 Cart::updateOrCreate([
@@ -603,7 +336,7 @@ class ProductResource extends Resource
                                                     'id' => $record->id,
                                                     'name' => $record->name,
                                                     'price' => $record->final_price,
-                                                    'image' => $record->getFirstMediaUrl('product_image') ?: $record->image_url,
+                                                    'image' => $record->image_url,
                                                     'url' => ProductResource::getUrl('view', ['record' => $record->id]),
                                                 ]);
 
@@ -660,6 +393,7 @@ class ProductResource extends Resource
         return [
             'index' => Pages\ManageProducts::route('/'),
             'view' => Pages\ViewProduct::route('/{record}'),
+            'checkout' => Pages\CheckoutProduct::route('/{record}/checkout'),
         ];
     }
 
@@ -800,7 +534,6 @@ class ProductResource extends Resource
                                 ->default(1)
                                 ->minValue(1)
                                 ->maxValue(fn ($record) => $record->stock)
-                                ->suffix(__('Item'))
                                 ->columnSpanFull(),
                             Forms\Components\Textarea::make('notes')
                                 ->label(__('Alamat Lokasi'))

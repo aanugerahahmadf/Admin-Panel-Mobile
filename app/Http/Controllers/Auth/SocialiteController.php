@@ -53,48 +53,56 @@ class SocialiteController extends Controller
 
     // ─────────────────────────────────────────────────────────────────────
     // MOBILE REDIRECT — Buka Google OAuth via Browser::auth()
+    // Menggunakan reverse client ID scheme agar tidak perlu server publik.
+    // Google redirect ke: com.googleusercontent.apps.CLIENT_ID:/oauth2redirect
+    // NativePHP tangkap deep link ini dan load /auth/mobile/google/callback
     // ─────────────────────────────────────────────────────────────────────
 
     private function redirectMobile(string $provider, Request $request)
     {
-        // Callback tetap ke server web (Google hanya terima HTTPS/HTTP)
-        $callbackUrl = route('auth.callback.mobile', $provider);
+        $clientId = config("services.{$provider}.client_id");
+
+        // Reverse client ID scheme — tidak perlu server publik, Google redirect
+        // langsung ke app Android via custom URI scheme.
+        // Format: com.googleusercontent.apps.CLIENT_ID:/oauth2redirect
+        $reverseClientId = 'com.googleusercontent.apps.' . str_replace('.apps.googleusercontent.com', '', $clientId);
+        $callbackUrl = $reverseClientId . ':/oauth2redirect';
+
         config(["services.$provider.redirect" => $callbackUrl]);
 
         // Dapatkan URL OAuth Google
         $authUrl = Socialite::driver($provider)
             ->stateless()
+            ->with(['redirect_uri' => $callbackUrl])
             ->scopes([
                 'openid',
                 'profile',
                 'email',
-                'https://www.googleapis.com/auth/user.birthday.read',
-                'https://www.googleapis.com/auth/user.gender.read',
-                'https://www.googleapis.com/auth/user.phonenumbers.read',
-                'https://www.googleapis.com/auth/user.addresses.read',
             ])
             ->redirect()
             ->getTargetUrl();
 
-        Log::info("[Socialite Mobile] Opening auth URL: $authUrl");
+        Log::info("[Socialite Mobile] Auth URL: $authUrl");
+        Log::info("[Socialite Mobile] Callback URL: $callbackUrl");
 
-        // Buka di in-app browser (Custom Tabs / SFSafariViewController)
+        // Buka di in-app browser (Custom Tabs Android / SFSafariViewController iOS)
         $opened = false;
         if (class_exists(Browser::class) && function_exists('nativephp_call')) {
             $browser = new Browser;
             $opened = $browser->auth($authUrl);
+            Log::info("[Socialite Mobile] Browser::auth opened: " . ($opened ? 'yes' : 'no'));
         }
 
         // Jika dipanggil via fetch (AJAX), return JSON
         if ($request->ajax() || $request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
             return response()->json([
                 'success' => true,
-                'opened' => $opened,
-                'message' => 'Browser auth opened',
+                'opened'  => $opened,
+                'url'     => $authUrl,
             ]);
         }
 
-        // Fallback: redirect biasa jika bukan AJAX
+        // Fallback: redirect biasa
         return redirect($authUrl);
     }
 
@@ -121,6 +129,65 @@ class SocialiteController extends Controller
         }
 
         Auth::login($user, remember: true);
+
+        return $this->redirectAfterLogin($user);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────
+    // CALLBACK MOBILE via Reverse Client ID Scheme
+    // NativePHP intercept deep link: com.googleusercontent.apps.xxx:/oauth2redirect
+    // dan load route ini dengan query params dari Google
+    // ─────────────────────────────────────────────────────────────────────
+
+    public function callbackMobileScheme(string $provider, Request $request)
+    {
+        Log::info("[Socialite Mobile Scheme] Callback received", $request->all());
+
+        $code = $request->query('code');
+
+        if (! $code) {
+            Log::error("[Socialite Mobile Scheme] No code in callback");
+            return redirect()->route('filament.user.auth.login')
+                ->with('error', __('Gagal login dengan Google. Tidak ada kode otorisasi.'));
+        }
+
+        try {
+            $clientId     = config("services.{$provider}.client_id");
+            $reverseId    = 'com.googleusercontent.apps.' . str_replace('.apps.googleusercontent.com', '', $clientId);
+            $callbackUrl  = $reverseId . ':/oauth2redirect';
+
+            config(["services.$provider.redirect" => $callbackUrl]);
+
+            $socialUser = Socialite::driver($provider)
+                ->stateless()
+                ->with(['redirect_uri' => $callbackUrl])
+                ->userFromCode($code);
+
+        } catch (\Exception $e) {
+            Log::error("[Socialite Mobile Scheme] Error: {$e->getMessage()}");
+            return redirect()->route('filament.user.auth.login')
+                ->with('error', __('Gagal mengambil data dari Google.'));
+        }
+
+        $user = $this->findOrCreateUser($socialUser, $provider);
+
+        if (! $user) {
+            return redirect()->route('filament.user.auth.login')
+                ->with('error', __('Gagal membuat akun.'));
+        }
+
+        Auth::login($user, remember: true);
+
+        Log::info("[Socialite Mobile Scheme] User {$user->id} logged in");
+
+        if (NativeServiceProvider::isNativeMobile()) {
+            try {
+                NativeNotification::new()
+                    ->title(__('Berhasil Masuk!'))
+                    ->message(__('Halo :name, selamat datang kembali.', ['name' => $user->first_name ?? $user->full_name]))
+                    ->show();
+            } catch (\Throwable) {}
+        }
 
         return $this->redirectAfterLogin($user);
     }
@@ -333,6 +400,7 @@ class SocialiteController extends Controller
                 'address' => isset($rawUser['addresses'][0]['formattedValue']) ? $rawUser['addresses'][0]['formattedValue'] : null,
                 'email_verified_at' => now(),
                 'active_status' => true,
+                'ip_address' => request()->ip(),
                 'password' => null,
             ]);
 

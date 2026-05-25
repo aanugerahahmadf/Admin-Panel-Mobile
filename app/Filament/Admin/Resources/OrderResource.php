@@ -164,36 +164,86 @@ class OrderResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('user.full_name')
-                    ->label(__('Pelanggan')),
-                Tables\Columns\TextColumn::make('package.name')->searchable()
-                    ->label(__('Paket Layanan')),
-                Tables\Columns\TextColumn::make('order_number')->searchable()
+                    ->label(__('Pelanggan'))
+                    ->searchable()
+                    ->sortable()
+                    ->icon('heroicon-o-user'),
+                Tables\Columns\TextColumn::make('package.name')
+                    ->searchable()
+                    ->label(__('Paket Layanan'))
+                    ->badge()
+                    ->color('info')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('order_number')
+                    ->searchable()
                     ->label(__('No. Pesanan'))
-                    ->alignment('center'),
+                    ->badge()
+                    ->color('primary')
+                    ->copyable()
+                    ->copyableState(fn ($state) => $state)
+                    ->alignment('center')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('total_price')
                     ->label(__('Harga'))
-                    ->formatStateUsing(fn ($state) => 'Rp '.number_format($state, 2, ',', '.'))
-                    ->alignment('right'),
+                    ->money('IDR')
+                    ->alignment('end')
+                    ->sortable()
+                    ->icon('heroicon-o-banknotes'),
                 Tables\Columns\TextColumn::make('status')
                     ->label(__('Status'))
                     ->badge()
-                    ->alignment('center'),
+                    ->color(fn (string $state): string => match ($state) {
+                        'pending' => 'warning',
+                        'confirmed' => 'info',
+                        'completed' => 'success',
+                        'cancelled' => 'danger',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'pending' => __('Pending'),
+                        'confirmed' => __('Terkonfirmasi'),
+                        'completed' => __('Selesai'),
+                        'cancelled' => __('Dibatalkan'),
+                        default => $state,
+                    })
+                    ->alignment('center')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('payment_status')
                     ->label(__('Pembayaran'))
                     ->badge()
-                    ->alignment('center'),
+                    ->color(fn (string $state): string => match ($state) {
+                        'pending' => 'warning',
+                        'paid' => 'success',
+                        'failed' => 'danger',
+                        'expired' => 'danger',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'pending' => __('Menunggu'),
+                        'paid' => __('Lunas'),
+                        'failed' => __('Gagal'),
+                        'expired' => __('Kadaluarsa'),
+                        default => $state,
+                    })
+                    ->alignment('center')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('booking_date')
                     ->label(__('Tanggal Acara'))
-                    ->date()
-                    ->alignment('center'),
+                    ->date('d M Y')
+                    ->alignment('center')
+                    ->sortable()
+                    ->icon('heroicon-o-calendar'),
                 Tables\Columns\TextColumn::make('booking_time')
                     ->label(__('Waktu'))
                     ->time('H:i')
-                    ->alignment('center'),
+                    ->alignment('center')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('quantity')
                     ->label(__('Jumlah'))
                     ->numeric()
-                    ->alignment('center'),
+                    ->alignment('center')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('notes')
                     ->label(__('Catatan'))
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -201,11 +251,13 @@ class OrderResource extends Resource
                     ->label(__('Tanggal Pesan'))
                     ->dateTime()
                     ->alignment('center')
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label(__('Terakhir Diperbarui'))
                     ->dateTime()
                     ->alignment('center')
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([

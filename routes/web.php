@@ -13,7 +13,7 @@ use Native\Mobile\Facades\System;
 
 Route::get('/', function () {
     return view('welcome');
-});
+})->middleware(\App\Http\Middleware\SetLocale::class);
 
 Route::redirect('/admin/inbox', '/admin/inbox/messages');
 Route::get('/mobile/settings', function () {
@@ -27,13 +27,15 @@ Route::get('/auth/{provider}/redirect', [SocialiteController::class, 'redirect']
     ->name('auth.redirect');
 Route::get('/auth/{provider}/callback', [SocialiteController::class, 'callback'])
     ->name('auth.callback');
+// Mobile OAuth via reverse client ID scheme (tidak perlu server publik)
+Route::get('/auth/{provider}/callback/scheme', [SocialiteController::class, 'callbackMobileScheme'])
+    ->name('auth.callback.scheme');
 // Mobile OAuth: callback dari Google → simpan token → redirect ke deep link
 Route::get('/auth/{provider}/callback/mobile', [SocialiteController::class, 'callbackMobile'])
     ->name('auth.callback.mobile');
 // Mobile OAuth: deep link handler → verifikasi token → login user
 Route::get('/auth/mobile/verify', [SocialiteController::class, 'verifyMobileToken'])
     ->name('auth.mobile.verify');
-
 // NativePHP Deep Link Handler — weddingapp://auth/google/success?token=xxx
 // NativePHP intercepts the deep link and loads this URL in the WebView
 Route::get('/auth/deeplink/google/success', [SocialiteController::class, 'verifyMobileToken'])
@@ -43,6 +45,11 @@ Route::get('/auth/deeplink/google/success', [SocialiteController::class, 'verify
 // weddingapp://auth/google/success → /auth/google/success di WebView
 Route::get('/auth/google/success', [SocialiteController::class, 'verifyMobileToken'])
     ->name('auth.google.success');
+
+// Google OAuth reverse client ID scheme callback
+// com.googleusercontent.apps.xxx:/oauth2redirect?code=... → /auth/google/oauth2redirect?code=...
+Route::get('/auth/{provider}/oauth2redirect', [SocialiteController::class, 'callbackMobileScheme'])
+    ->name('auth.oauth2redirect');
 Route::get('/media/{path}', function (string $path) {
     if (str_contains($path, '../')) {
         abort(403);

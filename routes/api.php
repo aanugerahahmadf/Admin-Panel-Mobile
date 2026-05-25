@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CBIRController;
 use App\Http\Controllers\Api\ChatController;
+use App\Http\Controllers\Api\FirebaseController;
 use App\Http\Controllers\Api\FonnteWebhookController;
 use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\OrderController;
@@ -92,6 +93,9 @@ Route::post('/webhooks/fonnte/status', [FonnteWebhookController::class, 'handleM
 // CBIR - AI Visual Search Public Probing
 Route::get('/cbir/stats', [CBIRController::class, 'getStats']);
 Route::get('/cbir/health', [CBIRController::class, 'healthCheck']);
+
+// Firebase Status (public)
+Route::get('/firebase/status', [FirebaseController::class, 'status']);
 
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -206,4 +210,19 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/cbir/index/build', [CBIRController::class, 'buildIndex']);
     Route::get('/cbir/stats', [CBIRController::class, 'getStats']);
     Route::get('/cbir/health', [CBIRController::class, 'healthCheck']);
+
+    // Firebase - Realtime Database Operations
+    Route::prefix('firebase')->group(function (): void {
+        Route::get('/status', [FirebaseController::class, 'status']);
+        Route::post('/read', [FirebaseController::class, 'read']);
+        Route::post('/write', [FirebaseController::class, 'write']);
+        Route::post('/update', [FirebaseController::class, 'update']);
+        Route::post('/delete', [FirebaseController::class, 'delete']);
+        Route::post('/push', [FirebaseController::class, 'push']);
+        Route::post('/children', [FirebaseController::class, 'children']);
+        Route::post('/exists', [FirebaseController::class, 'exists']);
+        Route::post('/sync-order', [FirebaseController::class, 'syncOrder']);
+        Route::post('/sync-message', [FirebaseController::class, 'syncMessage']);
+        Route::post('/clear-cache', [FirebaseController::class, 'clearCache']);
+    });
 });

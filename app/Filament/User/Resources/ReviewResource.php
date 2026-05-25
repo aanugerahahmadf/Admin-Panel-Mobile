@@ -24,6 +24,8 @@ class ReviewResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-star';
 
+    protected static ?int $navigationSort = 4;
+
     public static function getGloballySearchableAttributes(): array
     {
         return ['package.name', 'product.name', 'comment', 'weddingOrganizer.name'];

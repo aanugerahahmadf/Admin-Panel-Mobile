@@ -5,6 +5,7 @@ namespace App\Observers;
 use App\Enums\WithdrawalStatus;
 use App\Models\History;
 use App\Models\Withdrawal;
+use App\Services\PlatformNotificationService;
 use Filament\Notifications\Notification;
 
 class WithdrawalObserver
@@ -39,12 +40,20 @@ class WithdrawalObserver
             $user = $withdrawal->user;
             if ($user) {
                 $user->increment('balance', $withdrawal->amount);
+                $message = __('Saldo sebesar Rp :amount telah dikembalikan ke akun Anda.', [
+                    'amount' => number_format($withdrawal->amount, 0, ',', '.'),
+                ]);
                 Notification::make()
                     ->title(__('Penarikan Saldo Ditolak'))
                     ->body(__('Saldo sebesar Rp ').number_format($withdrawal->amount, 0, ',', '.').__(' telah dikembalikan ke akun Anda.'))
                     ->warning()
                     ->icon('heroicon-o-arrow-uturn-left')
                     ->sendToDatabase($user);
+                PlatformNotificationService::send(
+                    $user,
+                    __('Penarikan Saldo Ditolak'),
+                    $message
+                );
             }
         }
     }
@@ -84,12 +93,20 @@ class WithdrawalObserver
                 $user->increment('balance', $withdrawal->amount);
 
                 // 🔔 Notify User: Withdrawal Rejected/Cancelled
+                $message = __('Saldo sebesar Rp :amount telah dikembalikan ke akun Anda.', [
+                    'amount' => number_format($withdrawal->amount, 0, ',', '.'),
+                ]);
                 Notification::make()
                     ->title(__('Penarikan Saldo Ditolak'))
                     ->body(__('Saldo sebesar Rp ').number_format($withdrawal->amount, 2, ',', '.').__(' telah dikembalikan ke akun Anda.'))
                     ->warning()
                     ->icon('heroicon-o-arrow-uturn-left')
                     ->sendToDatabase($user);
+                PlatformNotificationService::send(
+                    $user,
+                    __('Penarikan Saldo Ditolak'),
+                    $message
+                );
             }
         }
 

@@ -51,7 +51,7 @@ class UserPanelProvider extends PanelProvider
             )
             ->emailVerification(OtpEmailVerificationPrompt::class)
             ->brandName(fn () => __('Dekorasi Bunga Pernikahan'))
-            ->brandLogo(fn () => NativeServiceProvider::normalizeUrl(asset('images/logo.png')))
+            ->brandLogo(fn () => '/images/logo.png')
             ->brandLogoHeight('3rem')
             ->colors([
                 'danger' => Color::Rose,
@@ -71,11 +71,15 @@ class UserPanelProvider extends PanelProvider
             ->globalSearch()
             ->renderHook(
                 'panels::global-search.after',
-                fn (): ?View => view('filament.filament-language-switcher.language-switcher')
+                fn (): ?View => NativeServiceProvider::isAnyMobile()
+                    ? null
+                    : view('filament.filament-language-switcher.language-switcher')
             )
             ->renderHook(
                 'panels::auth.form.before',
-                fn (): ?View => view('filament.filament-language-switcher.language-switcher')
+                fn (): ?View => NativeServiceProvider::isAnyMobile()
+                    ? null
+                    : view('filament.filament-language-switcher.language-switcher')
             )
             ->renderHook(
                 'panels::styles.after',

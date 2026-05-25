@@ -15,9 +15,9 @@ android {
 
     defaultConfig {
         applicationId = "com.asustuff15.cloudcometcrystal"
-        minSdk = 33
+        minSdk = 31
         targetSdk = 36
-        versionCode = 1
+        versionCode = 7
         versionName = "DEBUG"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -26,7 +26,8 @@ android {
             cmake {
                 arguments(
                     "-DANDROID_STL=c++_shared",
-                    "-DANDROID_PLATFORM=android-24"
+                    "-DANDROID_PLATFORM=android-24",
+                    "-DANDROID_ARM_NEON=TRUE"
                 )
                 cppFlags("-std=c++17", "-fexceptions", "-frtti")
                 targets("php_wrapper")
@@ -36,7 +37,7 @@ android {
 
         ndk {
             // Specify target ABI
-            abiFilters.addAll(listOf("arm64-v8a"))
+            abiFilters.add("arm64-v8a")
         }
     }
 
@@ -196,6 +197,18 @@ dependencies {
 
     // NativePHP Plugin Dependencies
 
+    // NativePHP Plugin Dependencies
+
+    // NativePHP Plugin Dependencies
+
+    // NativePHP Plugin Dependencies
+
+    // NativePHP Plugin Dependencies
+
+    // NativePHP Plugin Dependencies
+
+    // NativePHP Plugin Dependencies
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.material)
@@ -240,7 +253,10 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
+    // Import the Firebase BoM so all Firebase library versions are managed together
     implementation(platform(libs.firebase.bom))
+
+    // Firebase SDKs
     implementation("com.google.firebase:firebase-messaging")
 
     // AndroidX Security for encrypted storage

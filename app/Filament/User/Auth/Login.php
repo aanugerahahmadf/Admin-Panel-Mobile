@@ -103,12 +103,22 @@ class Login extends BaseLogin
     {
         // Enforce mandatory checkboxes (Agreement & Remember)
         if (! ($this->data['agreement'] ?? false)) {
+            Notification::make()
+                ->title(__('Perhatian'))
+                ->body(__('Anda harus menyetujui syarat dan ketentuan untuk melanjutkan.'))
+                ->warning()
+                ->send();
             throw ValidationException::withMessages([
                 'data.agreement' => __('Anda harus menyetujui syarat dan ketentuan untuk melanjutkan.'),
             ]);
         }
 
         if (! ($this->data['remember'] ?? false)) {
+            Notification::make()
+                ->title(__('Perhatian'))
+                ->body(__('Anda harus mencentang Ingat Saya untuk melanjutkan.'))
+                ->warning()
+                ->send();
             throw ValidationException::withMessages([
                 'data.remember' => __('Anda harus mencentang Ingat Saya untuk melanjutkan.'),
             ]);
@@ -121,7 +131,6 @@ class Login extends BaseLogin
                 ->title(__('Selamat Datang Kembali!'))
                 ->body(__('Anda telah berhasil masuk ke sistem Weeding Organizer pada :time.', ['time' => now()->format('H:i:s')]))
                 ->success()
-                ->duration(5000)
                 ->send();
         }
 
@@ -134,7 +143,6 @@ class Login extends BaseLogin
             ->title(__('Otentikasi Gagal'))
             ->body(__('Kami tidak dapat memverifikasi kredensial Anda. Silakan periksa email/username dan kata sandi Anda, lalu coba lagi.'))
             ->danger()
-            ->duration(8000)
             ->send();
 
         throw ValidationException::withMessages([

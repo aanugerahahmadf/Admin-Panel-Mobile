@@ -1,7 +1,7 @@
 @php
     use App\Providers\NativeServiceProvider;
     $isMobileApp = NativeServiceProvider::isNativeMobile();
-    $googleRedirectUrl = route('auth.redirect', 'google');
+    $googleRedirectUrl = NativeServiceProvider::normalizeUrl(route('auth.redirect', 'google'));
 @endphp
 <div x-data="{ 
     agreed: $wire.entangle('data.agreement'), 
@@ -12,18 +12,23 @@
 }" x-effect="
         $nextTick(function() {
             let form = $el.closest('form');
-            if (form) {
-                let actionBtns = form.querySelectorAll('button[type=\'submit\'], .fi-ac-btn-action, button.fi-btn-color-primary');
-                actionBtns.forEach(function(btn) {
-                    if (btn.innerText.trim() === '{{ __("Next") }}' || btn.type === 'submit' || btn.innerText.trim() === '{{ __("Daftar") }}' || btn.innerText.trim() === '{{ __("Log In") }}') {
-                        btn.disabled = !(agreed && remembered);
-                        btn.style.opacity = (agreed && remembered) ? '1' : '0.4';
-                        btn.style.cursor = (agreed && remembered) ? 'pointer' : 'not-allowed';
+            if (form && !form.dataset.validationBound) {
+                form.dataset.validationBound = 'true';
+                form.addEventListener('submit', function(e) {
+                    if (!(agreed && remembered)) {
+                        e.preventDefault();
+                        e.stopImmediatePropagation();
+                        
+                        new FilamentNotification()
+                            .title('{{ __('Perhatian') }}')
+                            .body('{{ __('Silakan centang opsi Ingat Saya dan Setujui Syarat & Ketentuan untuk melanjutkan.') }}')
+                            .warning()
+                            .send();
                     }
                 });
             }
         })
-    }" class="flex flex-col items-center justify-center gap-0 py-0 social-login-container w-full -mt-4">
+    " class="flex flex-col items-center justify-center gap-0 py-0 social-login-container w-full -mt-4">
     <style>
         .no-scrollbar::-webkit-scrollbar {
             display: none;

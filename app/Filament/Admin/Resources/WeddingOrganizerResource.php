@@ -31,6 +31,11 @@ class WeddingOrganizerResource extends Resource
 
     protected static ?int $navigationSort = 1;
 
+    public static function shouldRegisterNavigation(): bool
+    {
+        return false;
+    }
+
     public static function getNavigationBadge(): ?string
     {
         return (string) static::getModel()::count();
@@ -266,6 +271,7 @@ class WeddingOrganizerResource extends Resource
                     ->defaultImageUrl(asset('images/placeholders/image-placeholder.png'))
                     ->height(60)
                     ->width(60)
+                    ->circular()
                     ->extraImgAttributes(['class' => 'rounded-lg object-cover'])
                     ->alignment('center'),
                 Tables\Columns\TextColumn::make('video_url')
@@ -281,7 +287,9 @@ class WeddingOrganizerResource extends Resource
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->label(__('Nama Studio'))
-                    ->alignment('center'),
+                    ->alignment('center')
+                    ->sortable()
+                    ->icon('heroicon-o-sparkles'),
                 Tables\Columns\TextColumn::make('description')
                     ->label(__('Deskripsi'))
                     ->limit(50)
@@ -293,28 +301,38 @@ class WeddingOrganizerResource extends Resource
                     ->label(__('Alamat'))
                     ->limit(40)
                     ->alignment('center')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: false)
+                    ->icon('heroicon-o-map-pin'),
                 Tables\Columns\TextColumn::make('latitude')
                     ->label(__('Latitude'))
                     ->alignment('center')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->copyable()
+                    ->copyableState(fn ($state) => $state),
                 Tables\Columns\TextColumn::make('longitude')
                     ->label(__('Longitude'))
                     ->alignment('center')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->copyable()
+                    ->copyableState(fn ($state) => $state),
                 Tables\Columns\IconColumn::make('is_verified')
                     ->label(__('Terverifikasi'))
                     ->boolean()
-                    ->alignment('center'),
+                    ->alignment('center')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Terdaftar Pada'))
                     ->dateTime()
                     ->alignment('center')
+                    ->sortable()
+                    ->icon('heroicon-o-calendar')
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label(__('Diperbarui Pada'))
                     ->dateTime()
                     ->alignment('center')
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([

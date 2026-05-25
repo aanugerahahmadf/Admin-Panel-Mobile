@@ -7,9 +7,9 @@
     $isMobileBrowser = (bool) preg_match('/(android|bb\d+|meego).+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|mobile.+firefox|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|series(4|6)0|symbian|treo|up\.(browser|link)|vodafone|wap|windows ce|xda|xiino/i', request()->userAgent() ?? '');
 
     // Sembunyikan language switcher di NativePHP mobile DAN mobile browser
-    if ($isMobileApp || $isMobileBrowser) {
-        return;
-    }
+    // if ($isMobileApp || $isMobileBrowser) {
+    //     return;
+    // }
 
     $emojiFlags = [
         'id' => '🇮🇩',
@@ -42,48 +42,7 @@
         $activeColorClass = 'text-[#fbbf24]';
 @endphp
 
-{{-- ── MOBILE: Filament native select (no custom dropdown, no scroll issue) ── --}}
-@if($isMobileApp)
-    <div x-data="{ locale: '{{ $currentLocale }}' }" class="relative inline-flex items-center" x-tooltip="{
-                content: '{{ __('Change Language') }}',
-                theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light'
-            }">
-
-        {{-- Visible label overlay (emoji + code) --}}
-        <div class="pointer-events-none absolute inset-0 flex items-center justify-center gap-1 z-10">
-            <span class="text-sm leading-none">{{ $currentEmoji }}</span>
-            <span @class(['text-[10px] font-bold uppercase tracking-wider', $activeColorClass])>
-                {{ $currentLabel }}
-            </span>
-        </div>
-
-        {{-- Native select — invisible but functional --}}
-        <x-filament::input.wrapper class="opacity-0 absolute inset-0 w-full h-full">
-            <x-filament::input.select x-model="locale"
-                x-on:change="window.location.href = '{{ NativeServiceProvider::normalizeUrl(url('/language/switch')) }}/' + locale"
-                class="!opacity-0 !absolute !inset-0 !w-full !h-full !cursor-pointer">
-                @foreach($locals as $key => $language)
-                    <option value="{{ $key }}" @selected($currentLocale === $key)>
-                        {{ $emojiFlags[$key] ?? '🌐' }} {{ __($language['label']) }}
-                    </option>
-                @endforeach
-            </x-filament::input.select>
-        </x-filament::input.wrapper>
-
-        {{-- Visible button frame --}}
-        <div @class([
-            'flex items-center justify-center gap-1 h-8 px-2 rounded-md ring-1 ring-gray-950/10 dark:ring-white/20',
-            'hover:bg-yellow-400 transition cursor-pointer',
-        ]) style="min-width: 3rem;">
-            <span class="text-sm leading-none">{{ $currentEmoji }}</span>
-            <span @class(['text-[10px] font-bold uppercase tracking-wider', $activeColorClass])>
-                {{ $currentLabel }}
-            </span>
-        </div>
-    </div>
-
-    {{-- ── WEB: Custom dropdown dengan CDN flag images ── --}}
-@else
+{{-- ── UNIFIED: Custom dropdown untuk WEB, ANDROID, dan IOS ── --}}
 <div x-data="{
         isLanguageSwitcherOpen: false,
         toggleDropdown() { this.isLanguageSwitcherOpen = !this.isLanguageSwitcherOpen },
@@ -140,4 +99,3 @@
         </div>
     </div>
 </div>
-@endif

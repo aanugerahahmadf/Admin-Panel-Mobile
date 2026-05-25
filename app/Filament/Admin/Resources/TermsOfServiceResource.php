@@ -85,13 +85,17 @@ class TermsOfServiceResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('title')
                     ->label(__('Judul'))
-                    ->weight('bold')
-                    ->searchable(),
+                    ->badge()
+                    ->color('primary')
+                    ->searchable()
+                    ->sortable()
+                    ->icon('heroicon-o-document-text'),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label(__('Terakhir Diupdate'))
                     ->dateTime('d M Y H:i')
-                    ->color('gray')
-                    ->sortable(),
+                    ->sortable()
+                    ->alignment('center')
+                    ->icon('heroicon-o-calendar'),
             ])
             ->filters([])
             ->actions([

@@ -67,7 +67,7 @@ class ManageProducts extends ManageRecords
             ->success()
             ->send();
 
-        return redirect()->to(ProductResource::getUrl('index')."?tableAction=buy_now&tableActionRecord={$id}");
+        return redirect()->to(ProductResource::getUrl('checkout', ['record' => $id]));
     }
 
     public function toggleWishlist($id)

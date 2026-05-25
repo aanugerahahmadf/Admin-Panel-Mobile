@@ -16,12 +16,26 @@ class SetLocale
 {
     public function handle(Request $request, Closure $next): Response
     {
-        $sessionLocale = (string) session()->get('locale');
-        $locale = $sessionLocale ?: null;
+        $locale = null;
 
-        // Force check across all defined guards to find the authenticated user
+        // 1. Cek parameter request query/post 'locale' atau 'lang' terlebih dahulu
+        if ($request->has('locale')) {
+            $locale = (string) $request->input('locale');
+        } elseif ($request->has('lang')) {
+            $locale = (string) $request->input('lang');
+        }
+
+        // 2. Cek session jika session store aktif pada request ini
+        if (!$locale && $request->hasSession()) {
+            $sessionLocale = (string) session()->get('locale');
+            if ($sessionLocale) {
+                $locale = $sessionLocale;
+            }
+        }
+
+        // 3. Cek autentikasi user di semua guards untuk mendapatkan preferensi bahasa dari database
         $user = null;
-        $guards = ['web', 'filament', 'admin', 'mobile', 'nativephp', 'api'];
+        $guards = ['web', 'filament', 'admin', 'mobile', 'nativephp', 'api', 'sanctum'];
         foreach ($guards as $guard) {
             try {
                 $guardInstance = Auth::guard($guard);
@@ -35,12 +49,11 @@ class SetLocale
         }
 
         if ($user) {
-            // Get current DB locale via accessor. Assuming user model has a 'lang' property or relation.
-            // On NativePHP mobile, skip DB sync to avoid proxy errors — use session only
             $isMobile = NativeServiceProvider::isNativeMobile();
             $dbLocale = null;
 
-            if (! $isMobile) {
+            // Jika diakses dari NativePHP mobile yang menggunakan DB proxy lokal, batasi penulisan DB
+            if (!$isMobile) {
                 try {
                     $dbLocale = $user->lang;
                 } catch (\Throwable $e) {
@@ -48,47 +61,74 @@ class SetLocale
                 }
             }
 
-            if ($sessionLocale && $sessionLocale !== $dbLocale && ! $isMobile) {
-                // SYNC: Session changed (e.g. from Welcome page switcher). Persist to Database.
+            if ($locale && $locale !== $dbLocale && !$isMobile) {
+                // Sinkronisasi: Simpan pilihan bahasa terbaru ke Database jika berbeda
                 try {
                     UserLanguage::updateOrCreate(
                         ['model_id' => (string) $user->id, 'model_type' => get_class($user)],
-                        ['lang' => $sessionLocale]
+                        ['lang' => $locale]
                     );
-                    // Update user instance in memory if it's cached or loaded
-                    $user->setRawAttributes(['lang' => $sessionLocale], true);
+                    if (method_exists($user, 'setRawAttributes')) {
+                        $user->setRawAttributes(['lang' => $locale], true);
+                    }
                 } catch (\Exception $e) {
-                    // Fail silently if DB is not reachable
+                    // Abaikan jika DB tidak dapat diakses
                 }
-                $locale = $sessionLocale;
-            } elseif ($dbLocale) {
-                // SYNC: Database is source of truth if session is empty or old. Persist to Session.
+            } elseif ($dbLocale && !$locale) {
+                // Sinkronisasi: Ambil pilihan bahasa dari Database jika session/request kosong
                 $locale = (string) $dbLocale;
-                session()->put('locale', $locale);
-            } elseif ($sessionLocale) {
-                $locale = $sessionLocale;
             }
         }
 
-        // Detect from browser if everything else fails (new visitor)
-        if (! $locale) {
-            // On NativePHP mobile: default to Indonesian, ignore device browser language
+        // 4. Cek header Accept-Language dari client (sangat penting untuk API client mobile Android/iOS)
+        if (!$locale) {
+            $acceptLanguage = $request->header('Accept-Language');
+            if ($acceptLanguage) {
+                // Contoh: "en-US,en;q=0.9,id;q=0.8" -> ambil bagian pertama
+                $langs = explode(',', $acceptLanguage);
+                $firstLang = trim($langs[0]);
+                
+                // Normalisasi penulisan "en-US" menjadi "en_US"
+                $cleanLang = str_replace('-', '_', $firstLang);
+
+                $localsConfig = config('filament-language-switcher.locals', ['id' => [], 'en' => []]);
+                $supported = array_keys($localsConfig);
+
+                if (in_array($cleanLang, $supported)) {
+                    $locale = $cleanLang;
+                } else {
+                    // Cek versi bahasa pendek, misal "en" dari "en_US"
+                    $shortLang = explode('_', $cleanLang)[0];
+                    foreach ($supported as $sup) {
+                        if ($sup === $shortLang || explode('_', $sup)[0] === $shortLang) {
+                            $locale = $sup;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 5. Fallback Default jika belum terdeteksi
+        if (!$locale) {
             if (NativeServiceProvider::isNativeMobile()) {
                 $locale = 'id';
             } else {
                 $localsConfig = config('filament-language-switcher.locals', ['id' => [], 'en' => []]);
                 $supported = array_keys($localsConfig);
-                $locale = $request->getPreferredLanguage($supported ?: ['id', 'en']);
+                $locale = $request->getPreferredLanguage($supported ?: ['id', 'en']) ?: 'id';
             }
         }
 
+        // 6. Terapkan locale ke sistem
         if ($locale) {
             app()->setLocale($locale);
-            session()->put('locale', (string) $locale);
-
-            // Force update for all related parts of the system
             config(['app.locale' => $locale]);
-            // Ensure Filament context also respects this
+
+            if ($request->hasSession()) {
+                session()->put('locale', (string) $locale);
+            }
+
             if (class_exists(Filament::class)) {
                 App::setLocale($locale);
             }

@@ -20,6 +20,8 @@ class VoucherResource extends Resource
 {
     protected static ?string $model = Voucher::class;
 
+    protected static ?int $navigationSort = 3;
+
     protected static ?string $navigationIcon = 'heroicon-o-ticket';
 
     public static function getGloballySearchableAttributes(): array

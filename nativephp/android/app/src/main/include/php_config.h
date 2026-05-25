@@ -1812,9 +1812,6 @@
 /* Define to 1 if GD library has JIS-mapped Japanese font support. */
 /* #undef JISX0208 */
 
-/* Define the main Lexbor version */
-#define LEXBOR_VERSION "2.5.0"
-
 /* The LMDB handler header file. */
 /* #undef LMDB_INCLUDE_FILE */
 
@@ -1907,7 +1904,7 @@
 /* #undef PHP_BUILD_PROVIDER */
 
 /* The system that PHP was built on. */
-#define PHP_BUILD_SYSTEM "Darwin iad20-gt1026-e774b2cd-e783-40b5-a4ca-ad870f8043c1-0EFD654D91AD.local 23.6.0 Darwin Kernel Version 23.6.0: Mon Jan 19 22:03:27 PST 2026; root:xnu-10063.141.1.710.3~1/RELEASE_ARM64_VMAPPLE arm64"
+#define PHP_BUILD_SYSTEM "Darwin sjc20-bb713-43f4a4e2-9b98-4d76-be70-b4a1e81b6593-DE5E10BA624D.local 23.6.0 Darwin Kernel Version 23.6.0: Tue Feb 24 20:51:46 PST 2026; root:xnu-10063.141.1.711.7~1/RELEASE_ARM64_VMAPPLE arm64"
 
 /* Define to 1 if your system has fork/vfork/CreateProcess. */
 #define PHP_CAN_SUPPORT_PROC_OPEN 1
@@ -2016,7 +2013,7 @@
 /* #undef PHP_SYSTEM_GLOB */
 
 /* The 'uname -a' output. */
-#define PHP_UNAME "Darwin iad20-gt1026-e774b2cd-e783-40b5-a4ca-ad870f8043c1-0EFD654D91AD.local 23.6.0 Darwin Kernel Version 23.6.0: Mon Jan 19 22:03:27 PST 2026; root:xnu-10063.141.1.710.3~1/RELEASE_ARM64_VMAPPLE arm64"
+#define PHP_UNAME "Darwin sjc20-bb713-43f4a4e2-9b98-4d76-be70-b4a1e81b6593-DE5E10BA624D.local 23.6.0 Darwin Kernel Version 23.6.0: Tue Feb 24 20:51:46 PST 2026; root:xnu-10063.141.1.711.7~1/RELEASE_ARM64_VMAPPLE arm64"
 
 /* Define to 1 if PHP uses its own crypt_r, and to 0 if using the external
    crypt library. */
@@ -2097,6 +2094,10 @@
 /* Enable extensions on AIX, Interix, z/OS.  */
 #ifndef _ALL_SOURCE
 # define _ALL_SOURCE 1
+#endif
+/* Enable extensions on Cosmopolitan Libc. */
+#ifndef _COSMO_SOURCE
+# define _COSMO_SOURCE 1
 #endif
 /* Enable general extensions on macOS.  */
 #ifndef _DARWIN_C_SOURCE

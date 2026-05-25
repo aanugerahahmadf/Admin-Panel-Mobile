@@ -10,7 +10,12 @@ use Filament\Resources\Pages\ListRecords;
 
 class ListPackages extends ListRecords
 {
-    protected static string $resource = PackageResource::class;
+    protected static string $resource = PackageResource::class; 
+
+    public function getTitle(): string
+    {
+        return static::$title ?? static::getResource()::getTitleCasePluralModelLabel();
+    }
 
     protected function getHeaderActions(): array
     {

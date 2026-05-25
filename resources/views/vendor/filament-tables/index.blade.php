@@ -126,12 +126,6 @@
     ])
 >
     <x-filament-tables::container>
-        @if (count($filterIndicators))
-            <x-filament-tables::filters.indicators
-                :indicators="$filterIndicators"
-            />
-        @endif
-
         <div
             @if (! $hasHeader) x-cloak @endif
             x-bind:hidden="! (@js($hasHeader) || (selectedRecords.length && @js(count($bulkActions))))"
@@ -171,14 +165,9 @@
                         <span
                             x-on:click="areFiltersOpen = ! areFiltersOpen"
                             x-bind:class="{ @js($hasDeferredFilters() ? '-mt-7' : 'mt-3'): areFiltersOpen }"
-                            @class([
-                                'ms-auto flex items-center gap-x-2 cursor-pointer select-none outline-hidden focus:outline-hidden transition-all',
-                                'text-white dark:text-white [&_svg]:text-white [&_svg]:dark:text-white',
-                                'hover:underline focus:underline active:underline',
-                            ])
-                            style="-webkit-tap-highlight-color: transparent;"
+                            class="ms-auto"
                         >
-                            {{ $filtersTriggerAction->badge($activeFiltersCount > 0 ? $activeFiltersCount : null) }}
+                            {{ $filtersTriggerAction->badge($activeFiltersCount) }}
                         </span>
                     @endif
                 </div>
@@ -288,7 +277,11 @@
             />
         @endif
 
-
+        @if (count($filterIndicators))
+            <x-filament-tables::filters.indicators
+                :indicators="$filterIndicators"
+            />
+        @endif
 
         <div
             @if ((! $isReordering) && ($pollingInterval = $getPollingInterval()))

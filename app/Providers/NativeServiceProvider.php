@@ -75,25 +75,47 @@ class NativeServiceProvider extends ServiceProvider
             }
         }
 
-        // 4. Android WebView User-Agent detection
-        //    NativePHP Android embeds Chromium WebView which sends "wv)" in UA
-        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-        if (! empty($userAgent)) {
-            if (preg_match('/Android.*wv\)/i', $userAgent)) {
-                return $result = true;
-            }
-            // iOS WKWebView
-            if (preg_match('/iPhone|iPad.*Mobile.*Safari/i', $userAgent) && ! str_contains($userAgent, 'CriOS') && ! str_contains($userAgent, 'FxiOS')) {
-                return $result = true;
-            }
+        // 3b. NATIVE_HOST_IP is set → explicitly configured for mobile (dev sets this)
+        //     AND we are NOT on Windows (mobile devices run Linux/Darwin)
+        if (env('NATIVE_HOST_IP') && PHP_OS_FAMILY !== 'Windows') {
+            return $result = true;
         }
 
-        // 5. Heuristic: non-Windows OS with no HTTP client (embedded PHP CLI server on device)
+        // 4. Android / iOS WebView & Local embedded environment checks
+        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+        $remoteAddr = $_SERVER['REMOTE_ADDR'] ?? null;
         $isCI = env('GITHUB_ACTIONS') || app()->runningUnitTests();
         $isCloud = env('LARAVEL_CLOUD') || env('DOCKER_ENV') || env('APP_ENV') === 'production';
 
-        if (PHP_OS_FAMILY !== 'Windows' && ! isset($_SERVER['REMOTE_ADDR']) && ! $isCloud && ! $isCI) {
-            return $result = true;
+        if (! empty($userAgent)) {
+            // Android WebView (sends "wv)" in UA)
+            if (preg_match('/Android.*wv\)/i', $userAgent)) {
+                return $result = true;
+            }
+
+            // iOS WKWebView: Only treat as Native App if:
+            //  - Running on Linux or Darwin host (never Windows)
+            //  - Not on standard Cloud hosting / CI environments
+            //  - Accessing locally (empty Remote Address OR localhost loopback)
+            if (preg_match('/iPhone|iPad.*Mobile.*Safari/i', $userAgent) && ! str_contains($userAgent, 'CriOS') && ! str_contains($userAgent, 'FxiOS')) {
+                if (PHP_OS_FAMILY !== 'Windows' && ! $isCloud && ! $isCI) {
+                    if (! isset($remoteAddr) || in_array($remoteAddr, ['127.0.0.1', '::1', '0:0:0:0:0:0:0:1'])) {
+                        return $result = true;
+                    }
+                }
+            }
+        }
+
+        // 5. Heuristic: non-Windows OS with no HTTP client or loopback client
+        if (PHP_OS_FAMILY !== 'Windows' && ! $isCloud && ! $isCI) {
+            // No REMOTE_ADDR → definitely embedded PHP server on device (no incoming network)
+            if (! isset($remoteAddr)) {
+                return $result = true;
+            }
+            // REMOTE_ADDR is loopback → local WebView calling embedded PHP server
+            if (in_array($remoteAddr, ['127.0.0.1', '::1', '0:0:0:0:0:0:0:1'])) {
+                return $result = true;
+            }
         }
 
         return $result = false;
@@ -112,6 +134,15 @@ class NativeServiceProvider extends ServiceProvider
         // Allow explicit override via environment variable
         if ($override = env('NATIVE_HOST_IP')) {
             return $ip = $override;
+        }
+
+        // Ekstrak dari APP_URL jika diset ke IP LAN atau ngrok (Penting untuk HP FISIK)
+        $appUrl = env('APP_URL');
+        if ($appUrl && str_starts_with($appUrl, 'http')) {
+            $parsedHost = parse_url($appUrl, PHP_URL_HOST);
+            if ($parsedHost && !in_array($parsedHost, ['127.0.0.1', 'localhost'])) {
+                return $ip = $parsedHost;
+            }
         }
 
         // Android emulator special loopback
@@ -135,7 +166,34 @@ class NativeServiceProvider extends ServiceProvider
     public static function normalizeUrl(string $url): string
     {
         if (! self::isNativeMobile()) {
-            return $url;
+            if (app()->runningInConsole() || ! request()) {
+                return $url;
+            }
+
+            $requestRoot = request()->getSchemeAndHttpHost();
+            $urlHost = parse_url($url, PHP_URL_HOST);
+            $urlScheme = parse_url($url, PHP_URL_SCHEME);
+            $urlPort = parse_url($url, PHP_URL_PORT);
+            $appHost = parse_url((string) env('APP_URL'), PHP_URL_HOST);
+
+            if (! $urlHost || ! $urlScheme) {
+                return $url;
+            }
+
+            $localHosts = array_filter([
+                '127.0.0.1',
+                'localhost',
+                $appHost,
+                request()->getHost(),
+            ]);
+
+            if (! in_array($urlHost, $localHosts, true)) {
+                return $url;
+            }
+
+            $sourceRoot = $urlScheme.'://'.$urlHost.($urlPort ? ':'.$urlPort : '');
+
+            return preg_replace('#^'.preg_quote($sourceRoot, '#').'#', $requestRoot, $url) ?: $url;
         }
 
         $hostIp = self::mobileHostIp();
@@ -166,6 +224,27 @@ class NativeServiceProvider extends ServiceProvider
             if (class_exists(System::class)) {
                 $this->app->singleton(System::class, fn () => new System);
             }
+
+            // ── CRITICAL: Switch DB to proxy HERE (register phase) ──────────
+            // This MUST happen before boot() so that session, cache, and any
+            // middleware that access the DB use the proxy, not 127.0.0.1:3306
+            // which does not exist on the mobile device.
+            $proxyUrl = env('NATIVE_DB_PROXY_URL',
+                rtrim(env('APP_URL', 'http://192.168.100.63:8000'), '/') . '/api/db-proxy'
+            );
+            $proxySecret = env('NATIVE_DB_PROXY_SECRET', 'nativephp-db-proxy-secret-2024');
+
+            config([
+                'database.default'                                          => 'mysql_proxy',
+                'database.connections.mysql_proxy.proxy_url'               => $proxyUrl,
+                'database.connections.mysql_proxy.proxy_secret'            => $proxySecret,
+                'database.connections.mysql_proxy.database'                => env('DB_DATABASE', 'wedding_organizer'),
+                // Also switch session/cache to use file driver to avoid DB chicken-egg on boot
+                'session.driver'  => 'file',
+                'cache.default'   => 'file',
+            ]);
+
+            error_log('[NativePHP] register() → DB switched to mysql_proxy. URL: ' . $proxyUrl);
         }
     }
 
@@ -199,8 +278,11 @@ class NativeServiceProvider extends ServiceProvider
             $proto = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http');
             $host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'];
 
-            // If the request isn't coming from standard localhost
-            if (! in_array(parse_url('http://'.$host, PHP_URL_HOST), ['127.0.0.1', 'localhost'])) {
+            // If it is mobile, we must NOT override appUrl with 127.0.0.1 or localhost,
+            // because we need the app to connect to the developer's Host PC IP.
+            // If it is NOT mobile (e.g. web browser or desktop app), we should always
+            // update appUrl to match the host they are accessing from, so assets load correctly.
+            if (! $isMobile || ! in_array(parse_url('http://'.$host, PHP_URL_HOST), ['127.0.0.1', 'localhost'])) {
                 $appUrl = "{$proto}://{$host}";
                 $hostIp = parse_url($appUrl, PHP_URL_HOST);
                 $currentHost = $host;
@@ -267,7 +349,19 @@ class NativeServiceProvider extends ServiceProvider
             $runtimeConfig['database.connections.mysql_proxy.proxy_url'] = $proxyUrl;
             $runtimeConfig['database.connections.mysql_proxy.proxy_secret'] = env('NATIVE_DB_PROXY_SECRET', 'nativephp-db-proxy-secret-2024');
             $runtimeConfig['database.connections.mysql_proxy.database'] = env('DB_DATABASE', config('database.connections.mysql.database', 'Wedding_organizer'));
+            // Google OAuth: Alihkan redirect url ke skema deep link aplikasi Android/iOS
+            if (env('GOOGLE_MOBILE_REDIRECT_URL')) {
+                $runtimeConfig['services.google.redirect'] = env('GOOGLE_MOBILE_REDIRECT_URL');
+            }
+
+            // Memaksa asset() dan route() memakai URL Host PC, bukan localhost dari NativePHP
+            \Illuminate\Support\Facades\URL::forceRootUrl($hostServerUrl);
         }
+
+        // PASTIKAN public disk URL selalu absolute URL (untuk web & mobile), 
+        // sehingga Spatie Media Library tidak me-return '/storage/...' 
+        // yang menyebabkan blade menggandakan 'storage//storage/'
+        $runtimeConfig['filesystems.disks.public.url'] = ($isMobile ? $hostServerUrl : config('app.url')) . '/storage';
 
         config($runtimeConfig);
 
@@ -292,8 +386,18 @@ class NativeServiceProvider extends ServiceProvider
         // PHP static variables do not persist across separate HTTP requests.
         $flagFile = storage_path('framework/mobile_init.flag');
 
-        if ($isMobile && ! file_exists($flagFile) && ! app()->runningInConsole()) {
+        // Bypassed if using mysql_proxy because PC already handles migrations and seeders!
+        // This removes ALL delay and loading times on mobile boot.
+        if ($isMobile && config('database.default') !== 'mysql_proxy' && ! file_exists($flagFile) && ! app()->runningInConsole()) {
             try {
+                // FAST PING: Mencegah White Screen lama jika PC Host tidak terjangkau / Firewall aktif
+                try {
+                    Http::timeout(2)->post($proxyUrl, ['method' => 'select', 'query' => 'SELECT 1', 'bindings' => []]);
+                } catch (\Throwable $e) {
+                    error_log('[NativePHP] Host PC unreachable/Firewall active. Skipping DB init to prevent timeout delay.');
+                    return; // Abort init agar tidak white screen
+                }
+
                 // Double check DB status only if flag is missing
                 $hasUsers = false;
                 try {
@@ -317,6 +421,7 @@ class NativeServiceProvider extends ServiceProvider
                         'BannerSeeder',
                         'ArticleSeeder',
                         'TermsAndConditionsSeeder',
+                        'VoucherSeeder',
                     ];
 
                     foreach ($seeders as $seeder) {

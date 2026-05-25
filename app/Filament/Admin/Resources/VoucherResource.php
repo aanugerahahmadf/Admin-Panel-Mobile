@@ -157,9 +157,11 @@ class VoucherResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('code')
                     ->searchable()
+                    ->sortable()
                     ->label(__('Kode')),
                 Tables\Columns\TextColumn::make('discount_amount')
                     ->label(__('Diskon'))
+                    ->sortable()
                     ->formatStateUsing(function ($state, Voucher $record) {
                         if ($record->discount_type === DiscountType::PERCENTAGE) {
                             return number_format((float) $state, 0).'%';
@@ -171,18 +173,30 @@ class VoucherResource extends Resource
                 Tables\Columns\TextColumn::make('discount_type')
                     ->label(__('Tipe'))
                     ->badge()
-                    ->alignment('center'),
+                    ->color(fn (DiscountType $state): string => match($state) {
+                        DiscountType::PERCENTAGE => 'success',
+                        DiscountType::FIXED => 'info',
+                    })
+                    ->formatStateUsing(fn (DiscountType $state): string => match($state) {
+                        DiscountType::PERCENTAGE => __('Persentase (%)'),
+                        DiscountType::FIXED => __('Nominal (Rp)'),
+                    })
+                    ->alignment('center')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('expires_at')
                     ->label(__('Kadaluarsa Pada'))
                     ->dateTime()
+                    ->sortable()
                     ->alignment('center'),
                 Tables\Columns\IconColumn::make('is_active')
                     ->label(__('Status'))
                     ->boolean()
+                    ->sortable()
                     ->alignment('center'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Dibuat Pada'))
                     ->dateTime()
+                    ->sortable()
                     ->alignment('center')
                     ->toggleable(isToggledHiddenByDefault: true),
             ])

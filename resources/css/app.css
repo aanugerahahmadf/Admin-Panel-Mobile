@@ -97,49 +97,16 @@ footer.fixed > *,
     border: none !important;
 }
 
-/* Filament uses divide-y on the table container which adds lines */
-.fi-ta-ctn > .divide-y > *,
-.fi-ta > .divide-y > *,
-.fi-ta-header-toolbar,
-.fi-ta-content {
-    border-top: none !important;
-    border-bottom: none !important;
-    border-left: none !important;
-    border-right: none !important;
-}
-
-/* ─── Remove Table Container Background & Borders (Transparent Layout) ─── */
-.fi-ta-ctn, 
-.fi-ta-content,
-.fi-ta-header-toolbar,
-.fi-ta-header {
-    background-color: transparent !important;
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-}
-
-.dark .fi-ta-ctn,
-.dark .fi-ta-content,
-.dark .fi-ta-header-toolbar,
-.dark .fi-ta-header {
-    background-color: transparent !important;
-    background: transparent !important;
-}
-
-/* Ensure the table itself doesn't have a background */
-.fi-ta-ctn table {
-    background-color: transparent !important;
+/* Filament uses divide-y on the table container which adds lines. Keep default Filament borders and backgrounds. */
+.fi-ta-filter-indicators {
+    margin-bottom: 1rem !important;
+    padding-top: 0.5rem !important;
 }
 
 .fi-ta-ctn {
     overflow: visible !important;
 }
 
-.fi-ta-filter-indicators {
-    margin-bottom: 1rem !important;
-    padding-top: 0.5rem !important;
-}
 
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
@@ -300,6 +267,28 @@ select:focus[data-flux-control] {
     min-width: 0 !important;
 }
 
+/* ── Mobile: Header Actions (Kembali, Edit, dll) rata kanan di atas sebelah kanan ── */
+@media (max-width: 639px) {
+    .fi-header {
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        flex-wrap: nowrap !important;
+        gap: 1rem !important;
+    }
+    .fi-header > div:first-child {
+        flex-grow: 1 !important;
+        min-width: 0 !important;
+    }
+    .fi-header > div:last-child {
+        flex-shrink: 0 !important;
+        margin-top: 0 !important;
+        display: flex !important;
+        justify-content: flex-end !important;
+        align-items: center !important;
+    }
+}
+
 /* ── Touch optimizations ── */
 .fi-ta-record,
 .fi-ta-record * {
@@ -314,16 +303,6 @@ select:focus[data-flux-control] {
 /* ═══════════════════════════════════════════════════════════════════
    FILAMENT TABLE & FILTERS OVERRIDES
    ═══════════════════════════════════════════════════════════════════ */
-
-/* Remove table backgrounds and borders — hanya di user panel */
-.fi-panel-user .fi-ta-ctn, 
-.fi-panel-user .fi-ta-content, 
-.fi-panel-user .fi-ta-header-toolbar, 
-.fi-panel-user .fi-ta-pagination { 
-    background-color: transparent !important; 
-    box-shadow: none !important; 
-    border-color: transparent !important; 
-}
 
 /* Hide default search inputs and pagination — hanya di user panel */
 .fi-panel-user .fi-ta-header-toolbar .fi-input-wrp, 
@@ -376,11 +355,205 @@ select:focus[data-flux-control] {
     }
 }
 
+
+
+/* Hilangkan semua background & garis table di user panel (web, mobile, desktop) */
+.fi-panel-user .fi-ta-ctn,
+.fi-panel-user .fi-ta-content,
+.fi-panel-user .fi-wi-table .fi-ta-ctn,
+.fi-panel-user .fi-wi-table .fi-ta-content {
+    background-color: transparent !important;
+    border: none !important;
+    border-top: none !important;
+    box-shadow: none !important;
+}
+.fi-panel-user .fi-ta-header-toolbar {
+    border: none !important;
+    border-top: none !important;
+    border-bottom: none !important;
+}
+.fi-panel-user .fi-ta-cell,
+.fi-panel-user .fi-ta-header-cell,
+.fi-panel-user .fi-wi-table .fi-ta-cell,
+.fi-panel-user .fi-wi-table .fi-ta-header-cell {
+    border: none !important;
+    border-bottom: none !important;
+}
+.fi-panel-user .fi-ta-header,
+.fi-panel-user .fi-wi-table .fi-ta-header {
+    border-bottom: none !important;
+    border-top: none !important;
+}
+.fi-panel-user table,
+.fi-panel-user tr,
+.fi-panel-user td,
+.fi-panel-user th {
+    border: none !important;
+}
+.fi-panel-user thead,
+.fi-panel-user tbody,
+.fi-panel-user thead > tr,
+.fi-panel-user tbody > tr,
+.fi-panel-user .fi-ta-header-row {
+    border: none !important;
+    border-bottom: none !important;
+}
+.fi-panel-user .fi-ta-header-row .fi-ta-header-cell:last-child,
+.fi-panel-user thead > tr > th:last-child {
+    border-right: none !important;
+}
+.fi-panel-user [class*="divide-"],
+.fi-panel-user [class*="divide-"] > :not([hidden]) ~ :not([hidden]),
+.fi-panel-user [class*="border-t"],
+.fi-panel-user [class*="border-b"] {
+    border: none !important;
+    border-top: none !important;
+}
+
 /* Stats Overview 5 columns on XL & Center Align */
 @media (min-width: 1280px) { 
     .fi-wi-stats-overview-stats-ctn { 
         grid-template-columns: repeat(5, minmax(0, 1fr)) !important; 
     } 
+}
+
+.fi-wi-stats-overview {
+    width: 100% !important;
+}
+
+.user-home-stats .fi-wi-stats-overview-stats-ctn,
+.fi-wi-stats-overview-stats-ctn:has(.home-stat-card),
+.fi-wi-stats-overview-stats-ctn:has(.home-stat-welcome) {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.875rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    align-items: stretch !important;
+    box-sizing: border-box !important;
+}
+
+@media (min-width: 768px) {
+    .user-home-stats .fi-wi-stats-overview-stats-ctn,
+    .fi-wi-stats-overview-stats-ctn:has(.home-stat-card),
+    .fi-wi-stats-overview-stats-ctn:has(.home-stat-welcome) {
+        width: 100% !important;
+        max-width: 100% !important;
+        gap: 1rem !important;
+    }
+}
+
+@media (min-width: 1280px) {
+    .user-home-stats .fi-wi-stats-overview-stats-ctn,
+    .fi-wi-stats-overview-stats-ctn:has(.home-stat-card),
+    .fi-wi-stats-overview-stats-ctn:has(.home-stat-welcome) {
+        width: 100% !important;
+        max-width: 100% !important;
+        gap: 1rem 1.25rem !important;
+    }
+}
+
+@media (min-width: 1536px) {
+    .user-home-stats .fi-wi-stats-overview-stats-ctn,
+    .fi-wi-stats-overview-stats-ctn:has(.home-stat-card),
+    .fi-wi-stats-overview-stats-ctn:has(.home-stat-welcome) {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
+
+.user-home-stats .fi-wi-stats-overview-stat:first-child,
+.fi-wi-stats-overview-stats-ctn:has(.home-stat-card) .home-stat-welcome {
+    grid-column: 1 / -1 !important;
+}
+
+.home-stat-card {
+    border-radius: 12px !important;
+    min-height: 118px !important;
+    padding: 1rem !important;
+}
+
+.home-stat-welcome {
+    min-height: 132px !important;
+}
+
+.home-stat-card > div.grid {
+    gap: 0.45rem !important;
+}
+
+.home-stat-card .fi-wi-stats-overview-stat-label {
+    color: rgb(203 213 225) !important;
+    font-size: 0.95rem !important;
+    line-height: 1.25rem !important;
+    white-space: nowrap !important;
+}
+
+.home-stat-card .fi-wi-stats-overview-stat-value {
+    font-size: 1.9rem !important;
+    line-height: 2.15rem !important;
+}
+
+.home-stat-welcome .fi-wi-stats-overview-stat-value {
+    font-size: 2.15rem !important;
+    line-height: 2.4rem !important;
+}
+
+.home-stat-card .fi-wi-stats-overview-stat-description {
+    font-size: 0.95rem !important;
+    line-height: 1.25rem !important;
+    white-space: nowrap !important;
+}
+
+.home-stat-card .fi-wi-stats-overview-stat-description-icon {
+    width: 1.1rem !important;
+    height: 1.1rem !important;
+    flex: none !important;
+}
+
+.fi-resource-home.fi-resource-list-records-page > section,
+.fi-resource-home.fi-resource-list-records-page > section > div.grid {
+    row-gap: 0.5rem !important;
+}
+
+.fi-resource-home .fi-page-header-widgets ~ .flex {
+    margin-top: 0 !important;
+}
+
+@media (max-width: 480px) {
+    .user-home-stats .fi-wi-stats-overview-stats-ctn,
+    .fi-wi-stats-overview-stats-ctn:has(.home-stat-card),
+    .fi-wi-stats-overview-stats-ctn:has(.home-stat-welcome) {
+        width: calc(100vw - 2rem) !important;
+        max-width: calc(100vw - 2rem) !important;
+        gap: 0.625rem !important;
+    }
+
+    .home-stat-card {
+        min-height: 118px !important;
+        padding: 0.8rem !important;
+    }
+
+    .home-stat-welcome {
+        min-height: 136px !important;
+    }
+
+    .home-stat-card .fi-wi-stats-overview-stat-label,
+    .home-stat-card .fi-wi-stats-overview-stat-description {
+        font-size: 0.8rem !important;
+        line-height: 1rem !important;
+    }
+
+    .home-stat-card .fi-wi-stats-overview-stat-value {
+        font-size: 1.75rem !important;
+        line-height: 2rem !important;
+    }
+
+    .home-stat-welcome .fi-wi-stats-overview-stat-value {
+        font-size: 2rem !important;
+        line-height: 2.25rem !important;
+    }
 }
 
 .fi-wi-stats-overview-stat {
@@ -451,56 +624,10 @@ select:focus[data-flux-control] {
     transform: rotate(180deg) !important;
 }
 
-/* --- Table Widget Visibility (Specific for Widgets) --- */
-.fi-wi-table-widget .fi-ta-ctn {
-    background-color: white !important;
-    border: 1px solid rgb(var(--gray-200)) !important;
-    border-radius: 0.75rem !important;
-    box-shadow: var(--shadow-sm) !important;
-    overflow: hidden !important;
-    display: block !important;
-}
 
-.dark .fi-wi-table-widget .fi-ta-ctn {
-    background-color: rgb(var(--gray-900)) !important;
-    border-color: rgb(var(--gray-800)) !important;
-}
 
-.fi-wi-table-widget table {
-    display: table !important;
-    width: 100% !important;
-}
 
-.fi-wi-table-widget .fi-ta-header {
-    display: table-header-group !important;
-    background-color: rgb(var(--gray-50)) !important;
-}
-
-.dark .fi-wi-table-widget .fi-ta-header {
-    background-color: rgb(var(--gray-950)) !important;
-}
-
-.fi-wi-table-widget .fi-ta-header-cell {
-    padding: 0.75rem 1rem !important;
-    font-weight: 600 !important;
-    color: rgb(var(--gray-700)) !important;
-    border-bottom: 2px solid rgb(var(--gray-200)) !important;
-}
-
-.dark .fi-wi-table-widget .fi-ta-header-cell {
-    color: rgb(var(--gray-200)) !important;
-    border-bottom-color: rgb(var(--gray-800)) !important;
-}
-
-.fi-wi-table-widget .fi-ta-cell {
-    padding: 0.75rem 1rem !important;
-    border-bottom: 1px solid rgb(var(--gray-100)) !important;
-}
-
-.dark .fi-wi-table-widget .fi-ta-cell {
-    border-bottom-color: rgb(var(--gray-800)) !important;
-}
 
 /* ═══════════════════════════════════════════════════════════════════
    CBIR SEARCH BAR — tombol camera & upload menyatu di dalam search
-*/
+   */

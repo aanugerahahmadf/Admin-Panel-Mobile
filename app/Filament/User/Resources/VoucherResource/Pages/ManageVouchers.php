@@ -18,4 +18,9 @@ class ManageVouchers extends ManageRecords
             // No creation action for user
         ];
     }
+
+   public function getTitle(): string
+    {
+        return $this->record->name;
+    }
 }

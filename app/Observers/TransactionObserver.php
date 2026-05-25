@@ -4,27 +4,21 @@ namespace App\Observers;
 
 use App\Models\History;
 use App\Models\Transaction;
+use App\Services\PlatformNotificationService;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Log;
 
 class TransactionObserver
 {
-    /**
-     * Handle the Transaction "created" event.
-     */
     public function created(Transaction $transaction): void
     {
         $this->logToHistory($transaction);
     }
 
-    /**
-     * Handle the Transaction "updated" event.
-     */
     public function updated(Transaction $transaction): void
     {
         $this->logToHistory($transaction);
 
-        // Check if status changed to success to handle balance and notifications
         if ($transaction->status === 'success' && $transaction->getOriginal('status') !== 'success') {
             if ($transaction->type === 'topup') {
                 $user = $transaction->user;
@@ -38,6 +32,14 @@ class TransactionObserver
                             ->success()
                             ->icon('heroicon-o-banknotes')
                             ->sendToDatabase($user);
+
+                        PlatformNotificationService::send(
+                            $user,
+                            __('Topup Berhasil'),
+                            __('Saldo sebesar Rp :amount telah masuk ke akun Anda.', [
+                                'amount' => number_format($transaction->amount, 0, ',', '.'),
+                            ])
+                        );
                     } catch (\Throwable $e) {
                         Log::warning('[TransactionObserver] Notification failed: '.$e->getMessage());
                     }
@@ -46,9 +48,6 @@ class TransactionObserver
         }
     }
 
-    /**
-     * Log transaction to history table.
-     */
     protected function logToHistory(Transaction $transaction): void
     {
         History::updateOrCreate(

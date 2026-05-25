@@ -140,29 +140,70 @@ class WithdrawalResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('user.full_name')
                     ->label(__('Pelanggan'))
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable()
+                    ->icon('heroicon-o-user'),
                 Tables\Columns\TextColumn::make('reference_number')
-                    ->label(__('Ref'))
-                    ->searchable(),
+                    ->label(__('Referensi'))
+                    ->searchable()
+                    ->sortable()
+                    ->copyable()
+                    ->copyableState(fn ($state) => $state)
+                    ->badge()
+                    ->color('primary'),
                 Tables\Columns\TextColumn::make('amount')
                     ->label(__('Jumlah'))
-                    ->money('IDR'),
+                    ->money('IDR')
+                    ->sortable()
+                    ->alignment('end')
+                    ->icon('heroicon-o-banknotes'),
                 Tables\Columns\TextColumn::make('bank_name')
                     ->label(__('Bank'))
-                    ->searchable(),
+                    ->searchable()
+                    ->badge()
+                    ->color('info')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('account_number')
-                    ->label(__('Rekening')),
+                    ->label(__('Rekening'))
+                    ->copyable()
+                    ->copyableState(fn ($state) => $state)
+                    ->alignment('center')
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('account_holder')
                     ->label(__('Pemilik Rekening'))
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('status')
-                    ->badge(),
+                    ->label(__('Status'))
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'pending' => 'warning',
+                        'approved' => 'info',
+                        'completed' => 'success',
+                        'rejected' => 'danger',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'pending' => __('Tertunda'),
+                        'approved' => __('Disetujui'),
+                        'completed' => __('Selesai'),
+                        'rejected' => __('Ditolak'),
+                        default => $state,
+                    })
+                    ->alignment('center')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Tgl Pengajuan'))
                     ->dateTime()
+                    ->sortable()
+                    ->alignment('center')
+                    ->icon('heroicon-o-calendar')
                     ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('updated_at')
+                    ->label(__('Diperbarui Pada'))
                     ->dateTime()
+                    ->sortable()
+                    ->alignment('center')
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([

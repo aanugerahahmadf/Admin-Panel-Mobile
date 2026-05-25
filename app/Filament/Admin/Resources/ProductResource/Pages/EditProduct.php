@@ -4,11 +4,25 @@ namespace App\Filament\Admin\Resources\ProductResource\Pages;
 
 use App\Filament\Admin\Resources\ProductResource;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 
 class EditProduct extends EditRecord
 {
     protected static string $resource = ProductResource::class;
+
+    protected function getSavedNotification(): ?Notification
+    {
+        return Notification::make()
+            ->success()
+            ->title(__('Bunga Diperbarui'))
+            ->body(__('Bunga telah berhasil diperbarui.'));
+    }
+
+    public function getTitle(): string
+    {
+        return $this->record->name;
+    }
 
     protected function getHeaderActions(): array
     {

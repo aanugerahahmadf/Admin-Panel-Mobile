@@ -137,6 +137,24 @@ class UserResource extends Resource
                                     ->label(__('Alamat Tempat Tinggal'))
                                     ->rows(3)
                                     ->columnSpanFull(),
+                                Forms\Components\TextInput::make('ip_address')
+                                    ->label(__('Alamat IP'))
+                                    ->disabled()
+                                    ->maxLength(45)
+                                    ->helperText(__('IP terakhir yang tercatat untuk pengguna.'))
+                                    ->columnSpan(1),
+                                Forms\Components\TextInput::make('login_city')
+                                    ->label(__('Kota'))
+                                    ->disabled()
+                                    ->columnSpan(1),
+                                Forms\Components\TextInput::make('login_region')
+                                    ->label(__('Provinsi'))
+                                    ->disabled()
+                                    ->columnSpan(1),
+                                Forms\Components\TextInput::make('login_country')
+                                    ->label(__('Negara'))
+                                    ->disabled()
+                                    ->columnSpanFull(),
                             ])->columns(2),
                     ])->columnSpan(['lg' => 2]),
 
@@ -274,6 +292,24 @@ class UserResource extends Resource
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
+                Tables\Columns\TextColumn::make('ip_address')
+                    ->label(__('Alamat IP'))
+                    ->searchable()
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('login_location')
+                    ->label(__('Tempat Login'))
+                    ->state(function (User $record): string {
+                        $parts = array_filter([
+                            $record->login_city,
+                            $record->login_region,
+                            $record->login_country,
+                        ]);
+                        return $parts ? implode(', ', $parts) : '-';
+                    })
+                    ->icon('heroicon-o-map-pin')
+                    ->toggleable(),
+
                 Tables\Columns\TextColumn::make('whatsapp')
                     ->label(__('WhatsApp'))
                     ->searchable()
@@ -293,8 +329,7 @@ class UserResource extends Resource
                     ->badge()
                     ->color(fn (string $state): string => $state === 'google' ? 'danger' : 'gray')
                     ->formatStateUsing(fn (string $state): string => $state === 'google' ? 'Google' : $state)
-                    ->alignment('center')
-                    ->placeholder(__('Manual')),
+                    ->alignment('center'),
 
                 Tables\Columns\TextColumn::make('roles.name')
                     ->searchable()

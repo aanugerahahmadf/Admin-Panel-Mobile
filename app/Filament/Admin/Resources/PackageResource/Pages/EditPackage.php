@@ -19,6 +19,11 @@ class EditPackage extends EditRecord
             ->body(__('Paket telah berhasil diperbarui.'));
     }
 
+    public function getTitle(): string
+    {
+        return $this->record->name;
+    }
+
     protected function getHeaderActions(): array
     {
         return [

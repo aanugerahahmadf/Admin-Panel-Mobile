@@ -3,6 +3,7 @@
 namespace App\Filament\User\Resources\PackageResource\Pages;
 
 use App\Filament\User\Pages\CbirSearchPage;
+use App\Filament\User\Pages\Dashboard;
 use App\Filament\User\Resources\PackageResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
@@ -11,18 +12,28 @@ class ViewPackage extends ViewRecord
 {
     protected static string $resource = PackageResource::class;
 
+    public function getTitle(): string
+    {
+        return $this->record->name;
+    }
+
     protected function getHeaderActions(): array
     {
         return [
             Actions\Action::make('back')
                 ->label(__('Kembali'))
-                ->url(fn () => str_contains(url()->previous(), 'cbir-search')
-                    ? CbirSearchPage::getUrl()
-                    : static::getResource()::getUrl('index'))
+                ->url(function () {
+                    $prev = url()->previous();
+                    if (str_contains($prev, 'cbir-search')) {
+                        return CbirSearchPage::getUrl();
+                    }
+                    if (str_contains($prev, 'packages') || str_contains($prev, 'products')) {
+                        return static::getResource()::getUrl('index');
+                    }
+                    return Dashboard::getUrl();
+                })
                 ->color('gray')->button()
                 ->icon('heroicon-o-arrow-left'),
-
-            // No edit/delete for users ideally, maybe a "Book Now" or "Chat"
         ];
     }
 }

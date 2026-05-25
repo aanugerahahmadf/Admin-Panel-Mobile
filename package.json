@@ -22,8 +22,17 @@
         "#nativephp": "./vendor/nativephp/mobile/resources/dist/native.js"
     },
     "dependencies": {
+        "@dataconnect/generated": "file:src/dataconnect-generated",
+        "@google-cloud/api-gateway": "^4.2.2",
+        "@google-cloud/bigquery-data-transfer": "^5.1.3",
+        "@google-cloud/bigquery-reservation": "^4.4.1",
+        "@google-cloud/language": "^7.2.2",
+        "@google-cloud/retail": "^4.3.1",
+        "@google-cloud/translate": "^9.4.1",
+        "@google-cloud/vision": "^5.3.6",
         "@popperjs/core": "^2.11.8",
         "emoji-js": "^3.9.0",
-        "emoji-picker-element": "^1.29.1"
+        "emoji-picker-element": "^1.29.1",
+        "firebase": "^10.8.0"
     }
 }

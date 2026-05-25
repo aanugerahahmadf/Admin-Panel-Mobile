@@ -43,6 +43,7 @@ class AuthController extends Controller
             'phone' => $request->phone,
             'address' => $request->address,
             'password' => Hash::make($request->password),
+            'ip_address' => $request->ip(),
         ];
 
         if ($request->hasFile('profile_photo')) {

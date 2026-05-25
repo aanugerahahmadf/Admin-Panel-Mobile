@@ -36,6 +36,11 @@ $app = Application::configure(basePath: dirname(__DIR__))
             SetLocale::class,
         ]);
 
+        // Mendaftarkan middleware SetLocale ke group api untuk sinkronisasi bahasa aplikasi mobile
+        $middleware->api(append: [
+            SetLocale::class,
+        ]);
+
         // Define mobile group for NativePHP
         $middleware->group('mobile', [
             EncryptCookies::class,
@@ -44,6 +49,8 @@ $app = Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->replace(ValidateCsrfToken::class, VerifyCsrfToken::class);
+
+        $middleware->redirectGuestsTo(fn () => route('filament.user.auth.login'));
 
         // Trust proxies for Vercel, Production, or ngrok development
         if (env('VERCEL') ||

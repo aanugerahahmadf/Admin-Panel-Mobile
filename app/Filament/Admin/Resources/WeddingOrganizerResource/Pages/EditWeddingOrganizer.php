@@ -10,6 +10,11 @@ class EditWeddingOrganizer extends EditRecord
 {
     protected static string $resource = WeddingOrganizerResource::class;
 
+    public function getTitle(): string
+    {
+        return $this->record->name;
+    }
+
     protected function getHeaderActions(): array
     {
         return [

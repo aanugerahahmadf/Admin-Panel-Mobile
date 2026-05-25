@@ -41,6 +41,10 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string|null $avatar_url
  * @property string|null $phone
  * @property string|null $address
+ * @property string|null $ip_address
+ * @property string|null $login_city
+ * @property string|null $login_region
+ * @property string|null $login_country
  * @property float|null $latitude
  * @property float|null $longitude
  * @property float|null $budget
@@ -205,6 +209,10 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
         'phone',
         'whatsapp',
         'address',
+        'ip_address',
+        'login_city',
+        'login_region',
+        'login_country',
         'latitude',
         'longitude',
         'budget',

@@ -92,19 +92,27 @@ class WishlistResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('user.full_name')
                     ->searchable()
-                    ->label(__('Pelanggan')),
+                    ->label(__('Pelanggan'))
+                    ->sortable()
+                    ->icon('heroicon-o-user'),
                 Tables\Columns\TextColumn::make('package.name')
                     ->searchable()
-                    ->label(__('Paket Dekorasi')),
+                    ->label(__('Paket Dekorasi'))
+                    ->badge()
+                    ->color('info')
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Ditambahkan Pada'))
                     ->dateTime()
-                    ->alignment('center'),
+                    ->alignment('center')
+                    ->sortable()
+                    ->icon('heroicon-o-calendar'),
                 Tables\Columns\TextColumn::make('updated_at')
                     ->label(__('Terakhir Diubah'))
                     ->dateTime()
-                    ->toggleable(isToggledHiddenByDefault: true)
-                    ->alignment('center'),
+                    ->sortable()
+                    ->alignment('center')
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 //

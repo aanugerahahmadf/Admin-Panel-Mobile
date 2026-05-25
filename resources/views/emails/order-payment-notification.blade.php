@@ -29,17 +29,7 @@
   table.detail td.key { color:#666; width:45%; }
   table.detail td.val { font-weight:bold; color:#111; }
 
-  .product-card { text-align:center; padding:20px 0 12px; }
-  .product-card img { width:160px; height:160px; object-fit:cover;
-                      border:1px solid #e0e0e0; border-radius:4px; display:block;
-                      margin:0 auto; }
-  .product-card .no-img { width:160px; height:160px; background:#f5f5f5;
-                           border:1px solid #e0e0e0; border-radius:4px;
-                           display:block; margin:0 auto;
-                           line-height:160px; font-size:11px; color:#aaa; }
-  .product-card .prod-name  { font-size:14px; font-weight:bold; color:#111; margin-top:10px; }
-  .product-card .prod-meta  { font-size:11px; color:#888; margin-top:3px; }
-  .product-card .prod-price { font-size:15px; font-weight:bold; color:#111; margin-top:6px; }
+
 
   .btn-wrap { text-align:center; margin:24px 0 8px; }
   .btn { display:inline-block; background:#111; color:#fff !important; text-decoration:none;
@@ -53,6 +43,7 @@
 
 @php
 use App\Enums\OrderPaymentStatus;
+use App\Enums\OrderStatus;
 
 $ps = $order->payment_status instanceof OrderPaymentStatus
     ? $order->payment_status
@@ -74,12 +65,23 @@ $itemType  = $order->package_id
 $itemName  = $item?->name ?? '-';
 $itemCat   = $item?->category?->name ?? '-';
 $itemPrice = $order->total_price;
+$qty       = $order->quantity ?? 1;
+
+$os = $order->status instanceof OrderStatus
+    ? $order->status
+    : OrderStatus::tryFrom((string) $order->status);
+$orderStatusLabel = $os?->getLabel() ?? (string) $order->status;
 
 $orderUrl   = config('app.url') . '/user/orders';
 $appName    = config('app.name', 'Wedding Organizer');
 $userName   = $user->full_name ?? $user->username ?? __('Pelanggan');
 $adminEmail = \App\Models\User::whereHas('roles', fn($q) => $q->where('name','super_admin'))
     ->value('email') ?? config('mail.from.address');
+
+$bookingDate = $order->booking_date
+    ? \Carbon\Carbon::parse($order->booking_date)->translatedFormat('d F Y')
+    : '-';
+$bookingTime = $order->booking_time ?? '-';
 
 // Dari Mailable::build() — URL publik atau base64 kecil
 $imgSrc  = $itemImageSrc ?? null;
@@ -111,6 +113,25 @@ $logoSrc = $logoSrc      ?? null;
       <p>{{ __('Pesanan Anda belum dibayar. Segera selesaikan pembayaran agar pesanan dapat diproses.') }}</p>
     @endif
 
+    {{-- Produk/Paket yang dipesan seperti marketplace --}}
+    <table style="width:100%; border-collapse:collapse; margin:16px 0; background:#fafafa; border-radius:8px; overflow:hidden;">
+      <tr>
+        <td style="width:80px; padding:12px; vertical-align:top;">
+          @if($imgSrc)
+            <img src="{{ $imgSrc }}" alt="{{ $itemName }}" style="width:72px; height:72px; object-fit:cover; border-radius:6px; border:1px solid #e0e0e0;">
+          @else
+            <div style="width:72px; height:72px; background:#eee; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:10px; color:#999;">No Image</div>
+          @endif
+        </td>
+        <td style="padding:12px 12px 12px 0; vertical-align:top;">
+          <div style="font-size:11px; color:#888; margin-bottom:2px;">{{ $itemType }}</div>
+          <div style="font-size:14px; font-weight:bold; color:#111; margin-bottom:4px;">{{ $itemName }}</div>
+          <div style="font-size:11px; color:#888;">{{ $itemCat }} &times; {{ $qty }}</div>
+          <div style="font-size:15px; font-weight:bold; color:#111; margin-top:6px;">Rp {{ number_format($itemPrice, 0, ',', '.') }}</div>
+        </td>
+      </tr>
+    </table>
+
     <div class="section-title">{{ __('Rincian Pesanan') }}</div>
 
     <table class="detail">
@@ -120,11 +141,15 @@ $logoSrc = $logoSrc      ?? null;
       </tr>
       <tr>
         <td class="key">{{ __('Tanggal Booking') }}</td>
-        <td class="val">{{ \Carbon\Carbon::parse($order->booking_date)->translatedFormat('d F Y') }}</td>
+        <td class="val">{{ $bookingDate }} {{ $bookingTime }}</td>
+      </tr>
+      <tr>
+        <td class="key">{{ __('Jumlah Item') }}</td>
+        <td class="val">{{ $qty }} {{ $qty > 1 ? __('item') : __('item') }}</td>
       </tr>
       <tr>
         <td class="key">{{ __('Total Pembayaran') }}</td>
-        <td class="val">Rp {{ number_format($itemPrice, 0, ',', '.') }}</td>
+        <td class="val" style="font-size:16px;">Rp {{ number_format($itemPrice, 0, ',', '.') }}</td>
       </tr>
       <tr>
         <td class="key">{{ __('Status Pembayaran') }}</td>
@@ -132,25 +157,11 @@ $logoSrc = $logoSrc      ?? null;
       </tr>
       <tr>
         <td class="key">{{ __('Status Pesanan') }}</td>
-        <td class="val">
-          {{ $order->status instanceof \App\Enums\OrderStatus
-              ? $order->status->getLabel()
-              : (string) $order->status }}
-        </td>
+        <td class="val">{{ $orderStatusLabel }}</td>
       </tr>
     </table>
 
-    {{-- Gambar produk/paket seperti Shopee --}}
-    <div class="product-card">
-      @if($imgSrc)
-        <img src="{{ $imgSrc }}" alt="{{ $itemName }}">
-      @else
-        <div class="no-img">No Image</div>
-      @endif
-      <div class="prod-name">{{ $itemName }}</div>
-      <div class="prod-meta">{{ $itemType }} &bull; {{ $itemCat }}</div>
-      <div class="prod-price">Rp {{ number_format($itemPrice, 0, ',', '.') }}</div>
-    </div>
+
 
     <div class="btn-wrap">
       <a href="{{ $orderUrl }}" class="btn">{{ __('Lihat Pesanan') }}</a>
