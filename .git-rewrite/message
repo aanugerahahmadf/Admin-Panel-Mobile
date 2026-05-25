@@ -1,1 +1,0 @@
-chore: optimize login and fix PHP 8.4 compatibility (security: removed .env)

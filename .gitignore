@@ -36,6 +36,7 @@ pglite-debug.log
 patches.lock.json
 skills-lock.json
 firebase-debug.log
+.git-rewrite/
 coverage/
 .phpunit.cache/
 /.phpunit.result.cache
