@@ -93,54 +93,49 @@ jobs:
       - name: Run Tests
         run: php artisan test
 
-  build:
-    name: Build Docker Image
+  deploy:
+    name: Deploy to Production
     needs: test
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check GCP credentials
+        id: check-gcp
+        run: |
+          if [ -n "${{ secrets.GCP_SERVICE_KEY }}" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "⚠️ GCP_PROJECT_ID secret not set — skipping cloud deploy"
+          fi
+
       - name: Google Cloud Auth
+        if: steps.check-gcp.outputs.ready == 'true'
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_SERVICE_KEY }}
 
       - name: Set up Cloud SDK
+        if: steps.check-gcp.outputs.ready == 'true'
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Configure Docker
+        if: steps.check-gcp.outputs.ready == 'true'
         run: gcloud auth configure-docker gcr.io -q
 
-      - name: Build image
+      - name: Build & Push Docker Image
+        if: steps.check-gcp.outputs.ready == 'true'
         run: |
           docker build -f Dockerfile.cloudrun \
             -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/wedding-decorasi-api:${{ github.sha }} \
             -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/wedding-decorasi-api:latest .
-
-      - name: Push image
-        run: |
           docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/wedding-decorasi-api:${{ github.sha }}
           docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/wedding-decorasi-api:latest
 
-  deploy-cloud-run:
-    name: Deploy Cloud Run
-    needs: build
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Google Cloud Auth
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GCP_SERVICE_KEY }}
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
       - name: Deploy to Cloud Run
+        if: steps.check-gcp.outputs.ready == 'true'
         run: |
           gcloud run deploy wedding-decorasi-api \
             --image=gcr.io/${{ secrets.GCP_PROJECT_ID }}/wedding-decorasi-api:${{ github.sha }} \
@@ -155,38 +150,11 @@ jobs:
             --timeout=300 \
             --set-env-vars="APP_ENV=production,APP_DEBUG=false,APP_URL=${{ secrets.APP_URL }},DB_CONNECTION=mysql,DB_HOST=${{ secrets.DB_HOST }},DB_PORT=${{ secrets.DB_PORT }},DB_DATABASE=${{ secrets.DB_DATABASE }},DB_USERNAME=${{ secrets.DB_USERNAME }},DB_PASSWORD=${{ secrets.DB_PASSWORD }},SESSION_DRIVER=database,CACHE_STORE=database,QUEUE_CONNECTION=database"
 
-  deploy-firebase:
-    name: Deploy Firebase
-    needs: test
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Deploy Firebase Hosting & Data Connect
+      - name: Deploy Firebase
+        if: steps.check-gcp.outputs.ready == 'true'
         run: |
           npx -y firebase-tools@latest deploy \
             --only hosting,dataconnect \
-            --project ${{ secrets.GCP_PROJECT_ID }}
+            --project "${{ secrets.GCP_PROJECT_ID }}"
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-
-  notify:
-    name: Notify Deployment
-    needs: [deploy-cloud-run, deploy-firebase]
-    if: always() && github.ref == 'refs/heads/main' && github.event_name == 'push'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Notify Slack
-        run: |
-          STATUS="${{ needs.deploy-cloud-run.result == 'success' && needs.deploy-firebase.result == 'success' && '✅' || '❌' }}"
-          curl -s -X POST "${{ secrets.SLACK_WEBHOOK }}" \
-            -H "Content-Type: application/json" \
-            -d "{\"text\":\"${STATUS} Wedding Organizer deployment (${GITHUB_SHA::7})\"}" \
-          || true
