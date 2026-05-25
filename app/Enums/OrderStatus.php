@@ -10,6 +10,8 @@ enum OrderStatus: string implements HasColor, HasIcon, HasLabel
 {
     case PENDING = 'pending';
     case CONFIRMED = 'confirmed';
+    case PREPARING = 'preparing';
+    case EVENT_DAY = 'event_day';
     case COMPLETED = 'completed';
     case CANCELLED = 'cancelled';
 
@@ -18,6 +20,8 @@ enum OrderStatus: string implements HasColor, HasIcon, HasLabel
         return match ($this) {
             self::PENDING => __('Menunggu'),
             self::CONFIRMED => __('Dikonfirmasi'),
+            self::PREPARING => __('Sedang Disiapkan'),
+            self::EVENT_DAY => __('Hari-H'),
             self::COMPLETED => __('Selesai'),
             self::CANCELLED => __('Dibatalkan'),
         };
@@ -28,6 +32,8 @@ enum OrderStatus: string implements HasColor, HasIcon, HasLabel
         return match ($this) {
             self::PENDING => 'warning',
             self::CONFIRMED => 'primary',
+            self::PREPARING => 'info',
+            self::EVENT_DAY => 'success',
             self::COMPLETED => 'success',
             self::CANCELLED => 'danger',
         };
@@ -38,6 +44,8 @@ enum OrderStatus: string implements HasColor, HasIcon, HasLabel
         return match ($this) {
             self::PENDING => 'heroicon-m-clock',
             self::CONFIRMED => 'heroicon-m-check-circle',
+            self::PREPARING => 'heroicon-m-arrow-path',
+            self::EVENT_DAY => 'heroicon-m-calendar-days',
             self::COMPLETED => 'heroicon-m-check-badge',
             self::CANCELLED => 'heroicon-m-x-circle',
         };

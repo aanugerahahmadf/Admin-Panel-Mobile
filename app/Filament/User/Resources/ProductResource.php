@@ -2,6 +2,7 @@
 
 namespace App\Filament\User\Resources;
 
+use App\Enums\DiscountType;
 use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
 use App\Filament\User\Pages\MessagesPage;
