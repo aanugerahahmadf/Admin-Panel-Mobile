@@ -65,8 +65,8 @@ class SocialiteController extends Controller
         // Reverse client ID scheme — tidak perlu server publik, Google redirect
         // langsung ke app Android via custom URI scheme.
         // Format: com.googleusercontent.apps.CLIENT_ID:/oauth2redirect
-        $reverseClientId = 'com.googleusercontent.apps.' . str_replace('.apps.googleusercontent.com', '', $clientId);
-        $callbackUrl = $reverseClientId . ':/oauth2redirect';
+        $reverseClientId = 'com.googleusercontent.apps.'.str_replace('.apps.googleusercontent.com', '', $clientId);
+        $callbackUrl = $reverseClientId.':/oauth2redirect';
 
         config(["services.$provider.redirect" => $callbackUrl]);
 
@@ -90,15 +90,15 @@ class SocialiteController extends Controller
         if (class_exists(Browser::class) && function_exists('nativephp_call')) {
             $browser = new Browser;
             $opened = $browser->auth($authUrl);
-            Log::info("[Socialite Mobile] Browser::auth opened: " . ($opened ? 'yes' : 'no'));
+            Log::info('[Socialite Mobile] Browser::auth opened: '.($opened ? 'yes' : 'no'));
         }
 
         // Jika dipanggil via fetch (AJAX), return JSON
         if ($request->ajax() || $request->wantsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
             return response()->json([
                 'success' => true,
-                'opened'  => $opened,
-                'url'     => $authUrl,
+                'opened' => $opened,
+                'url' => $authUrl,
             ]);
         }
 
@@ -141,20 +141,21 @@ class SocialiteController extends Controller
 
     public function callbackMobileScheme(string $provider, Request $request)
     {
-        Log::info("[Socialite Mobile Scheme] Callback received", $request->all());
+        Log::info('[Socialite Mobile Scheme] Callback received', $request->all());
 
         $code = $request->query('code');
 
         if (! $code) {
-            Log::error("[Socialite Mobile Scheme] No code in callback");
+            Log::error('[Socialite Mobile Scheme] No code in callback');
+
             return redirect()->route('filament.user.auth.login')
                 ->with('error', __('Gagal login dengan Google. Tidak ada kode otorisasi.'));
         }
 
         try {
-            $clientId     = config("services.{$provider}.client_id");
-            $reverseId    = 'com.googleusercontent.apps.' . str_replace('.apps.googleusercontent.com', '', $clientId);
-            $callbackUrl  = $reverseId . ':/oauth2redirect';
+            $clientId = config("services.{$provider}.client_id");
+            $reverseId = 'com.googleusercontent.apps.'.str_replace('.apps.googleusercontent.com', '', $clientId);
+            $callbackUrl = $reverseId.':/oauth2redirect';
 
             config(["services.$provider.redirect" => $callbackUrl]);
 
@@ -165,6 +166,7 @@ class SocialiteController extends Controller
 
         } catch (\Exception $e) {
             Log::error("[Socialite Mobile Scheme] Error: {$e->getMessage()}");
+
             return redirect()->route('filament.user.auth.login')
                 ->with('error', __('Gagal mengambil data dari Google.'));
         }
@@ -186,7 +188,8 @@ class SocialiteController extends Controller
                     ->title(__('Berhasil Masuk!'))
                     ->message(__('Halo :name, selamat datang kembali.', ['name' => $user->first_name ?? $user->full_name]))
                     ->show();
-            } catch (\Throwable) {}
+            } catch (\Throwable) {
+            }
         }
 
         return $this->redirectAfterLogin($user);

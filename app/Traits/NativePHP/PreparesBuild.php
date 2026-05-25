@@ -4,8 +4,6 @@ namespace App\Traits\NativePHP;
 
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
-use Illuminate\Support\Str;
-use Symfony\Component\Process\Process as SymfonyProcess;
 
 /**
  * Local override of Native\Mobile\Traits\PreparesBuild.
@@ -27,7 +25,7 @@ trait PreparesBuild
         $excludeDevDependencies = true; // Force-exclude dev dependencies to prevent massive APK size (e.g. PHPUnit)
         $this->logToFile('Preparing Laravel bundle...');
 
-        $source         = realpath(base_path());
+        $source = realpath(base_path());
         $destinationZip = base_path('nativephp/android/app/src/main/assets/laravel_bundle.zip');
 
         $this->logToFile("  Source: $source");
@@ -35,7 +33,7 @@ trait PreparesBuild
 
         // ── KEY CHANGE: read from env instead of hardcoded C:\temp ──────────
         $tempDir = PHP_OS_FAMILY === 'Windows'
-            ? (env('NATIVEPHP_BUILD_TEMP_DIR', 'D:\\Temp') . '\\')
+            ? (env('NATIVEPHP_BUILD_TEMP_DIR', 'D:\\Temp').'\\')
             : base_path('nativephp/android/laravel');
         // ────────────────────────────────────────────────────────────────────
 
@@ -50,26 +48,26 @@ trait PreparesBuild
         try {
             if (file_exists($destinationZip)) {
                 $this->logToFile('  Removing existing bundle zip...');
-                
+
                 $unlinked = false;
                 for ($i = 0; $i < 5; $i++) {
                     if (@unlink($destinationZip)) {
                         $unlinked = true;
                         break;
                     }
-                    $this->logToFile("  Attempt " . ($i + 1) . " to remove bundle zip failed, retrying in 200ms...");
+                    $this->logToFile('  Attempt '.($i + 1).' to remove bundle zip failed, retrying in 200ms...');
                     usleep(200000); // 200ms
                 }
-                
-                if (!$unlinked) {
+
+                if (! $unlinked) {
                     $this->logToFile('  Failed to remove bundle zip. Attempting to stop Gradle daemon to release locks...');
                     if (PHP_OS_FAMILY === 'Windows') {
                         $androidPath = base_path('nativephp/android');
                         @exec("cd /d \"$androidPath\" && gradlew.bat --stop");
                         usleep(500000); // 500ms
                     }
-                    
-                    if (!@unlink($destinationZip)) {
+
+                    if (! @unlink($destinationZip)) {
                         $this->logToFile('WARNING: Could not remove existing bundle zip. 7-Zip will attempt to overwrite/update it.');
                     }
                 }
@@ -77,12 +75,12 @@ trait PreparesBuild
 
             $excludedDirs = match (PHP_OS_FAMILY) {
                 'Windows' => array_merge(config('nativephp.cleanup_exclude_files'), ['.git', 'node_modules', 'nativephp', 'vendor/nativephp/mobile/resources']),
-                'Linux'   => array_merge(config('nativephp.cleanup_exclude_files'), ['.git', 'node_modules', 'nativephp/ios', 'nativephp/android']),
-                'Darwin'  => array_merge(config('nativephp.cleanup_exclude_files'), ['.git', 'node_modules', 'nativephp/ios', 'nativephp/android']),
-                default   => config('nativephp.cleanup_exclude_files'),
+                'Linux' => array_merge(config('nativephp.cleanup_exclude_files'), ['.git', 'node_modules', 'nativephp/ios', 'nativephp/android']),
+                'Darwin' => array_merge(config('nativephp.cleanup_exclude_files'), ['.git', 'node_modules', 'nativephp/ios', 'nativephp/android']),
+                default => config('nativephp.cleanup_exclude_files'),
             };
 
-            $this->logToFile('  Excluded directories: ' . implode(', ', $excludedDirs));
+            $this->logToFile('  Excluded directories: '.implode(', ', $excludedDirs));
 
             $srcDir = base_path('vendor/nativephp/mobile/bootstrap/android');
 
@@ -91,7 +89,7 @@ trait PreparesBuild
 
             $composerArgs = $excludeDevDependencies ? '--no-dev --no-interaction' : '--no-interaction';
 
-            $this->logToFile('  Installing Composer dependencies' . ($excludeDevDependencies ? ' (--no-dev)' : '') . '...');
+            $this->logToFile('  Installing Composer dependencies'.($excludeDevDependencies ? ' (--no-dev)' : '').'...');
             $this->components->task('Installing Composer dependencies', function () use ($tempDir, $composerArgs) {
                 $result = Process::path($tempDir)
                     ->timeout(0)
@@ -121,12 +119,12 @@ trait PreparesBuild
 
             $version = config('nativephp.version', now()->format('Ymd-His'));
             $this->logToFile("  Writing version file: $version");
-            file_put_contents($tempDir . DIRECTORY_SEPARATOR . '.version', $version . PHP_EOL);
+            file_put_contents($tempDir.DIRECTORY_SEPARATOR.'.version', $version.PHP_EOL);
 
-            if (file_exists($source . DIRECTORY_SEPARATOR . '.env')) {
+            if (file_exists($source.DIRECTORY_SEPARATOR.'.env')) {
                 $this->logToFile('  Copying and cleaning .env file...');
-                $envPath = $tempDir . DIRECTORY_SEPARATOR . '.env';
-                copy($source . DIRECTORY_SEPARATOR . '.env', $envPath);
+                $envPath = $tempDir.DIRECTORY_SEPARATOR.'.env';
+                copy($source.DIRECTORY_SEPARATOR.'.env', $envPath);
                 $this->cleanEnvFile($envPath);
             }
 
@@ -150,23 +148,23 @@ trait PreparesBuild
             }
 
             // Write bundle_meta.json alongside the ZIP
-            $assetsDir    = dirname($destinationZip);
+            $assetsDir = dirname($destinationZip);
             $bifrostAppId = null;
-            if (file_exists($source . DIRECTORY_SEPARATOR . '.env')) {
-                $envContent = file_get_contents($source . DIRECTORY_SEPARATOR . '.env');
+            if (file_exists($source.DIRECTORY_SEPARATOR.'.env')) {
+                $envContent = file_get_contents($source.DIRECTORY_SEPARATOR.'.env');
                 if (preg_match('/BIFROST_APP_ID=(.+)/', $envContent, $matches)) {
                     $bifrostAppId = trim($matches[1]);
                 }
             }
             $bundleMeta = json_encode([
-                'version'      => $version,
+                'version' => $version,
                 'bifrost_app_id' => $bifrostAppId,
                 'runtime_mode' => config('nativephp.runtime.mode', 'persistent'),
             ], JSON_PRETTY_PRINT);
-            file_put_contents($assetsDir . DIRECTORY_SEPARATOR . 'bundle_meta.json', $bundleMeta);
+            file_put_contents($assetsDir.DIRECTORY_SEPARATOR.'bundle_meta.json', $bundleMeta);
 
             $runtimeMode = config('nativephp.runtime.mode', 'persistent');
-            $this->logToFile("  Written bundle_meta.json: version=$version, bifrost=" . ($bifrostAppId ?? 'null') . ", runtime_mode=$runtimeMode");
+            $this->logToFile("  Written bundle_meta.json: version=$version, bifrost=".($bifrostAppId ?? 'null').", runtime_mode=$runtimeMode");
 
             $sizeMB = round(filesize($destinationZip) / 1024 / 1024, 2);
             $this->logToFile("  Bundle size: {$sizeMB} MB");
@@ -275,7 +273,7 @@ trait PreparesBuild
             'ic_launcher_foreground.png',
         ];
 
-        $this->logToFile('  Generating icon sizes: ' . implode(', ', array_keys($sizes)));
+        $this->logToFile('  Generating icon sizes: '.implode(', ', array_keys($sizes)));
 
         foreach ($sizes as $folder => $size) {
             $dstDir = $resDir.$folder;
@@ -344,7 +342,7 @@ trait PreparesBuild
         }
 
         $success = @imagepng($resized, $dst, 0);
-        if (!$success) {
+        if (! $success) {
             $this->logToFile("  Warning: Failed to write icon to {$dst}. Retrying after short delay...");
             usleep(150000); // 150ms
             if (file_exists($dst)) {
@@ -373,7 +371,7 @@ trait PreparesBuild
                     $excludeArgs .= " /XD \"{$source}\\{$normalizedDir}\"";
                 }
                 // Explicitly exclude any nested .git and node_modules directories
-                $excludeArgs .= " /XD .git node_modules";
+                $excludeArgs .= ' /XD .git node_modules';
 
                 $cmd = "robocopy \"{$source}\" \"{$destination}\" /MIR /NFL /NDL /NJH /NJS /NP /R:0 /W:0{$excludeArgs}";
             } else {
@@ -401,4 +399,3 @@ trait PreparesBuild
         }
     }
 }
-

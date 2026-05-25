@@ -163,7 +163,7 @@ class ProductResource extends Resource
                 Tables\Columns\TextColumn::make('stock')
                     ->label(__('Stok'))
                     ->badge()
-                    ->color(fn ($state): string => match(true) {
+                    ->color(fn ($state): string => match (true) {
                         $state > 10 => 'success',
                         $state > 0 => 'warning',
                         default => 'danger',

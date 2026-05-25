@@ -26,14 +26,14 @@ trait PackagesIos
                              getenv('GITHUB_ACTIONS') === 'true';
 
         if ($shouldCleanCaches) {
-            $derivedDataPath = $_SERVER['HOME'] . '/Library/Developer/Xcode/DerivedData';
+            $derivedDataPath = $_SERVER['HOME'].'/Library/Developer/Xcode/DerivedData';
             if (is_dir($derivedDataPath)) {
                 Process::run(['rm', '-rf', $derivedDataPath]);
             }
 
             $spmCachePaths = [
-                $_SERVER['HOME'] . '/Library/Caches/org.swift.swiftpm',
-                $_SERVER['HOME'] . '/Library/org.swift.swiftpm',
+                $_SERVER['HOME'].'/Library/Caches/org.swift.swiftpm',
+                $_SERVER['HOME'].'/Library/org.swift.swiftpm',
             ];
 
             foreach ($spmCachePaths as $cachePath) {
@@ -65,12 +65,12 @@ trait PackagesIos
      */
     protected function exportArchiveWithXcode(string $archivePath): ?string
     {
-        $basePath          = base_path('nativephp/ios');
-        $exportPath        = $basePath . '/build/export';
+        $basePath = base_path('nativephp/ios');
+        $exportPath = $basePath.'/build/export';
         $exportOptionsPath = $this->createExportOptions($basePath);
 
         if (is_dir($exportPath)) {
-            Process::run('rm -rf ' . escapeshellarg($exportPath));
+            Process::run('rm -rf '.escapeshellarg($exportPath));
         }
 
         $result = Process::path($basePath)
@@ -93,7 +93,7 @@ trait PackagesIos
             return null;
         }
 
-        $ipaFiles = glob($exportPath . '/*.ipa');
+        $ipaFiles = glob($exportPath.'/*.ipa');
         if (empty($ipaFiles)) {
             \Laravel\Prompts\error('No IPA file was generated');
 
@@ -117,12 +117,12 @@ trait PackagesIos
     protected function uploadToAppStore(string $ipaPath, ?array $iosSigningConfig = null): void
     {
         if ($iosSigningConfig) {
-            $apiKey      = $this->resolveApiKeyFromPath($iosSigningConfig['apiKeyPath']);
-            $apiKeyId    = $iosSigningConfig['apiKeyId'];
+            $apiKey = $this->resolveApiKeyFromPath($iosSigningConfig['apiKeyPath']);
+            $apiKeyId = $iosSigningConfig['apiKeyId'];
             $apiIssuerId = $iosSigningConfig['apiIssuerId'];
         } else {
-            $apiKey      = $this->getAppStoreApiKey();
-            $apiKeyId    = config('nativephp.app_store_connect.api_key_id');
+            $apiKey = $this->getAppStoreApiKey();
+            $apiKeyId = config('nativephp.app_store_connect.api_key_id');
             $apiIssuerId = config('nativephp.app_store_connect.api_issuer_id');
         }
 
@@ -152,12 +152,12 @@ trait PackagesIos
                 ->env(['API_PRIVATE_KEYS_DIR' => dirname($tempApiKeyPath)])
                 ->run($command);
 
-            $stdout      = $result->output();
-            $stderr      = $result->errorOutput();
-            $allOutput   = $stdout . "\n" . $stderr;
+            $stdout = $result->output();
+            $stderr = $result->errorOutput();
+            $allOutput = $stdout."\n".$stderr;
             $jsonResponse = $stdout ? json_decode($stdout, true) : null;
 
-            $hasProductErrors   = $jsonResponse && ! empty($jsonResponse['product-errors']);
+            $hasProductErrors = $jsonResponse && ! empty($jsonResponse['product-errors']);
             $hasFailureInOutput = str_contains($allOutput, 'Failed to upload package')
                 || str_contains($allOutput, 'Upload failed')
                 || str_contains($allOutput, 'ERROR ITMS-')
@@ -171,10 +171,10 @@ trait PackagesIos
                 if ($hasProductErrors) {
                     foreach ($jsonResponse['product-errors'] as $error) {
                         $this->newLine();
-                        $this->line('<fg=red>Error: ' . ($error['message'] ?? 'Unknown error') . '</>');
+                        $this->line('<fg=red>Error: '.($error['message'] ?? 'Unknown error').'</>');
                         $reason = $error['user-info']['NSLocalizedFailureReason'] ?? null;
                         if ($reason) {
-                            $this->line('<fg=yellow>' . $reason . '</>');
+                            $this->line('<fg=yellow>'.$reason.'</>');
                         }
                     }
                 }

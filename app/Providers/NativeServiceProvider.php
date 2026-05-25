@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 use Native\Mobile\Network;
 use Native\Mobile\Providers\CameraServiceProvider;
@@ -140,7 +141,7 @@ class NativeServiceProvider extends ServiceProvider
         $appUrl = env('APP_URL');
         if ($appUrl && str_starts_with($appUrl, 'http')) {
             $parsedHost = parse_url($appUrl, PHP_URL_HOST);
-            if ($parsedHost && !in_array($parsedHost, ['127.0.0.1', 'localhost'])) {
+            if ($parsedHost && ! in_array($parsedHost, ['127.0.0.1', 'localhost'])) {
                 return $ip = $parsedHost;
             }
         }
@@ -230,21 +231,21 @@ class NativeServiceProvider extends ServiceProvider
             // middleware that access the DB use the proxy, not 127.0.0.1:3306
             // which does not exist on the mobile device.
             $proxyUrl = env('NATIVE_DB_PROXY_URL',
-                rtrim(env('APP_URL', 'http://192.168.100.63:8000'), '/') . '/api/db-proxy'
+                rtrim(env('APP_URL', 'http://192.168.100.63:8000'), '/').'/api/db-proxy'
             );
             $proxySecret = env('NATIVE_DB_PROXY_SECRET', 'nativephp-db-proxy-secret-2024');
 
             config([
-                'database.default'                                          => 'mysql_proxy',
-                'database.connections.mysql_proxy.proxy_url'               => $proxyUrl,
-                'database.connections.mysql_proxy.proxy_secret'            => $proxySecret,
-                'database.connections.mysql_proxy.database'                => env('DB_DATABASE', 'wedding_organizer'),
+                'database.default' => 'mysql_proxy',
+                'database.connections.mysql_proxy.proxy_url' => $proxyUrl,
+                'database.connections.mysql_proxy.proxy_secret' => $proxySecret,
+                'database.connections.mysql_proxy.database' => env('DB_DATABASE', 'wedding_organizer'),
                 // Also switch session/cache to use file driver to avoid DB chicken-egg on boot
-                'session.driver'  => 'file',
-                'cache.default'   => 'file',
+                'session.driver' => 'file',
+                'cache.default' => 'file',
             ]);
 
-            error_log('[NativePHP] register() → DB switched to mysql_proxy. URL: ' . $proxyUrl);
+            error_log('[NativePHP] register() → DB switched to mysql_proxy. URL: '.$proxyUrl);
         }
     }
 
@@ -355,13 +356,13 @@ class NativeServiceProvider extends ServiceProvider
             }
 
             // Memaksa asset() dan route() memakai URL Host PC, bukan localhost dari NativePHP
-            \Illuminate\Support\Facades\URL::forceRootUrl($hostServerUrl);
+            URL::forceRootUrl($hostServerUrl);
         }
 
-        // PASTIKAN public disk URL selalu absolute URL (untuk web & mobile), 
-        // sehingga Spatie Media Library tidak me-return '/storage/...' 
+        // PASTIKAN public disk URL selalu absolute URL (untuk web & mobile),
+        // sehingga Spatie Media Library tidak me-return '/storage/...'
         // yang menyebabkan blade menggandakan 'storage//storage/'
-        $runtimeConfig['filesystems.disks.public.url'] = ($isMobile ? $hostServerUrl : config('app.url')) . '/storage';
+        $runtimeConfig['filesystems.disks.public.url'] = ($isMobile ? $hostServerUrl : config('app.url')).'/storage';
 
         config($runtimeConfig);
 
@@ -395,6 +396,7 @@ class NativeServiceProvider extends ServiceProvider
                     Http::timeout(2)->post($proxyUrl, ['method' => 'select', 'query' => 'SELECT 1', 'bindings' => []]);
                 } catch (\Throwable $e) {
                     error_log('[NativePHP] Host PC unreachable/Firewall active. Skipping DB init to prevent timeout delay.');
+
                     return; // Abort init agar tidak white screen
                 }
 

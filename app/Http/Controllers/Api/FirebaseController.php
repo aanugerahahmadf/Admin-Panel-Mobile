@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Models\Message;
+use App\Models\Order;
 use App\Services\FirebaseService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Cache;
 
 class FirebaseController extends Controller
 {
@@ -247,7 +249,7 @@ class FirebaseController extends Controller
             ]);
 
             $orderId = $request->input('order_id');
-            $order = \App\Models\Order::findOrFail($orderId);
+            $order = Order::findOrFail($orderId);
 
             $orderData = [
                 'id' => $order->id,
@@ -284,7 +286,7 @@ class FirebaseController extends Controller
             ]);
 
             $messageId = $request->input('message_id');
-            $message = \App\Models\Message::findOrFail($messageId);
+            $message = Message::findOrFail($messageId);
 
             $messageData = [
                 'id' => $message->id,
@@ -326,7 +328,7 @@ class FirebaseController extends Controller
                 $this->firebaseService->clearCache($path);
                 $message = "Cache cleared for path: {$path}";
             } else {
-                \Illuminate\Support\Facades\Cache::flush();
+                Cache::flush();
                 $message = 'All cache cleared';
             }
 

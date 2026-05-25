@@ -16,6 +16,7 @@ use Native\Mobile\Traits\PackagesIos as VendorPackagesIos;
 use Native\Mobile\Traits\PlatformFileOperations;
 use Native\Mobile\Traits\RunsAndroid as VendorRunsAndroid;
 use Native\Mobile\Traits\RunsIos as VendorRunsIos;
+
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\error;
 use function Laravel\Prompts\intro;
@@ -43,11 +44,14 @@ class NativeRunCommand extends Command
         ManagesWatchman,
         PlatformFileOperations;
 
-    // ── Android traits ────────────────────────────────────────────────────
-    use VendorRunsAndroid, LocalRunsAndroid {
-        // LocalRunsAndroid::runTheAndroidBuild wins (no timeout)
-        LocalRunsAndroid::runTheAndroidBuild insteadof VendorRunsAndroid;
-        VendorRunsAndroid::runTheAndroidBuild as vendorRunTheAndroidBuild;
+    use LocalPackagesIos, VendorPackagesIos {
+        // LocalPackagesIos methods win (no timeout)
+        LocalPackagesIos::prepareBuildEnvironment  insteadof VendorPackagesIos;
+        LocalPackagesIos::exportArchiveWithXcode   insteadof VendorPackagesIos;
+        LocalPackagesIos::uploadToAppStore         insteadof VendorPackagesIos;
+        VendorPackagesIos::prepareBuildEnvironment as vendorPrepareBuildEnvironment;
+        VendorPackagesIos::exportArchiveWithXcode as vendorExportArchiveWithXcode;
+        VendorPackagesIos::uploadToAppStore as vendorUploadToAppStore;
     }
 
     // ── PreparesBuild ─────────────────────────────────────────────────────
@@ -61,21 +65,17 @@ class NativeRunCommand extends Command
         LocalPreparesBuild::platformOptimizedCopy insteadof PlatformFileOperations;
     }
 
+    // ── Android traits ────────────────────────────────────────────────────
+    use LocalRunsAndroid, VendorRunsAndroid {
+        // LocalRunsAndroid::runTheAndroidBuild wins (no timeout)
+        LocalRunsAndroid::runTheAndroidBuild insteadof VendorRunsAndroid;
+        VendorRunsAndroid::runTheAndroidBuild as vendorRunTheAndroidBuild;
+    }
     // ── iOS traits ────────────────────────────────────────────────────────
-    use VendorRunsIos, LocalRunsIos {
+    use LocalRunsIos, VendorRunsIos {
         // LocalRunsIos::runOnRealDevice wins (no timeout)
         LocalRunsIos::runOnRealDevice    insteadof VendorRunsIos;
-        VendorRunsIos::runOnRealDevice   as vendorRunOnRealDevice;
-    }
-
-    use VendorPackagesIos, LocalPackagesIos {
-        // LocalPackagesIos methods win (no timeout)
-        LocalPackagesIos::prepareBuildEnvironment  insteadof VendorPackagesIos;
-        LocalPackagesIos::exportArchiveWithXcode   insteadof VendorPackagesIos;
-        LocalPackagesIos::uploadToAppStore         insteadof VendorPackagesIos;
-        VendorPackagesIos::prepareBuildEnvironment as vendorPrepareBuildEnvironment;
-        VendorPackagesIos::exportArchiveWithXcode  as vendorExportArchiveWithXcode;
-        VendorPackagesIos::uploadToAppStore        as vendorUploadToAppStore;
+        VendorRunsIos::runOnRealDevice as vendorRunOnRealDevice;
     }
 
     protected $signature = 'native:run
@@ -111,7 +111,7 @@ class NativeRunCommand extends Command
         if ($os && in_array(strtolower($os), ['a', 'i', 'android', 'ios'])) {
             $os = match (strtolower($os)) {
                 'android', 'a' => 'android',
-                'ios', 'i'     => 'ios',
+                'ios', 'i' => 'ios',
             };
         }
 
@@ -125,7 +125,7 @@ class NativeRunCommand extends Command
         if (! $os) {
             if (PHP_OS_FAMILY === 'Darwin') {
                 $hasAndroid = is_dir(base_path('nativephp/android'));
-                $hasIos     = is_dir(base_path('nativephp/ios'));
+                $hasIos = is_dir(base_path('nativephp/ios'));
 
                 if ($hasAndroid && ! $hasIos) {
                     $os = 'android';
@@ -134,7 +134,7 @@ class NativeRunCommand extends Command
                 } else {
                     $os = select('Which platform would you like to run?', [
                         'android' => 'Android',
-                        'ios'     => 'iOS',
+                        'ios' => 'iOS',
                     ]);
                 }
             } else {
@@ -163,11 +163,11 @@ class NativeRunCommand extends Command
 
         $osName = match ($os) {
             'android' => 'Android',
-            'ios'     => 'iOS',
-            default   => throw new \Exception('Invalid OS type.'),
+            'ios' => 'iOS',
+            default => throw new \Exception('Invalid OS type.'),
         };
 
-        intro('Running NativePHP for ' . $osName);
+        intro('Running NativePHP for '.$osName);
 
         if (! $this->checkForPhpBinaryUpdates()) {
             return self::FAILURE;
@@ -177,7 +177,7 @@ class NativeRunCommand extends Command
 
         match ($os) {
             'android' => $this->runAndroid(),
-            'ios'     => $this->runIos(),
+            'ios' => $this->runIos(),
         };
 
         $this->showBifrostBanner();
@@ -191,8 +191,8 @@ class NativeRunCommand extends Command
 
     private function resolvePhysicalDevice(): ?string
     {
-        $output  = shell_exec('adb devices') ?: '';
-        $lines   = array_values(array_filter(
+        $output = shell_exec('adb devices') ?: '';
+        $lines = array_values(array_filter(
             explode("\n", $output),
             fn ($line) => str_contains($line, "\tdevice")
         ));
@@ -230,16 +230,16 @@ class NativeRunCommand extends Command
                 return true;
             }
 
-            $nativephp        = json_decode(file_get_contents($jsonPath), true) ?? [];
+            $nativephp = json_decode(file_get_contents($jsonPath), true) ?? [];
             $installedVersion = $nativephp['php']['version'] ?? null;
 
             if (! $installedVersion) {
                 return true;
             }
 
-            $parts          = explode('.', $installedVersion);
-            $installedMinor = $parts[0] . '.' . $parts[1];
-            $runningMinor   = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
+            $parts = explode('.', $installedVersion);
+            $installedMinor = $parts[0].'.'.$parts[1];
+            $runningMinor = PHP_MAJOR_VERSION.'.'.PHP_MINOR_VERSION;
 
             if ($installedMinor !== $runningMinor) {
                 warning("PHP version mismatch:\n  • Mobile PHP version: {$installedMinor}\n  • CLI PHP version: {$runningMinor}\n\nYour app will not run.");
@@ -253,14 +253,14 @@ class NativeRunCommand extends Command
                 return false;
             }
 
-            $branch   = env('NATIVEPHP_BIN_BRANCH', 'main');
-            $client   = new Client;
+            $branch = env('NATIVEPHP_BIN_BRANCH', 'main');
+            $client = new Client;
             $response = $client->get("https://bin.nativephp.com/{$branch}/versions.json", [
                 'connect_timeout' => 3,
-                'timeout'         => 3,
+                'timeout' => 3,
             ]);
 
-            $versions      = json_decode($response->getBody()->getContents(), true);
+            $versions = json_decode($response->getBody()->getContents(), true);
             $latestVersion = $versions['versions'][$installedMinor]['php_version'] ?? null;
 
             if ($latestVersion && version_compare($latestVersion, $installedVersion, '>')) {
@@ -275,7 +275,7 @@ class NativeRunCommand extends Command
 
     protected function checkForUnregisteredPlugins(): void
     {
-        $registry     = app(PluginRegistry::class);
+        $registry = app(PluginRegistry::class);
         $unregistered = $registry->unregistered();
 
         if ($unregistered->isEmpty()) {
@@ -316,13 +316,13 @@ class NativeRunCommand extends Command
         }
 
         $envContent = file_get_contents($envFilePath);
-        $key        = 'NATIVEPHP_START_URL';
-        $newLine    = "{$key}={$startUrl}";
+        $key = 'NATIVEPHP_START_URL';
+        $newLine = "{$key}={$startUrl}";
 
         if (preg_match("/^{$key}=.*$/m", $envContent)) {
             $envContent = preg_replace("/^{$key}=.*$/m", $newLine, $envContent);
         } else {
-            $envContent = rtrim($envContent) . PHP_EOL . $newLine . PHP_EOL;
+            $envContent = rtrim($envContent).PHP_EOL.$newLine.PHP_EOL;
         }
 
         file_put_contents($envFilePath, $envContent);

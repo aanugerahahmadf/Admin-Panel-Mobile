@@ -16,7 +16,6 @@ class CreateProduct extends CreateRecord
         return $this->record->name;
     }
 
-    
     protected function getCreatedNotification(): ?Notification
     {
         return Notification::make()

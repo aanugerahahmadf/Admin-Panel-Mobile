@@ -4,7 +4,7 @@ namespace App\Filament\User\Resources\WeddingOrganizerResource\Pages;
 
 use App\Filament\User\Concerns\HasMobilePagination;
 use App\Filament\User\Resources\WeddingOrganizerResource;
-use Filament\Actions;
+use App\Filament\User\Widgets\StatsOverview;
 use Filament\Resources\Pages\ManageRecords;
 
 class ManageWeddingOrganizers extends ManageRecords
@@ -21,7 +21,7 @@ class ManageWeddingOrganizers extends ManageRecords
     public function getHeaderWidgets(): array
     {
         return [
-            \App\Filament\User\Widgets\StatsOverview::class,
+            StatsOverview::class,
             // \App\Filament\User\Widgets\UserOrdersChart::class,
             // \App\Filament\User\Widgets\UserSpendingChart::class,
         ];
@@ -31,5 +31,4 @@ class ManageWeddingOrganizers extends ManageRecords
     {
         return __('Beranda');
     }
-
 }

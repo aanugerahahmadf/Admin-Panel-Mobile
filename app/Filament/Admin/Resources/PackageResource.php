@@ -13,7 +13,6 @@ use Filament\Tables;
 use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\HtmlString;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 /**
@@ -266,7 +265,7 @@ class PackageResource extends Resource
                 Tables\Columns\TextColumn::make('stock')
                     ->label(__('Stok'))
                     ->badge()
-                    ->color(fn ($state): string => match(true) {
+                    ->color(fn ($state): string => match (true) {
                         $state <= 0 => 'danger',
                         $state <= 5 => 'warning',
                         default => 'success',

@@ -11,7 +11,7 @@ class ManageTermsOfServices extends ManageRecords
 {
     protected static string $resource = TermsOfServiceResource::class;
 
-     public function getTitle(): string
+    public function getTitle(): string
     {
         return static::$title ?? static::getResource()::getTitleCasePluralModelLabel();
     }

@@ -208,7 +208,7 @@ class Messages extends Component implements HasActions, HasForms
                     ->hiddenLabel()
                     ->placeholder(__('Write a message...'))
                     ->afterStateUpdated(fn () => $this->setTyping()),
-                    // ->suffixAction(EmojiPickerAction::make('emoji-message')),
+                // ->suffixAction(EmojiPickerAction::make('emoji-message')),
                 TakePicture::make('camera_image')
                     ->hiddenLabel()
                     ->visible(fn () => $this->showCamera)

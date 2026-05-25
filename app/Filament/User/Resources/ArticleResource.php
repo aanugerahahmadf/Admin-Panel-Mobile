@@ -68,10 +68,12 @@ class ArticleResource extends Resource
             __('Isi') => Str::limit(strip_tags(__($record->content)), 100),
         ];
     }
+
     public static function shouldRegisterNavigation(): bool
     {
         return false;
     }
+
     public static function getGlobalSearchResultUrl(Model $record): ?string
     {
         return static::getUrl('view', ['record' => $record]);

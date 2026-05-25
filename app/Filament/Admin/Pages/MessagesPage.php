@@ -16,7 +16,7 @@ class MessagesPage extends Page
     protected static string $view = 'filament.pages.messages';
 
     protected static ?string $activeNavigationIcon = 'heroicon-o-chat-bubble-left-right';
-    
+
     protected static ?int $navigationSort = 1;
 
     public ?Inbox $selectedConversation;

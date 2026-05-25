@@ -3,8 +3,8 @@
 namespace App\Providers;
 
 use App\Services\FirebaseService;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\ServiceProvider;
 
 class FirebaseServiceProvider extends ServiceProvider
 {
@@ -15,35 +15,44 @@ class FirebaseServiceProvider extends ServiceProvider
     {
         $this->app->singleton(FirebaseService::class, function ($app) {
             try {
-                return new FirebaseService();
+                return new FirebaseService;
             } catch (\Exception $e) {
                 Log::error('Failed to initialize FirebaseService', ['error' => $e->getMessage()]);
 
                 // Return a mock service if credentials are not available
-                return new class {
-                    public function read($path) {
-                        Log::warning('Firebase service not initialized. Returning null for path: ' . $path);
+                return new class
+                {
+                    public function read($path)
+                    {
+                        Log::warning('Firebase service not initialized. Returning null for path: '.$path);
+
                         return null;
                     }
 
-                    public function write($path, $data) {
-                        Log::warning('Firebase service not initialized. Write failed for path: ' . $path);
+                    public function write($path, $data)
+                    {
+                        Log::warning('Firebase service not initialized. Write failed for path: '.$path);
+
                         return false;
                     }
 
-                    public function getDatabase() {
+                    public function getDatabase()
+                    {
                         throw new \Exception('Firebase service not initialized');
                     }
 
-                    public function getAuth() {
+                    public function getAuth()
+                    {
                         throw new \Exception('Firebase service not initialized');
                     }
 
-                    public function getStorage() {
+                    public function getStorage()
+                    {
                         throw new \Exception('Firebase service not initialized');
                     }
 
-                    public function isConnected() {
+                    public function isConnected()
+                    {
                         return false;
                     }
                 };

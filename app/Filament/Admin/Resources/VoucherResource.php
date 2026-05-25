@@ -173,11 +173,11 @@ class VoucherResource extends Resource
                 Tables\Columns\TextColumn::make('discount_type')
                     ->label(__('Tipe'))
                     ->badge()
-                    ->color(fn (DiscountType $state): string => match($state) {
+                    ->color(fn (DiscountType $state): string => match ($state) {
                         DiscountType::PERCENTAGE => 'success',
                         DiscountType::FIXED => 'info',
                     })
-                    ->formatStateUsing(fn (DiscountType $state): string => match($state) {
+                    ->formatStateUsing(fn (DiscountType $state): string => match ($state) {
                         DiscountType::PERCENTAGE => __('Persentase (%)'),
                         DiscountType::FIXED => __('Nominal (Rp)'),
                     })

@@ -2,14 +2,13 @@
 
 namespace App\Filament\User\Resources;
 
-use App\Filament\User\Pages\MessagesPage;
 use App\Filament\User\Resources\WeddingOrganizerResource\Pages;
 use App\Models\Message;
 use App\Models\WeddingOrganizer;
+use App\Providers\NativeServiceProvider;
 use Filament\Facades\Filament;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
-use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -18,7 +17,6 @@ use Illuminate\Support\Str;
 class WeddingOrganizerResource extends Resource
 {
     protected static ?string $model = WeddingOrganizer::class;
-
 
     protected static ?string $navigationIcon = 'heroicon-o-home';
 
@@ -90,6 +88,7 @@ class WeddingOrganizerResource extends Resource
     {
         // Dynamically find the first WO to avoid 404 after fresh migration
         $firstId = WeddingOrganizer::value('id') ?? 1;
+
         return parent::getEloquentQuery()->where('id', $firstId);
     }
 
@@ -110,7 +109,7 @@ class WeddingOrganizerResource extends Resource
     {
         return $table
             ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
-            ->poll(\App\Providers\NativeServiceProvider::isNativeMobile() ? null : '30s')
+            ->poll(NativeServiceProvider::isNativeMobile() ? null : '30s')
             ->content(view('filament.user.components.combined-catalog-grid'));
     }
 

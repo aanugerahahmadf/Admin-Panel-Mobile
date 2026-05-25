@@ -30,6 +30,7 @@ class ViewPackage extends ViewRecord
                     if (str_contains($prev, 'packages') || str_contains($prev, 'products')) {
                         return static::getResource()::getUrl('index');
                     }
+
                     return Dashboard::getUrl();
                 })
                 ->color('gray')->button()

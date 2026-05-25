@@ -68,7 +68,7 @@ return [
         'mysql_proxy' => [
             'driver' => 'mysql_proxy',
             'database' => env('DB_DATABASE', 'wedding_organizer'),
-            'proxy_url' => env('NATIVE_DB_PROXY_URL', rtrim(env('APP_URL', 'http://192.168.100.63:8000'), '/') . '/api/db-proxy'),
+            'proxy_url' => env('NATIVE_DB_PROXY_URL', rtrim(env('APP_URL', 'http://192.168.100.63:8000'), '/').'/api/db-proxy'),
             'proxy_secret' => env('NATIVE_DB_PROXY_SECRET', 'nativephp-db-proxy-secret-2024'),
             'prefix' => '',
         ],

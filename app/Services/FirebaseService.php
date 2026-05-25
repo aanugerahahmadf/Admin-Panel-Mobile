@@ -2,22 +2,25 @@
 
 namespace App\Services;
 
-use Kreait\Firebase\Factory;
-use Kreait\Firebase\Database;
-use Kreait\Firebase\Auth;
-use Kreait\Firebase\Storage;
-use Kreait\Firebase\Exception\DatabaseException;
-use Kreait\Firebase\Exception\AuthException;
+use Exception;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Exception;
+use Kreait\Firebase\Auth;
+use Kreait\Firebase\Database;
+use Kreait\Firebase\Exception\DatabaseException;
+use Kreait\Firebase\Factory;
+use Kreait\Firebase\Storage;
 
 class FirebaseService
 {
     protected Factory $factory;
+
     protected ?Database $database = null;
+
     protected ?Auth $auth = null;
+
     protected ?Storage $storage = null;
+
     protected string $databaseUrl;
 
     public function __construct()
@@ -25,7 +28,7 @@ class FirebaseService
         try {
             $credentialsPath = config('firebase.credentials');
 
-            if (!file_exists($credentialsPath)) {
+            if (! file_exists($credentialsPath)) {
                 throw new Exception("Firebase credentials file not found at: {$credentialsPath}");
             }
 
@@ -42,9 +45,10 @@ class FirebaseService
      */
     public function getDatabase(): Database
     {
-        if (!$this->database) {
+        if (! $this->database) {
             $this->database = $this->factory->createDatabase();
         }
+
         return $this->database;
     }
 
@@ -53,9 +57,10 @@ class FirebaseService
      */
     public function getAuth(): Auth
     {
-        if (!$this->auth) {
+        if (! $this->auth) {
             $this->auth = $this->factory->createAuth();
         }
+
         return $this->auth;
     }
 
@@ -64,9 +69,10 @@ class FirebaseService
      */
     public function getStorage(): Storage
     {
-        if (!$this->storage) {
+        if (! $this->storage) {
             $this->storage = $this->factory->createStorage();
         }
+
         return $this->storage;
     }
 
@@ -81,6 +87,7 @@ class FirebaseService
                 ->set($data);
 
             Log::info("Firebase write successful: {$path}");
+
             return true;
         } catch (DatabaseException $e) {
             Log::error("Firebase write failed for path: {$path}", ['error' => $e->getMessage()]);
@@ -99,6 +106,7 @@ class FirebaseService
                 ->update($data);
 
             Log::info("Firebase update successful: {$path}");
+
             return true;
         } catch (DatabaseException $e) {
             Log::error("Firebase update failed for path: {$path}", ['error' => $e->getMessage()]);
@@ -117,10 +125,12 @@ class FirebaseService
 
             return Cache::remember($cacheKey, $ttl, function () use ($path) {
                 $snapshot = $this->getDatabase()->getReference($path)->getSnapshot();
+
                 return $snapshot->getValue();
             });
         } catch (DatabaseException $e) {
             Log::error("Firebase read failed for path: {$path}", ['error' => $e->getMessage()]);
+
             return null;
         }
     }
@@ -132,9 +142,11 @@ class FirebaseService
     {
         try {
             $snapshot = $this->getDatabase()->getReference($path)->getSnapshot();
+
             return $snapshot->getValue();
         } catch (DatabaseException $e) {
             Log::error("Firebase direct read failed for path: {$path}", ['error' => $e->getMessage()]);
+
             return null;
         }
     }
@@ -151,6 +163,7 @@ class FirebaseService
 
             Cache::forget("firebase:{$path}");
             Log::info("Firebase delete successful: {$path}");
+
             return true;
         } catch (DatabaseException $e) {
             Log::error("Firebase delete failed for path: {$path}", ['error' => $e->getMessage()]);
@@ -170,6 +183,7 @@ class FirebaseService
 
             $key = $newRef->getKey();
             Log::info("Firebase push successful: {$path}, key: {$key}");
+
             return $key;
         } catch (DatabaseException $e) {
             Log::error("Firebase push failed for path: {$path}", ['error' => $e->getMessage()]);
@@ -184,9 +198,11 @@ class FirebaseService
     {
         try {
             $snapshot = $this->getDatabase()->getReference($path)->getSnapshot();
+
             return $snapshot->exists();
         } catch (DatabaseException $e) {
             Log::error("Firebase exists check failed for path: {$path}", ['error' => $e->getMessage()]);
+
             return false;
         }
     }
@@ -207,6 +223,7 @@ class FirebaseService
             return $children;
         } catch (DatabaseException $e) {
             Log::error("Firebase getChildren failed for path: {$path}", ['error' => $e->getMessage()]);
+
             return [];
         }
     }
@@ -230,7 +247,8 @@ class FirebaseService
 
             return $results;
         } catch (DatabaseException $e) {
-            Log::error("Firebase orderByChild failed", ['path' => $path, 'childKey' => $childKey, 'error' => $e->getMessage()]);
+            Log::error('Firebase orderByChild failed', ['path' => $path, 'childKey' => $childKey, 'error' => $e->getMessage()]);
+
             return [];
         }
     }
@@ -251,9 +269,11 @@ class FirebaseService
     {
         try {
             $this->readDirect('.info/connected');
+
             return true;
         } catch (Exception $e) {
             Log::warning('Firebase connection check failed', ['error' => $e->getMessage()]);
+
             return false;
         }
     }

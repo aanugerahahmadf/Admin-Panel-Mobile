@@ -4,8 +4,8 @@ namespace App\Notifications\Traits;
 
 use App\Channels\NativePHPChannel;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
-use Illuminate\Contracts\Queue\ShouldQueue;
+use Native\Laravel\Notification;
+use Native\Mobile\Dialog;
 
 trait HasNotificationChannels
 {
@@ -21,7 +21,7 @@ trait HasNotificationChannels
             $channels[] = 'broadcast';
         }
 
-        if (class_exists(\Native\Laravel\Notification::class) || class_exists(\Native\Mobile\Dialog::class)) {
+        if (class_exists(Notification::class) || class_exists(Dialog::class)) {
             $channels[] = NativePHPChannel::class;
         }
 
@@ -54,7 +54,10 @@ trait HasNotificationChannels
     }
 
     abstract protected function title(): string;
+
     abstract protected function body(): string;
+
     abstract protected function icon(): string;
+
     abstract protected function color(): string;
 }

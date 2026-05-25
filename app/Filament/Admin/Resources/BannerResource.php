@@ -136,7 +136,7 @@ class BannerResource extends Resource
                 Tables\Columns\TextColumn::make('sort_order')
                     ->label(__('Prioritas'))
                     ->badge()
-                    ->color(fn ($state): string => match(true) {
+                    ->color(fn ($state): string => match (true) {
                         $state == 1 => 'success',
                         $state <= 3 => 'info',
                         default => 'warning',

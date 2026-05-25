@@ -3,8 +3,6 @@
 namespace App\Traits\NativePHP;
 
 use Illuminate\Support\Facades\Process;
-use Native\Mobile\Plugins\PluginRegistry;
-use Symfony\Component\Process\Process as SymfonyProcess;
 
 use function Laravel\Prompts\error;
 use function Laravel\Prompts\note;
@@ -25,21 +23,21 @@ trait RunsAndroid
      */
     private function runTheAndroidBuild(?string $targetDeviceId): void
     {
-        $androidPath   = base_path('nativephp/android');
+        $androidPath = base_path('nativephp/android');
         $gradleWrapper = PHP_OS_FAMILY === 'Windows' ? 'gradlew.bat' : './gradlew';
 
         if (PHP_OS_FAMILY !== 'Windows') {
-            $gradlePath = $androidPath . DIRECTORY_SEPARATOR . 'gradlew';
+            $gradlePath = $androidPath.DIRECTORY_SEPARATOR.'gradlew';
             if (! is_executable($gradlePath)) {
                 chmod($gradlePath, 0755);
             }
         }
 
         $gradleTask = match ($this->buildType) {
-            'debug'   => 'assembleDebug',
+            'debug' => 'assembleDebug',
             'release' => 'assembleRelease',
-            'bundle'  => 'bundleRelease',
-            default   => throw new \Exception("Unknown build type: $this->buildType"),
+            'bundle' => 'bundleRelease',
+            default => throw new \Exception("Unknown build type: $this->buildType"),
         };
 
         $verbose = $this->getOutput()->isVerbose();
@@ -51,7 +49,7 @@ trait RunsAndroid
         $this->logToFile('--- Starting Gradle Build ---');
         $this->logToFile("Gradle wrapper: $gradleWrapper");
         $this->logToFile("Gradle task: $gradleTask");
-        $this->logToFile('Verbose mode: ' . ($verbose ? 'enabled' : 'disabled'));
+        $this->logToFile('Verbose mode: '.($verbose ? 'enabled' : 'disabled'));
 
         $buildSuccessful = false;
 
@@ -74,7 +72,7 @@ trait RunsAndroid
             });
 
             if (! $result->successful()) {
-                $this->logToFile('ERROR: Gradle build failed with exit code: ' . $result->exitCode());
+                $this->logToFile('ERROR: Gradle build failed with exit code: '.$result->exitCode());
                 error('Gradle build failed');
                 note("Check the build log for details: {$this->androidLogPath}");
 
@@ -95,9 +93,9 @@ trait RunsAndroid
         $this->logToFile('Gradle build completed successfully');
 
         if ($this->buildType === 'debug') {
-            $appId         = config('nativephp.app_id');
-            $mainActivity  = 'com.nativephp.mobile.ui.MainActivity';
-            $adbCommand    = PHP_OS_FAMILY === 'Windows' ? 'adb.exe' : 'adb';
+            $appId = config('nativephp.app_id');
+            $mainActivity = 'com.nativephp.mobile.ui.MainActivity';
+            $adbCommand = PHP_OS_FAMILY === 'Windows' ? 'adb.exe' : 'adb';
 
             $apkPath = base_path('nativephp/android/app/build/outputs/apk/debug/app-debug.apk');
             $installCmd = "$adbCommand -s $targetDeviceId install -r \"$apkPath\"";
@@ -143,8 +141,8 @@ trait RunsAndroid
         } else {
             $outputPath = match ($this->buildType) {
                 'release' => $this->findReleaseApk(),
-                'bundle'  => base_path('nativephp/android/app/build/outputs/bundle/release/app-release.aab'),
-                default   => null,
+                'bundle' => base_path('nativephp/android/app/build/outputs/bundle/release/app-release.aab'),
+                default => null,
             };
 
             if ($outputPath) {
@@ -165,7 +163,7 @@ trait RunsAndroid
                     exec("open -R \"$outputPath\"");
                 } elseif (PHP_OS_FAMILY === 'Linux') {
                     if (shell_exec('which xdg-open')) {
-                        exec('xdg-open "' . dirname($outputPath) . '"');
+                        exec('xdg-open "'.dirname($outputPath).'"');
                     }
                 }
             } else {

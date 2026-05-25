@@ -26,7 +26,7 @@ class SetLocale
         }
 
         // 2. Cek session jika session store aktif pada request ini
-        if (!$locale && $request->hasSession()) {
+        if (! $locale && $request->hasSession()) {
             $sessionLocale = (string) session()->get('locale');
             if ($sessionLocale) {
                 $locale = $sessionLocale;
@@ -53,7 +53,7 @@ class SetLocale
             $dbLocale = null;
 
             // Jika diakses dari NativePHP mobile yang menggunakan DB proxy lokal, batasi penulisan DB
-            if (!$isMobile) {
+            if (! $isMobile) {
                 try {
                     $dbLocale = $user->lang;
                 } catch (\Throwable $e) {
@@ -61,7 +61,7 @@ class SetLocale
                 }
             }
 
-            if ($locale && $locale !== $dbLocale && !$isMobile) {
+            if ($locale && $locale !== $dbLocale && ! $isMobile) {
                 // Sinkronisasi: Simpan pilihan bahasa terbaru ke Database jika berbeda
                 try {
                     UserLanguage::updateOrCreate(
@@ -74,20 +74,20 @@ class SetLocale
                 } catch (\Exception $e) {
                     // Abaikan jika DB tidak dapat diakses
                 }
-            } elseif ($dbLocale && !$locale) {
+            } elseif ($dbLocale && ! $locale) {
                 // Sinkronisasi: Ambil pilihan bahasa dari Database jika session/request kosong
                 $locale = (string) $dbLocale;
             }
         }
 
         // 4. Cek header Accept-Language dari client (sangat penting untuk API client mobile Android/iOS)
-        if (!$locale) {
+        if (! $locale) {
             $acceptLanguage = $request->header('Accept-Language');
             if ($acceptLanguage) {
                 // Contoh: "en-US,en;q=0.9,id;q=0.8" -> ambil bagian pertama
                 $langs = explode(',', $acceptLanguage);
                 $firstLang = trim($langs[0]);
-                
+
                 // Normalisasi penulisan "en-US" menjadi "en_US"
                 $cleanLang = str_replace('-', '_', $firstLang);
 
@@ -110,7 +110,7 @@ class SetLocale
         }
 
         // 5. Fallback Default jika belum terdeteksi
-        if (!$locale) {
+        if (! $locale) {
             if (NativeServiceProvider::isNativeMobile()) {
                 $locale = 'id';
             } else {

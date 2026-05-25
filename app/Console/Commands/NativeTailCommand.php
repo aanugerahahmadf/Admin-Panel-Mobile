@@ -40,9 +40,9 @@ class NativeTailCommand extends Command
         $platform = $this->option('platform') ?: $this->detectPlatform();
 
         match ($platform) {
-            'ios'     => $this->tailIos($appId),
+            'ios' => $this->tailIos($appId),
             'android' => $this->tailAndroid($appId),
-            default   => $this->error("Unknown platform: {$platform}. Use android or ios."),
+            default => $this->error("Unknown platform: {$platform}. Use android or ios."),
         };
     }
 
@@ -53,7 +53,7 @@ class NativeTailCommand extends Command
     private function detectPlatform(): string
     {
         $hasAndroid = $this->hasConnectedAndroidDevices();
-        $hasIos     = PHP_OS_FAMILY === 'Darwin'; // iOS tools only on macOS
+        $hasIos = PHP_OS_FAMILY === 'Darwin'; // iOS tools only on macOS
 
         if ($hasAndroid && ! $hasIos) {
             return 'android';
@@ -66,7 +66,7 @@ class NativeTailCommand extends Command
         if ($hasAndroid && $hasIos) {
             return select('Select platform to tail logs from', [
                 'android' => 'Android',
-                'ios'     => 'iOS',
+                'ios' => 'iOS',
             ]);
         }
 
@@ -76,7 +76,7 @@ class NativeTailCommand extends Command
 
     private function hasConnectedAndroidDevices(): bool
     {
-        $output  = shell_exec('adb devices') ?: '';
+        $output = shell_exec('adb devices') ?: '';
         $devices = array_filter(
             explode("\n", $output),
             fn ($l) => str_contains($l, "\tdevice")
@@ -114,8 +114,8 @@ class NativeTailCommand extends Command
 
     private function resolveAndroidDevice(): ?string
     {
-        $output  = shell_exec('adb devices') ?: '';
-        $lines   = array_values(array_filter(
+        $output = shell_exec('adb devices') ?: '';
+        $lines = array_values(array_filter(
             explode("\n", $output),
             fn ($l) => str_contains($l, "\tdevice")
         ));
@@ -134,7 +134,7 @@ class NativeTailCommand extends Command
 
         // Multiple — prefer physical over emulator
         $physical = array_values(array_filter($devices, fn ($d) => ! str_starts_with($d, 'emulator')));
-        $chosen   = ! empty($physical) ? $physical[0] : $devices[0];
+        $chosen = ! empty($physical) ? $physical[0] : $devices[0];
 
         $this->line("⚡ Multiple devices found. Using: <info>{$chosen}</info> (--device=SERIAL to override)\n");
 
@@ -167,14 +167,14 @@ class NativeTailCommand extends Command
     {
         // Check booted simulators first
         $bootedOutput = shell_exec('xcrun simctl list devices booted --json 2>/dev/null') ?: '';
-        $bootedData   = json_decode($bootedOutput, true);
-        $booted       = [];
+        $bootedData = json_decode($bootedOutput, true);
+        $booted = [];
 
         if (! empty($bootedData['devices'])) {
             foreach ($bootedData['devices'] as $runtime => $devices) {
                 foreach ($devices as $device) {
                     if ($device['state'] === 'Booted') {
-                        $booted[$device['udid']] = $device['name'] . ' (Simulator, Booted)';
+                        $booted[$device['udid']] = $device['name'].' (Simulator, Booted)';
                     }
                 }
             }
@@ -182,10 +182,10 @@ class NativeTailCommand extends Command
 
         // Check connected physical devices
         $physicalOutput = shell_exec('xcrun devicectl list devices 2>/dev/null') ?: '';
-        $physical       = [];
+        $physical = [];
         foreach (explode("\n", $physicalOutput) as $line) {
             if (preg_match('/([0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12})\s+(.+)/i', $line, $m)) {
-                $physical[$m[1]] = trim($m[2]) . ' (Physical)';
+                $physical[$m[1]] = trim($m[2]).' (Physical)';
             }
         }
 
@@ -207,8 +207,8 @@ class NativeTailCommand extends Command
 
     private function isIosSimulator(string $udid): bool
     {
-        $output = shell_exec("xcrun simctl list devices --json 2>/dev/null") ?: '';
-        $data   = json_decode($output, true);
+        $output = shell_exec('xcrun simctl list devices --json 2>/dev/null') ?: '';
+        $data = json_decode($output, true);
 
         if (empty($data['devices'])) {
             return false;
@@ -241,15 +241,15 @@ class NativeTailCommand extends Command
             return;
         }
 
-        $logPath = $containerPath . '/Library/Caches/storage/logs/laravel.log';
+        $logPath = $containerPath.'/Library/Caches/storage/logs/laravel.log';
 
         if (! file_exists($logPath)) {
             // Try alternative path
-            $logPath = $containerPath . '/Documents/storage/logs/laravel.log';
+            $logPath = $containerPath.'/Documents/storage/logs/laravel.log';
         }
 
         if (! file_exists($logPath)) {
-            $this->warn("⚠️  Log file not found at expected path.");
+            $this->warn('⚠️  Log file not found at expected path.');
             $this->line("Container: {$containerPath}");
             $this->line('The app may not have generated logs yet. Launch the app first.');
 
@@ -287,7 +287,7 @@ class NativeTailCommand extends Command
 
         // Fallback: xcrun devicectl stream logs (Xcode 15+)
         $this->line("idevicesyslog not found. Falling back to xcrun devicectl...\n");
-        $this->line("<comment>Tip: Install libimobiledevice for better log filtering:</comment>");
+        $this->line('<comment>Tip: Install libimobiledevice for better log filtering:</comment>');
         $this->line("  brew install libimobiledevice\n");
 
         $process = new Process([

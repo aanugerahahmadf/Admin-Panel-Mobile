@@ -3,6 +3,7 @@
 namespace App\Channels;
 
 use Illuminate\Notifications\Notification;
+use Native\Mobile\Dialog;
 
 class NativePHPChannel
 {
@@ -27,8 +28,8 @@ class NativePHPChannel
         }
 
         try {
-            if (class_exists(\Native\Mobile\Dialog::class)) {
-                \Native\Mobile\Dialog::toast($body, 'long');
+            if (class_exists(Dialog::class)) {
+                Dialog::toast($body, 'long');
             }
         } catch (\Throwable $e) {
             report($e);

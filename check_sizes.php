@@ -1,5 +1,7 @@
 <?php
-function get_dir_size($dir) {
+
+function get_dir_size($dir)
+{
     $size = 0;
     try {
         $files = new RecursiveIteratorIterator(
@@ -12,6 +14,7 @@ function get_dir_size($dir) {
         }
     } catch (Exception $e) {
     }
+
     return $size;
 }
 

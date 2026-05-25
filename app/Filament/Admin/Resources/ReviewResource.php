@@ -150,7 +150,7 @@ class ReviewResource extends Resource
                 Tables\Columns\TextColumn::make('rating')
                     ->label(__('Rating'))
                     ->badge()
-                    ->color(fn ($state): string => match(true) {
+                    ->color(fn ($state): string => match (true) {
                         $state >= 5 => 'success',
                         $state >= 4 => 'info',
                         $state >= 3 => 'warning',

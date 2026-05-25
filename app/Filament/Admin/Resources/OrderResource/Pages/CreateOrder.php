@@ -9,7 +9,6 @@ class CreateOrder extends CreateRecord
 {
     protected static string $resource = OrderResource::class;
 
-    
     public function getTitle(): string
     {
         return $this->record->name;

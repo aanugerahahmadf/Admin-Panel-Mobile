@@ -305,6 +305,7 @@ class UserResource extends Resource
                             $record->login_region,
                             $record->login_country,
                         ]);
+
                         return $parts ? implode(', ', $parts) : '-';
                     })
                     ->icon('heroicon-o-map-pin')

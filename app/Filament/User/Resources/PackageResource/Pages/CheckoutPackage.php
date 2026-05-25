@@ -24,7 +24,7 @@ class CheckoutPackage extends Page implements HasForms
 
     public ?array $data = [];
 
-    public function mount(int | string $record): void
+    public function mount(int|string $record): void
     {
         $this->record = $this->resolveRecord($record);
 
@@ -42,12 +42,12 @@ class CheckoutPackage extends Page implements HasForms
                 Wizard::make()
                     ->steps(PackageResource::getCheckoutWizardSteps($this->record))
                     ->submitAction(new HtmlString(
-                        '<div class="flex justify-end mt-4">' .
-                        '<button type="submit" class="fi-btn fi-btn-size-md fi-btn-color-success relative grid-flow-col items-center justify-center font-semibold outline-none transition duration-75 focus-visible:ring-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm ring-1 ring-emerald-600 px-4 py-2 cursor-pointer">' .
-                        __('Konfirmasi & Bayar') .
-                        '</button>' .
+                        '<div class="flex justify-end mt-4">'.
+                        '<button type="submit" class="fi-btn fi-btn-size-md fi-btn-color-success relative grid-flow-col items-center justify-center font-semibold outline-none transition duration-75 focus-visible:ring-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm ring-1 ring-emerald-600 px-4 py-2 cursor-pointer">'.
+                        __('Konfirmasi & Bayar').
+                        '</button>'.
                         '</div>'
-                    ))
+                    )),
             ])
             ->statePath('data');
     }

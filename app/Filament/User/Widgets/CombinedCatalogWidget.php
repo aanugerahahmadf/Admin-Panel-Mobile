@@ -6,6 +6,7 @@ use App\Models\WeddingOrganizer;
 use App\Providers\NativeServiceProvider;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
+use Illuminate\Contracts\Support\Htmlable;
 
 class CombinedCatalogWidget extends BaseWidget
 {
@@ -13,7 +14,7 @@ class CombinedCatalogWidget extends BaseWidget
 
     protected int|string|array $columnSpan = 'full';
 
-    protected function getTableHeading(): string|\Illuminate\Contracts\Support\Htmlable|null
+    protected function getTableHeading(): string|Htmlable|null
     {
         return '';
     }

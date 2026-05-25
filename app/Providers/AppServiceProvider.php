@@ -28,16 +28,16 @@ use App\Models\Transaction;
 use App\Models\User;
 use App\Observers\MediaObserver;
 use App\Observers\MessageObserver;
-use App\Services\GeoLocationService;
-use App\Services\PlatformNotificationService;
 use App\Observers\OrderObserver;
 use App\Observers\TransactionObserver;
 use App\Providers\Filament\UserPanelProvider;
+use App\Services\GeoLocationService;
+use App\Services\PlatformNotificationService;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Forms\Components\Field;
 use Filament\Http\Responses\Auth\Contracts\LoginResponse as LoginResponseContract;
-use Filament\Http\Responses\Auth\Contracts\RegistrationResponse as RegistrationResponseContract;
 use Filament\Http\Responses\Auth\Contracts\LogoutResponse as LogoutResponseContract;
+use Filament\Http\Responses\Auth\Contracts\RegistrationResponse as RegistrationResponseContract;
 use Filament\Infolists\Components\Entry;
 use Filament\Support\Facades\FilamentView;
 use Filament\Tables\Columns\Column;
@@ -76,11 +76,12 @@ class AppServiceProvider extends ServiceProvider
         // Override with implementations that always return RedirectResponse.
         // ═══════════════════════════════════════════════════════════
         $this->app->bind(LoginResponseContract::class, function () {
-            return new class implements LoginResponseContract {
+            return new class implements LoginResponseContract
+            {
                 public function toResponse($request)
                 {
                     $panel = filament()->getCurrentPanel();
-                    $url   = $panel
+                    $url = $panel
                         ? $panel->getUrl()
                         : (session()->pull('url.intended') ?? '/');
 
@@ -90,11 +91,12 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->bind(RegistrationResponseContract::class, function () {
-            return new class implements RegistrationResponseContract {
+            return new class implements RegistrationResponseContract
+            {
                 public function toResponse($request)
                 {
                     $panel = filament()->getCurrentPanel();
-                    $url   = $panel
+                    $url = $panel
                         ? $panel->getUrl()
                         : (session()->pull('url.intended') ?? '/');
 
@@ -104,11 +106,12 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->bind(LogoutResponseContract::class, function () {
-            return new class implements LogoutResponseContract {
+            return new class implements LogoutResponseContract
+            {
                 public function toResponse($request)
                 {
                     $panel = filament()->getCurrentPanel();
-                    $url   = $panel
+                    $url = $panel
                         ? $panel->getLoginUrl()
                         : route('filament.user.auth.login');
 

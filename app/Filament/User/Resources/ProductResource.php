@@ -13,10 +13,8 @@ use App\Models\Transaction;
 use App\Models\Voucher;
 use App\Models\Wishlist;
 use App\Providers\NativeServiceProvider;
-use App\Services\CBIRService;
 use App\Services\ChatService;
 use App\Services\MidtransService;
-use emmanpbarrameda\FilamentTakePictureField\Forms\Components\TakePicture;
 use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Infolists;
@@ -37,8 +35,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
 use Livewire\Component;
-use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
-use Symfony\Component\HttpFoundation\File\File;
 
 class ProductResource extends Resource
 {

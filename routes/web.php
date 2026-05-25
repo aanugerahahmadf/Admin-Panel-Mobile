@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\SocialiteController;
 use App\Http\Controllers\LanguageController;
+use App\Http\Middleware\SetLocale;
 use App\Models\Order;
 use Dompdf\Dompdf;
 use Illuminate\Support\Facades\File;
@@ -13,7 +14,7 @@ use Native\Mobile\Facades\System;
 
 Route::get('/', function () {
     return view('welcome');
-})->middleware(\App\Http\Middleware\SetLocale::class);
+})->middleware(SetLocale::class);
 
 Route::redirect('/admin/inbox', '/admin/inbox/messages');
 Route::get('/mobile/settings', function () {

@@ -16,7 +16,6 @@ class ManagePrivacyPolicies extends ManageRecords
         return static::$title ?? static::getResource()::getTitleCasePluralModelLabel();
     }
 
-
     protected function getHeaderActions(): array
     {
         return [

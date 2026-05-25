@@ -3,17 +3,20 @@
 namespace App\Services;
 
 use App\Enums\OrderPaymentStatus;
+use App\Enums\OrderStatus;
 use App\Filament\User\Resources\OrderResource;
 use App\Mail\OrderPaymentNotification;
 use App\Models\Message;
 use App\Models\Order;
 use App\Models\User;
+use Carbon\Carbon;
 use Filament\Notifications\Actions\Action;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Native\Mobile\Dialog;
 
 class PaymentNotificationService
 {
@@ -44,7 +47,7 @@ class PaymentNotificationService
             ['paid', 'partial']
         );
 
-        $date = $order->booking_date ? \Carbon\Carbon::parse($order->booking_date)->translatedFormat('d F Y') : '-';
+        $date = $order->booking_date ? Carbon::parse($order->booking_date)->translatedFormat('d F Y') : '-';
         $time = $order->booking_time ?? '-';
 
         $message = "❌ *Pesanan Dibatalkan*\n\n"
@@ -61,7 +64,7 @@ class PaymentNotificationService
                 ? "\n💸 Dana telah dikembalikan ke saldo akun Anda.\n"
                 : '')
             ."\nHubungi kami jika ada pertanyaan 💬\n"
-            ."Lihat detail: ".config('app.url')."/user/orders";
+            .'Lihat detail: '.config('app.url').'/user/orders';
 
         // 1. Inbox
         $this->sendCancellationToInbox($order, $user, $itemName, $itemImage, $message, $isRefunded);
@@ -211,9 +214,9 @@ class PaymentNotificationService
         $name = $user->full_name ?? $user->username ?? 'Pelanggan';
         $amount = 'Rp '.number_format((float) $order->total_price, 0, ',', '.');
         $qty = $order->quantity ?? 1;
-        $date = $order->booking_date ? \Carbon\Carbon::parse($order->booking_date)->translatedFormat('d F Y') : '-';
+        $date = $order->booking_date ? Carbon::parse($order->booking_date)->translatedFormat('d F Y') : '-';
         $time = $order->booking_time ?? '-';
-        $orderStatus = $order->status instanceof \App\Enums\OrderStatus
+        $orderStatus = $order->status instanceof OrderStatus
             ? $order->status->getLabel()
             : (string) $order->status;
 
@@ -231,7 +234,7 @@ class PaymentNotificationService
                 ."📊 Status: {$paymentLabel}\n"
                 ."📋 Pesanan: {$orderStatus}\n\n"
                 ."Tim kami akan segera memproses pesanan Anda 🎊\n"
-                ."Lihat detail pesanan: ".config('app.url')."/user/orders";
+                .'Lihat detail pesanan: '.config('app.url').'/user/orders';
         }
 
         return "⚠️ *Menunggu Pembayaran*\n\n"
@@ -247,7 +250,7 @@ class PaymentNotificationService
             ."📊 Status: {$paymentLabel}\n\n"
             ."Segera lakukan pembayaran agar pesanan diproses.\n"
             ."Hubungi kami jika butuh bantuan 💬\n"
-            ."Bayar sekarang: ".config('app.url')."/user/orders";
+            .'Bayar sekarang: '.config('app.url').'/user/orders';
     }
 
     // ── 1. Inbox (Messages Panel) ─────────────────────────────────────────────
@@ -433,8 +436,8 @@ class PaymentNotificationService
 
         // Mobile toast notification
         try {
-            if (class_exists(\Native\Mobile\Dialog::class)) {
-                \Native\Mobile\Dialog::toast(strip_tags($body), 'long');
+            if (class_exists(Dialog::class)) {
+                Dialog::toast(strip_tags($body), 'long');
             }
         } catch (\Throwable $e) {
             Log::warning('[PaymentNotification] Mobile toast failed: '.$e->getMessage());

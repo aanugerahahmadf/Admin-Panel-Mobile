@@ -21,7 +21,7 @@ trait RunsIos
     private function runOnRealDevice(string $basePath, string $target, bool $verbose = false): void
     {
         $installFailed = false;
-        $isRelease     = $this->option('build') === 'release';
+        $isRelease = $this->option('build') === 'release';
         $configuration = $isRelease ? 'Release' : 'Debug';
 
         $this->components->task('Deploying app to device', function () use ($basePath, $target, $verbose, &$installFailed, $configuration) {
@@ -55,7 +55,7 @@ trait RunsIos
             return;
         }
 
-        $appId      = config('nativephp.app_id');
+        $appId = config('nativephp.app_id');
         $launchFailed = false;
 
         $this->components->task('Launching app', function () use ($basePath, $target, $appId, $verbose, &$launchFailed) {
