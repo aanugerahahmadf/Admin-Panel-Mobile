@@ -43,7 +43,6 @@ class NativeRunCommand extends Command
         ManagesViteDevServer,
         ManagesWatchman,
         PlatformFileOperations;
-
     use LocalPackagesIos, VendorPackagesIos {
         // LocalPackagesIos methods win (no timeout)
         LocalPackagesIos::prepareBuildEnvironment  insteadof VendorPackagesIos;
@@ -71,6 +70,7 @@ class NativeRunCommand extends Command
         LocalRunsAndroid::runTheAndroidBuild insteadof VendorRunsAndroid;
         VendorRunsAndroid::runTheAndroidBuild as vendorRunTheAndroidBuild;
     }
+
     // ── iOS traits ────────────────────────────────────────────────────────
     use LocalRunsIos, VendorRunsIos {
         // LocalRunsIos::runOnRealDevice wins (no timeout)
