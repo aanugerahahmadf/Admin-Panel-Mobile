@@ -4,13 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\PrivacyPolicy;
 use App\Models\TermsOfService;
-use Illuminate\Http\Request;
 
 class LegalWebController extends Controller
 {
     public function terms()
     {
         $terms = TermsOfService::first();
+
         return view('legal.legal-page', [
             'title' => $terms?->title ?? 'Perjanjian Pengguna',
             'sections' => $terms?->content ?? [],
@@ -21,6 +21,7 @@ class LegalWebController extends Controller
     public function privacy()
     {
         $privacy = PrivacyPolicy::first();
+
         return view('legal.legal-page', [
             'title' => $privacy?->title ?? 'Kebijakan Privasi',
             'sections' => $privacy?->content ?? [],

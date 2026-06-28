@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Auth\SocialiteController;
 use App\Http\Controllers\LanguageController;
+use App\Http\Controllers\LegalWebController;
 use App\Http\Middleware\SetLocale;
 use App\Models\Order;
 use App\Models\User;
@@ -10,10 +11,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
 use Laravel\Sanctum\PersonalAccessToken;
+// Legal Pages — HTML untuk mobile browser / HP fisik
 use Native\Mobile\Facades\System;
 
-// Legal Pages — HTML untuk mobile browser / HP fisik
-use App\Http\Controllers\LegalWebController;
 Route::get('/legal/terms', [LegalWebController::class, 'terms'])->name('legal.terms');
 Route::get('/legal/privacy', [LegalWebController::class, 'privacy'])->name('legal.privacy');
 
