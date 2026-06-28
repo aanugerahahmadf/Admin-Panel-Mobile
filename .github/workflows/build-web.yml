@@ -48,7 +48,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: '8.3'
           extensions: pdo, pdo_mysql, mbstring, openssl, tokenizer, xml, ctype, json
           coverage: xdebug
 
@@ -131,7 +131,7 @@ jobs:
       - name: Set up PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2'
+          php-version: '8.3'
 
       - name: Install PHP dependencies (production)
         run: composer install --no-dev --optimize-autoloader --no-progress --no-scripts --ignore-platform-reqs
