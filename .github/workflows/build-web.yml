@@ -60,7 +60,7 @@ jobs:
           restore-keys: ${{ runner.os }}-composer-
 
       - name: Install PHP dependencies
-        run: composer install --no-dev --optimize-autoloader --no-progress --ignore-platform-req=ext-grpc
+        run: composer install --no-dev --optimize-autoloader --no-progress --ignore-platform-reqs
 
       - name: Copy test environment file
         run: cp .env.example .env
@@ -134,7 +134,7 @@ jobs:
           php-version: '8.2'
 
       - name: Install PHP dependencies (production)
-        run: composer install --no-dev --optimize-autoloader --no-progress --ignore-platform-req=ext-grpc
+        run: composer install --no-dev --optimize-autoloader --no-progress --ignore-platform-reqs
 
       # Replace the deploy step below with your actual deployment mechanism
       # (Envoyer, Deployer, rsync, Laravel Forge webhook, etc.)
