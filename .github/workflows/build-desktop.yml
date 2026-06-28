@@ -57,6 +57,8 @@ jobs:
 
       - name: Run Pest tests
         run: php artisan test --parallel
+        env:
+          APP_KEY: base64:qlfLQwBtJA/blNrn3/qZ8T3NZYaj9cSHCPI88Ldmelo=
 
   # ── Build desktop assets ───────────────────────────────────────────────────
   build-assets:

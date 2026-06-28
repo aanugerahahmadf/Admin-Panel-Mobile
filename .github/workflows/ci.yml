@@ -127,6 +127,7 @@ jobs:
 
       - name: Run tests with coverage
         env:
+          APP_KEY: base64:qlfLQwBtJA/blNrn3/qZ8T3NZYaj9cSHCPI88Ldmelo=
           DB_CONNECTION: mysql
           DB_HOST: 127.0.0.1
           DB_PORT: 3306
@@ -136,7 +137,6 @@ jobs:
           REDIS_HOST: 127.0.0.1
           REDIS_PORT: 6379
         run: |
-          php artisan key:generate --force --no-interaction
           php artisan test --coverage --min=60 2>&1 || true
 
       - name: Upload coverage

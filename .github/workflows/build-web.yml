@@ -74,6 +74,7 @@ jobs:
       - name: Run Pest tests (Web mode)
         run: php artisan test --parallel
         env:
+          APP_KEY: base64:qlfLQwBtJA/blNrn3/qZ8T3NZYaj9cSHCPI88Ldmelo=
           VITE_PLATFORM: web
 
   build-assets:
