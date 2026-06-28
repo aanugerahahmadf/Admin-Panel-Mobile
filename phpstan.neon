@@ -17,7 +17,7 @@ parameters:
         - storage/*
         - bootstrap/cache/*
         - _ide_helper*.php
-        - .phpstorm.meta.php
+        - .phpstorm.meta.php (?)
         - database/migrations/*
         - database/seeders/*
         - routes/ai.php

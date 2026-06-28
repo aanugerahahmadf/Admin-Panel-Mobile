@@ -25,6 +25,9 @@ _ide_helper_models.php
 .env
 .env.*
 !.env.example
+!.env.mobile.example
+!.env.desktop.example
+!.env.web.example
 # Credential files (keystores, private keys, etc.)
 /credentials/
 *.jks
