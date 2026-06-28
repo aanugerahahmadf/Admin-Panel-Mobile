@@ -531,7 +531,7 @@ class ProfileController extends Controller
                 }
             }
 
-            if (! empty($user->nik) || ! empty($user->passport_number)) {
+            if (! empty($user->nik) || ! empty($user->passport_number) || ! empty($user->sim_number) || ! empty($user->npwp_number)) {
                 $score += 10;
             }
 
@@ -542,7 +542,7 @@ class ProfileController extends Controller
             return response()->json([
                 'status' => 'success',
                 'data' => [
-                    'completion_percent' => $score,
+                    'completion_percent' => min($score, 100),
                     'total_weight' => 100,
                     'items' => [
                         'full_name' => ! empty($user->full_name),
@@ -550,11 +550,13 @@ class ProfileController extends Controller
                         'whatsapp' => ! empty($user->whatsapp),
                         'avatar_url' => ! empty($user->avatar_url),
                         'email_verified' => ! empty($user->email_verified_at),
-                        'nik' => ! empty($user->nik),
+                        'nik' => ! empty($user->nik) || ! empty($user->passport_number) || ! empty($user->sim_number) || ! empty($user->npwp_number),
                         'ktp_photo' => ! empty($user->ktp_photo),
                         'selfie_photo' => ! empty($user->selfie_photo),
                         'identity_verified' => ! empty($user->identity_verified_at),
                     ],
+                    'social_type' => $user->social_type,
+                    'needs_completion' => ! $user->identity_type || ! $user->whatsapp || ! $user->birth_date,
                 ],
             ]);
         } catch (\Exception $e) {

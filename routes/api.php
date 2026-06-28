@@ -82,12 +82,14 @@ Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::post('/auth/send-otp', [AuthController::class, 'sendOtp']);
 Route::post('/auth/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/auth/clerk-sync', [AuthController::class, 'clerkSync']);
+Route::post('/auth/google', [AuthController::class, 'googleLogin']);
 
 // Public endpoints
 Route::get('/packages/public', [PackageController::class, 'index']);
 Route::get('/products/public', [ProductController::class, 'index']);
 Route::get('/legal/terms', [LegalController::class, 'getTerms']);
 Route::get('/legal/privacy', [LegalController::class, 'getPrivacy']);
+Route::get('/legal/wedding-decoration-policy', [LegalController::class, 'getWeddingDecorationPolicy']);
 Route::get('/legal/about', [LegalController::class, 'getAbout']);
 Route::get('/legal/help', [LegalController::class, 'getHelp']);
 

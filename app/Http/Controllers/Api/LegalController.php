@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\LegalPage;
 use App\Models\PrivacyPolicy;
 use App\Models\TermsOfService;
+use App\Models\WeddingDecorationPolicy;
 use Illuminate\Http\JsonResponse;
 
 class LegalController extends Controller
@@ -49,6 +50,28 @@ class LegalController extends Controller
                 'title' => $privacy->title,
                 'content' => $privacy->content,
                 'updated_at' => $privacy->updated_at->format('d M Y'),
+            ],
+        ]);
+    }
+
+    public function getWeddingDecorationPolicy(): JsonResponse
+    {
+        $policy = WeddingDecorationPolicy::first();
+
+        if (! $policy) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kebijakan Wedding Flowers Decorasi belum tersedia.',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $policy->id,
+                'title' => $policy->title,
+                'content' => $policy->content,
+                'updated_at' => $policy->updated_at->format('d M Y'),
             ],
         ]);
     }

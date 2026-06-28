@@ -214,6 +214,8 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
         'whatsapp',
         'nik',
         'passport_number',
+        'sim_number',
+        'npwp_number',
         'birth_place',
         'birth_date',
         'ktp_photo',
@@ -247,6 +249,9 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
         'gender',
         'social_id',
         'social_type',
+        'otp_code',
+        'otp_expires_at',
+        'otp_purpose',
     ];
 
     /**

@@ -19,7 +19,7 @@ class DatabaseSeeder extends Seeder
             SuperAdminSeeder::class,
             ProductSeeder::class,
             PackageSeeder::class,
-            TermsAndConditionsSeeder::class,
+            LegalSeeder::class,
             VoucherSeeder::class,
         ]);
     }

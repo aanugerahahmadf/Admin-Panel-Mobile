@@ -25,7 +25,9 @@ class AuthController extends Controller
             'whatsapp' => 'nullable|string|max:255',
             'nik' => 'nullable|string|max:20',
             'passport_number' => 'nullable|string|max:20',
-            'identity_type' => 'nullable|string|in:ktp,passport|max:20',
+            'sim_number' => 'nullable|string|max:20',
+            'npwp_number' => 'nullable|string|max:20',
+            'identity_type' => 'nullable|string|in:ktp,passport,sim,npwp|max:20',
             'birth_place' => 'nullable|string|max:255',
             'birth_date' => 'nullable|date',
             'ktp_photo' => 'nullable|image|max:2048',
@@ -55,6 +57,14 @@ class AuthController extends Controller
             return ($input->identity_type ?? '') === 'passport';
         });
 
+        $validator->sometimes('sim_number', 'required|min:6|max:20', function ($input) {
+            return ($input->identity_type ?? '') === 'sim';
+        });
+
+        $validator->sometimes('npwp_number', 'required|min:15|max:20', function ($input) {
+            return ($input->identity_type ?? '') === 'npwp';
+        });
+
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
@@ -73,6 +83,8 @@ class AuthController extends Controller
             'whatsapp' => $request->whatsapp,
             'nik' => $request->nik,
             'passport_number' => $request->passport_number,
+            'sim_number' => $request->sim_number,
+            'npwp_number' => $request->npwp_number,
             'identity_type' => $request->identity_type,
             'birth_place' => $request->birth_place,
             'birth_date' => $request->birth_date,
@@ -134,7 +146,7 @@ class AuthController extends Controller
         $login = $request->login;
         $fieldType = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
-        $user = User::where($fieldType, $login)->orWhere('nik', $login)->orWhere('passport_number', $login)->first();
+        $user = User::where($fieldType, $login)->orWhere('nik', $login)->orWhere('passport_number', $login)->orWhere('sim_number', $login)->orWhere('npwp_number', $login)->first();
 
         if (! $user || ! Hash::check($request->password, $user->password)) {
             return response()->json([
@@ -306,14 +318,44 @@ class AuthController extends Controller
     {
         $request->validate([
             'email' => 'required|email',
-            'purpose' => 'required|string',
+            'purpose' => 'required|string|in:google_register,forgot_password,verify_email',
         ]);
 
-        // Simulating OTP sending
+        $user = User::where('email', $request->email)->first();
+
+        if ($request->purpose === 'google_register') {
+            if (! $user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => __('User tidak ditemukan'),
+                ], 404);
+            }
+            if (! $user->social_id || $user->social_type !== 'google') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => __('Email tidak terdaftar via Google'),
+                ], 422);
+            }
+        } elseif ($request->purpose !== 'forgot_password' && $request->purpose !== 'verify_email') {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Tujuan OTP tidak valid'),
+            ], 422);
+        }
+
+        $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        User::where('email', $request->email)->update([
+            'otp_code' => $otp,
+            'otp_expires_at' => now()->addMinutes(5),
+            'otp_purpose' => $request->purpose,
+        ]);
+
+        // TODO: kirim OTP via email + WhatsApp (Mail + Fonnte)
+
         return response()->json([
             'status' => 'success',
-            'message' => __('OTP berhasil dikirim ke ').$request->email,
-            'otp' => '123456', // Simulated OTP
+            'message' => __('Kode OTP berhasil dikirim'),
         ]);
     }
 
@@ -321,22 +363,135 @@ class AuthController extends Controller
     {
         $request->validate([
             'email' => 'required|email',
-            'otp' => 'required|string',
-            'purpose' => 'required|string',
+            'otp' => 'required|string|size:6',
+            'purpose' => 'required|string|in:google_register,forgot_password,verify_email',
         ]);
 
-        // Simulating OTP verification
-        if ($request->otp === '123456') {
+        $user = User::where('email', $request->email)
+            ->where('otp_code', $request->otp)
+            ->where('otp_purpose', $request->purpose)
+            ->where('otp_expires_at', '>', now())
+            ->first();
+
+        if (! $user) {
             return response()->json([
-                'status' => 'success',
-                'message' => __('OTP berhasil diverifikasi'),
-            ]);
+                'status' => 'error',
+                'message' => __('Kode OTP tidak valid atau sudah kedaluwarsa'),
+            ], 422);
+        }
+
+        $user->update([
+            'otp_code' => null,
+            'otp_expires_at' => null,
+            'otp_purpose' => null,
+        ]);
+
+        if ($request->purpose === 'forgot_password' || $request->purpose === 'verify_email' || $request->purpose === 'google_register') {
+            $user->update(['email_verified_at' => now()]);
         }
 
         return response()->json([
-            'status' => 'error',
-            'message' => __('OTP tidak valid'),
-        ], 422);
+            'status' => 'success',
+            'message' => __('OTP berhasil diverifikasi'),
+            'data' => [
+                'verified' => true,
+            ],
+        ]);
+    }
+
+    public function googleLogin(Request $request)
+    {
+        $request->validate([
+            'id_token' => 'required|string',
+        ]);
+
+        // Verify Google ID token via Google's token info endpoint
+        $tokenInfo = file_get_contents('https://oauth2.googleapis.com/tokeninfo?id_token='.$request->id_token);
+        if (! $tokenInfo) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Token Google tidak valid'),
+            ], 401);
+        }
+
+        $payload = json_decode($tokenInfo, true);
+        if (! isset($payload['email']) || ! isset($payload['sub'])) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Token Google tidak valid'),
+            ], 401);
+        }
+
+        $googleId = $payload['sub'];
+        $email = $payload['email'];
+        $name = $payload['name'] ?? explode('@', $email)[0];
+        $avatarUrl = $payload['picture'] ?? null;
+
+        $user = User::where('social_id', $googleId)
+            ->orWhere('email', $email)
+            ->first();
+
+        if ($user) {
+            if (! $user->social_id) {
+                $user->update([
+                    'social_id' => $googleId,
+                    'social_type' => 'google',
+                    'avatar_url' => $avatarUrl ?: $user->avatar_url,
+                ]);
+            }
+
+            if ($user->active_status === false) {
+                $user->update(['active_status' => true]);
+            }
+
+            $token = $user->createToken('google-auth')->plainTextToken;
+
+            return response()->json([
+                'status' => 'success',
+                'message' => __('Login berhasil'),
+                'data' => [
+                    'token' => $token,
+                    'user' => $user,
+                    'needs_completion' => ! $user->identity_type || ! $user->whatsapp || ! $user->birth_date,
+                ],
+            ]);
+        }
+
+        // User doesn't exist — register with Google data
+        $username = 'user_'.Str::random(8);
+        while (User::where('username', $username)->exists()) {
+            $username = 'user_'.Str::random(8);
+        }
+
+        $user = User::create([
+            'social_id' => $googleId,
+            'social_type' => 'google',
+            'full_name' => $name,
+            'first_name' => explode(' ', $name)[0],
+            'last_name' => Str::after($name, ' ') ?: '',
+            'email' => $email,
+            'avatar_url' => $avatarUrl,
+            'username' => $username,
+            'active_status' => true,
+        ]);
+
+        $userRole = Role::where('name', 'user')->first();
+        if ($userRole) {
+            $user->assignRole($userRole);
+        }
+
+        $token = $user->createToken('google-auth')->plainTextToken;
+
+        return response()->json([
+            'status' => 'success',
+            'message' => __('Registrasi Google berhasil, lengkapi profil Anda'),
+            'data' => [
+                'token' => $token,
+                'user' => $user,
+                'needs_completion' => true,
+                'needs_otp' => true,
+            ],
+        ]);
     }
 
     public function updateProfile(Request $request)

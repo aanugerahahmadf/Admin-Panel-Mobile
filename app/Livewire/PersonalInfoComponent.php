@@ -49,7 +49,7 @@ class PersonalInfoComponent extends Component implements HasForms
             $avatarValue = filter_var($rawAvatar, FILTER_VALIDATE_URL) ? null : $rawAvatar;
 
             $nik = $user->nik;
-            $identityType = ($nik && preg_match('/^\d{16}$/', $nik)) ? 'ktp' : 'passport';
+            $identityType = $user->identity_type ?? (($nik && preg_match('/^\d{16}$/', $nik)) ? 'ktp' : 'passport');
 
             $this->form->fill([
                 'identity_type' => $identityType,
@@ -64,6 +64,8 @@ class PersonalInfoComponent extends Component implements HasForms
                 'address' => $user->address,
                 'nik' => $nik,
                 'passport_number' => $user->passport_number,
+                'sim_number' => $user->sim_number,
+                'npwp_number' => $user->npwp_number,
                 'birth_place' => $user->birth_place,
                 'birth_date' => $user->birth_date,
                 'country' => $user->country,
@@ -173,6 +175,8 @@ class PersonalInfoComponent extends Component implements HasForms
                             ->options([
                                 'ktp' => __('Kartu Tanda Kependudukan (KTP)'),
                                 'passport' => __('Passport'),
+                                'sim' => __('Surat Izin Mengemudi (SIM)'),
+                                'npwp' => __('Nomor Pokok Wajib Pajak (NPWP)'),
                             ])
                             ->columnSpan(1),
                         TextInput::make('nik')
@@ -185,6 +189,18 @@ class PersonalInfoComponent extends Component implements HasForms
                             ->label(__('Nomer Passport'))
                             ->disabled()
                             ->visible(fn (Get $get) => $get('identity_type') === 'passport')
+                            ->maxLength(20)
+                            ->columnSpan(1),
+                        TextInput::make('sim_number')
+                            ->label(__('Nomor SIM'))
+                            ->disabled()
+                            ->visible(fn (Get $get) => $get('identity_type') === 'sim')
+                            ->maxLength(20)
+                            ->columnSpan(1),
+                        TextInput::make('npwp_number')
+                            ->label(__('Nomor NPWP'))
+                            ->disabled()
+                            ->visible(fn (Get $get) => $get('identity_type') === 'npwp')
                             ->maxLength(20)
                             ->columnSpan(1),
                         TextInput::make('birth_place')
@@ -290,19 +306,37 @@ class PersonalInfoComponent extends Component implements HasForms
                             ->visible(fn (Get $get) => $get('country') !== null && $get('country') !== 'Indonesia')
                             ->columnSpan(1),
                         FileUpload::make('ktp_photo')
-                            ->label(fn (Get $get) => ($get('identity_type') === 'ktp') ? __('Foto KTP') : __('Foto Passport'))
+                            ->label(fn (Get $get) => match ($get('identity_type')) {
+                                'ktp' => __('Foto KTP'),
+                                'passport' => __('Foto Passport'),
+                                'sim' => __('Foto SIM'),
+                                'npwp' => __('Foto NPWP'),
+                                default => __('Foto Identitas'),
+                            })
                             ->image()
                             ->maxSize(5120)
                             ->directory('ktp-photos')
                             ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/jpg'])
                             ->columnSpan(1),
                         FileUpload::make('selfie_photo')
-                            ->label(fn (Get $get) => ($get('identity_type') === 'ktp') ? __('Foto Selfie + KTP') : __('Foto Selfie + Passport'))
+                            ->label(fn (Get $get) => match ($get('identity_type')) {
+                                'ktp' => __('Foto Selfie + KTP'),
+                                'passport' => __('Foto Selfie + Passport'),
+                                'sim' => __('Foto Selfie + SIM'),
+                                'npwp' => __('Foto Selfie + NPWP'),
+                                default => __('Foto Selfie + Identitas'),
+                            })
                             ->image()
                             ->maxSize(5120)
                             ->directory('selfies')
                             ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/jpg'])
-                            ->helperText(fn (Get $get) => ($get('identity_type') === 'ktp') ? __('Foto diri Anda sambil memegang KTP') : __('Foto diri Anda sambil memegang Passport'))
+                            ->helperText(fn (Get $get) => match ($get('identity_type')) {
+                                'ktp' => __('Foto diri Anda sambil memegang KTP'),
+                                'passport' => __('Foto diri Anda sambil memegang Passport'),
+                                'sim' => __('Foto diri Anda sambil memegang SIM'),
+                                'npwp' => __('Foto diri Anda sambil memegang NPWP'),
+                                default => __('Foto diri Anda sambil memegang identitas'),
+                            })
                             ->columnSpan(1),
                     ]),
             ]);

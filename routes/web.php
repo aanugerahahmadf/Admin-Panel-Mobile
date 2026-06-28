@@ -12,8 +12,10 @@ use Illuminate\Support\Facades\Route;
 use Laravel\Sanctum\PersonalAccessToken;
 use Native\Mobile\Facades\System;
 
-// Legal Routes using Filament Pages (HUBUNGKAN!)
-// No standalone routes needed, now using modals in social-buttons.blade.php
+// Legal Pages — HTML untuk mobile browser / HP fisik
+use App\Http\Controllers\LegalWebController;
+Route::get('/legal/terms', [LegalWebController::class, 'terms'])->name('legal.terms');
+Route::get('/legal/privacy', [LegalWebController::class, 'privacy'])->name('legal.privacy');
 
 Route::get('/', function () {
     return view('welcome');

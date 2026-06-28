@@ -392,6 +392,8 @@ class Register extends BaseRegister
                                 ->options([
                                     'ktp' => __('Kartu Tanda Kependudukan (KTP)'),
                                     'passport' => __('Passport'),
+                                    'sim' => __('Surat Izin Mengemudi (SIM)'),
+                                    'npwp' => __('Nomor Pokok Wajib Pajak (NPWP)'),
                                 ])
                                 ->default('ktp')
                                 ->columnSpanFull(),
@@ -405,18 +407,46 @@ class Register extends BaseRegister
                                 ->visible(fn (Get $get) => $get('identity_type') === 'passport')
                                 ->maxLength(20)
                                 ->columnSpanFull(),
+                            TextInput::make('sim_number')
+                                ->label(__('Nomor SIM'))
+                                ->visible(fn (Get $get) => $get('identity_type') === 'sim')
+                                ->maxLength(20)
+                                ->columnSpanFull(),
+                            TextInput::make('npwp_number')
+                                ->label(__('Nomor NPWP'))
+                                ->visible(fn (Get $get) => $get('identity_type') === 'npwp')
+                                ->maxLength(20)
+                                ->columnSpanFull(),
                             FileUpload::make('ktp_photo')
-                                ->label(fn (Get $get) => ($get('identity_type') === 'ktp') ? __('Foto KTP') : __('Foto Passport'))
+                                ->label(fn (Get $get) => match ($get('identity_type')) {
+                                    'ktp' => __('Foto KTP'),
+                                    'passport' => __('Foto Passport'),
+                                    'sim' => __('Foto SIM'),
+                                    'npwp' => __('Foto NPWP'),
+                                    default => __('Foto Identitas'),
+                                })
                                 ->image()
                                 ->maxSize(5120)
                                 ->directory('ktp-photos')
                                 ->columnSpanFull(),
                             FileUpload::make('selfie_photo')
-                                ->label(fn (Get $get) => ($get('identity_type') === 'ktp') ? __('Foto Selfie + KTP') : __('Foto Selfie + Passport'))
+                                ->label(fn (Get $get) => match ($get('identity_type')) {
+                                    'ktp' => __('Foto Selfie + KTP'),
+                                    'passport' => __('Foto Selfie + Passport'),
+                                    'sim' => __('Foto Selfie + SIM'),
+                                    'npwp' => __('Foto Selfie + NPWP'),
+                                    default => __('Foto Selfie + Identitas'),
+                                })
                                 ->image()
                                 ->maxSize(5120)
                                 ->directory('selfies')
-                                ->helperText(fn (Get $get) => ($get('identity_type') === 'ktp') ? __('Foto diri Anda sambil memegang KTP') : __('Foto diri Anda sambil memegang Passport'))
+                                ->helperText(fn (Get $get) => match ($get('identity_type')) {
+                                    'ktp' => __('Foto diri Anda sambil memegang KTP'),
+                                    'passport' => __('Foto diri Anda sambil memegang Passport'),
+                                    'sim' => __('Foto diri Anda sambil memegang SIM'),
+                                    'npwp' => __('Foto diri Anda sambil memegang NPWP'),
+                                    default => __('Foto diri Anda sambil memegang identitas'),
+                                })
                                 ->columnSpanFull(),
                         ]),
                 ])
@@ -479,6 +509,10 @@ class Register extends BaseRegister
             'password' => Hash::make($data['password'] ?? ''),
             'whatsapp' => $data['whatsapp'] ?? null,
             'nik' => $data['nik'] ?? null,
+            'passport_number' => $data['passport_number'] ?? null,
+            'sim_number' => $data['sim_number'] ?? null,
+            'npwp_number' => $data['npwp_number'] ?? null,
+            'identity_type' => $data['identity_type'] ?? 'ktp',
             'birth_place' => $data['birth_place'] ?? null,
             'birth_date' => $data['birth_date'] ?? null,
             'country' => $data['country'] ?? null,

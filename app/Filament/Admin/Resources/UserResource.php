@@ -141,6 +141,8 @@ class UserResource extends Resource
                                     ->options([
                                         'ktp' => __('Kartu Tanda Kependudukan (KTP)'),
                                         'passport' => __('Passport'),
+                                        'sim' => __('Surat Izin Mengemudi (SIM)'),
+                                        'npwp' => __('Nomor Pokok Wajib Pajak (NPWP)'),
                                     ])
                                     ->columnSpan(1),
                                 Forms\Components\TextInput::make('nik')
@@ -155,6 +157,18 @@ class UserResource extends Resource
                                     ->maxLength(20)
                                     ->prefixIcon('heroicon-o-identification')
                                     ->columnSpan(1),
+                                Forms\Components\TextInput::make('sim_number')
+                                    ->label(__('Nomor SIM'))
+                                    ->visible(fn (Get $get) => $get('identity_type') === 'sim')
+                                    ->maxLength(20)
+                                    ->prefixIcon('heroicon-o-identification')
+                                    ->columnSpan(1),
+                                Forms\Components\TextInput::make('npwp_number')
+                                    ->label(__('Nomor NPWP'))
+                                    ->visible(fn (Get $get) => $get('identity_type') === 'npwp')
+                                    ->maxLength(20)
+                                    ->prefixIcon('heroicon-o-identification')
+                                    ->columnSpan(1),
                                 Forms\Components\TextInput::make('birth_place')
                                     ->label(__('Tempat Lahir'))
                                     ->maxLength(255)
@@ -166,7 +180,13 @@ class UserResource extends Resource
                                     ->prefixIcon('heroicon-o-calendar')
                                     ->columnSpan(1),
                                 Forms\Components\FileUpload::make('ktp_photo')
-                                    ->label(fn (Get $get) => ($get('identity_type') === 'ktp') ? __('Foto KTP') : __('Foto Passport'))
+                                    ->label(fn (Get $get) => match ($get('identity_type')) {
+                                        'ktp' => __('Foto KTP'),
+                                        'passport' => __('Foto Passport'),
+                                        'sim' => __('Foto SIM'),
+                                        'npwp' => __('Foto NPWP'),
+                                        default => __('Foto Identitas'),
+                                    })
                                     ->image()
                                     ->maxSize(2048)
                                     ->directory('ktp-photos')
@@ -374,7 +394,13 @@ class UserResource extends Resource
                             ->icon('heroicon-o-face-smile')
                             ->schema([
                                 Forms\Components\FileUpload::make('selfie_photo')
-                                    ->label(fn (Get $get) => ($get('identity_type') === 'ktp') ? __('Foto Selfie + KTP') : __('Foto Selfie + Passport'))
+                                    ->label(fn (Get $get) => match ($get('identity_type')) {
+                                        'ktp' => __('Foto Selfie + KTP'),
+                                        'passport' => __('Foto Selfie + Passport'),
+                                        'sim' => __('Foto Selfie + SIM'),
+                                        'npwp' => __('Foto Selfie + NPWP'),
+                                        default => __('Foto Selfie + Identitas'),
+                                    })
                                     ->image()
                                     ->maxSize(5120)
                                     ->directory('selfies')
@@ -454,11 +480,15 @@ class UserResource extends Resource
                     ->color(fn (string $state): string => match ($state) {
                         'ktp' => 'primary',
                         'passport' => 'warning',
+                        'sim' => 'info',
+                        'npwp' => 'success',
                         default => 'gray',
                     })
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         'ktp' => __('Kartu Tanda Kependudukan (KTP)'),
                         'passport' => __('Passport'),
+                        'sim' => __('SIM'),
+                        'npwp' => __('NPWP'),
                         default => '-',
                     })
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -471,6 +501,18 @@ class UserResource extends Resource
 
                 Tables\Columns\TextColumn::make('passport_number')
                     ->label(__('Passport'))
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->placeholder('-'),
+
+                Tables\Columns\TextColumn::make('sim_number')
+                    ->label(__('SIM'))
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->placeholder('-'),
+
+                Tables\Columns\TextColumn::make('npwp_number')
+                    ->label(__('NPWP'))
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->placeholder('-'),

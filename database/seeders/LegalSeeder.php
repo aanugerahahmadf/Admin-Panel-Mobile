@@ -4,9 +4,10 @@ namespace Database\Seeders;
 
 use App\Models\PrivacyPolicy;
 use App\Models\TermsOfService;
+use App\Models\WeddingDecorationPolicy;
 use Illuminate\Database\Seeder;
 
-class TermsAndConditionsSeeder extends Seeder
+class LegalSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -45,6 +46,22 @@ class TermsAndConditionsSeeder extends Seeder
             ]
         );
         $this->command->line('  <info>✓</info> Kebijakan Privasi created');
+
+        // 3. Wedding Decoration Policy
+        WeddingDecorationPolicy::updateOrCreate(
+            ['id' => 1],
+            [
+                'title' => __('Kebijakan Aplikasi'),
+                'content' => [
+                    ['heading' => __('KEBIJAKAN DEKORASI'), 'body' => __('Wedding Flowers Decorasi berkomitmen untuk menyediakan layanan dekorasi bunga pernikahan berkualitas tinggi. Seluruh desain dan tata rias dekorasi dilakukan oleh tim profesional kami dengan pengalaman bertahun-tahun di industri pernikahan.'), 'is_italic' => false],
+                    ['heading' => __('PROSES PEMESANAN'), 'body' => __('Pemesanan dekorasi dilakukan melalui platform resmi kami. Setelah pemesanan dikonfirmasi, tim kami akan menghubungi Anda untuk konsultasi desain dan detail teknis dekorasi sesuai dengan konsep pernikahan yang diinginkan.'), 'is_italic' => true],
+                    ['heading' => __('KUALITAS LAYANAN'), 'body' => __('Kami menjamin penggunaan bahan bunga segar dan material dekorasi berkualitas terbaik. Setiap dekorasi akan dipasang dan dirawat oleh tim profesional kami selama acara berlangsung.'), 'is_italic' => false],
+                    ['heading' => __('TANGGUNG JAWAB'), 'body' => __('Wedding Flowers Decorasi bertanggung jawab penuh atas kualitas dan ketepatan waktu pemasangan dekorasi. Klien wajib memberikan akses lokasi yang memadai kepada tim kami pada hari pelaksanaan.'), 'is_italic' => true],
+                    ['heading' => __('KEBIJAKAN PEMBATALAN'), 'body' => __('Pembatalan sepihak oleh klien dikenakan biaya sesuai ketentuan yang tercantum dalam perjanjian kerja sama. Pengembalian dana hanya berlaku untuk pembatalan yang dilakukan minimal 30 hari sebelum hari acara.'), 'is_italic' => false],
+                ],
+            ]
+        );
+        $this->command->line('  <info>✓</info> Kebijakan Aplikasi created');
 
         $this->command->info('--- Terms & Privacy Seeding Complete ---');
     }
