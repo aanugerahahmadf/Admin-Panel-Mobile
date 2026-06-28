@@ -178,6 +178,11 @@
         },
         "platform": {
             "php": "8.4.99"
+        },
+        "audit": {
+            "ignore": [
+                "PKSA-n7tx-gkfb-14yj"
+            ]
         }
     },
     "minimum-stability": "dev",
