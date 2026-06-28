@@ -132,6 +132,7 @@ jobs:
           REDIS_HOST: 127.0.0.1
           REDIS_PORT: 6379
         run: |
+          php artisan key:generate --force --no-interaction
           php artisan test --coverage --min=60 2>&1 || true
 
       - name: Upload coverage
