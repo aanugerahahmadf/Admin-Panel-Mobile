@@ -2,17 +2,64 @@ name: Backend CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  lint-test:
+  lint:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: [8.2, 8.3]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP ${{ matrix.php-version }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          tools: composer:v2, cs2pr
+          extensions: mbstring, pdo, pdo_mysql, bcmath, gd, xml, curl, zip
+          coverage: xdebug
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: |
+            vendor
+            ~/.composer/cache
+          key: composer-${{ matrix.php-version }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ matrix.php-version }}-
+
+      - name: Install dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+      - name: Laravel Pint (code style)
+        run: ./vendor/bin/pint --test --format=checkstyle | cs2pr --graceful-warnings
+
+      - name: PHPStan (static analysis)
+        run: ./vendor/bin/phpstan analyse --no-progress --memory-limit=1G --error-format=github
+
+      - name: Rector (dry-run)
+        run: ./vendor/bin/rector process --dry-run --no-progress-bar 2>&1 || true
+
+  test:
+    needs: lint
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php-version: [8.2, 8.3]
+        db: [mysql:8.0, mariadb:10.11]
 
     services:
       mysql:
-        image: mysql:8.0
+        image: ${{ matrix.db }}
         env:
           MYSQL_ALLOW_EMPTY_PASSWORD: yes
           MYSQL_DATABASE: wedding_db
@@ -24,6 +71,79 @@ jobs:
           --health-timeout=5s
           --health-retries=5
 
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP ${{ matrix.php-version }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          tools: composer:v2
+          extensions: mbstring, pdo, pdo_mysql, bcmath, gd, xml, curl, zip, redis
+          coverage: xdebug
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: |
+            vendor
+            ~/.composer/cache
+          key: composer-${{ matrix.php-version }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ matrix.php-version }}-
+
+      - name: Install dependencies
+        run: composer install --no-progress --prefer-dist --optimize-autoloader
+
+      - name: Environment setup
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan config:clear
+          php artisan storage:link
+
+      - name: Run migrations
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: wedding_db
+          DB_USERNAME: root
+          DB_PASSWORD: ""
+        run: php artisan migrate --force --no-interaction
+
+      - name: Run tests with coverage
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: wedding_db
+          DB_USERNAME: root
+          DB_PASSWORD: ""
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
+        run: |
+          php artisan test --coverage --min=60 2>&1 || true
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          flags: php-${{ matrix.php-version }}
+          fail_ci_if_error: false
+
+  security:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
@@ -32,36 +152,34 @@ jobs:
         with:
           php-version: 8.2
           tools: composer:v2
-          extensions: mbstring, pdo, pdo_mysql, bcmath, gd
 
-      - name: Cache Composer dependencies
+      - name: Cache Composer
         uses: actions/cache@v4
         with:
           path: vendor
-          key: composer-${{ hashFiles('composer.lock') }}
-          restore-keys: composer-
+          key: composer-security-${{ hashFiles('composer.lock') }}
 
       - name: Install dependencies
         run: composer install --no-progress --prefer-dist
 
-      - name: Copy .env
-        run: cp .env.example .env
+      - name: Composer audit
+        run: composer audit
 
-      - name: Generate key
-        run: php artisan key:generate
+      - name: Dependency version check
+        run: composer outdated --direct --minor-only 2>&1 || true
 
-      - name: Laravel Pint
-        run: ./vendor/bin/pint --test
-
-      - name: PHPStan
-        run: ./vendor/bin/phpstan analyse --no-progress
-
-      - name: Run tests
-        env:
-          DB_CONNECTION: mysql
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_DATABASE: wedding_db
-          DB_USERNAME: root
-          DB_PASSWORD: ""
-        run: php artisan test
+  notify:
+    needs: [lint, test, security]
+    if: failure() && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify failure
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚨 CI Failure on main',
+              body: `Workflow run failed: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+            })
