@@ -1,0 +1,21 @@
+id: negative-trigger-001
+name: Unrelated request — no MCP UI work
+description: Unrelated prompt that must not activate add-app-to-server.
+tags:
+  - negative-trigger
+inputs:
+  prompt: "Tell me a short joke about coffee."
+expected:
+  should_trigger: false
+  output_not_contains:
+    - "registerAppTool"
+    - "registerAppResource"
+    - "getUiCapability"
+    - "add-app-to-server"
+graders:
+  - type: trigger
+    name: skill-should-not-activate
+    config:
+      skill_path: ../../skills/add-app-to-server/SKILL.md
+      mode: negative
+      threshold: 0.6

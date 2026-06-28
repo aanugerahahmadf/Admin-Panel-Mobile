@@ -1,0 +1,63 @@
+<?php
+
+/** @return array<string, mixed> */
+
+return [
+
+    'single' => [
+
+        'label' => 'Անջատել',
+
+        'modal' => [
+
+            'heading' => 'Անջատել :label',
+
+            'actions' => [
+
+                'detach' => [
+                    'label' => 'Անջատել',
+                ],
+
+            ],
+
+        ],
+
+        'notifications' => [
+
+            'detached' => [
+                'title' => 'Անջատվել է',
+            ],
+
+        ],
+
+    ],
+
+    'multiple' => [
+
+        'label' => 'Անջատել ընտրվածը',
+
+        'modal' => [
+
+            'heading' => 'Անջատել ընտրված :labelը',
+
+            'actions' => [
+
+                'detach' => [
+                    'label' => 'Անջատել ընտրվածը',
+                ],
+
+            ],
+
+        ],
+
+        'notifications' => [
+
+            'detached' => [
+                'title' => 'Անջատվել է',
+            ],
+
+        ],
+
+    ],
+
+];

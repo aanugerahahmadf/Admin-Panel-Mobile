@@ -1,0 +1,8 @@
+[build]
+  publish = "public"
+  command = "npm run prepare-deploy"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.php"
+  status = 200

@@ -1,0 +1,28 @@
+id: positive-trigger-001
+name: Add UI to existing MCP server
+description: Natural trigger from skill description — should activate add-app-to-server.
+tags:
+  - positive-trigger
+inputs:
+  prompt: "Add interactive UI to my existing MCP server; it already has tools but no views yet."
+expected:
+  should_trigger: true
+  output_contains_any:
+    - "MCP App"
+    - "registerAppTool"
+    - "resourceUri"
+    - "_meta.ui"
+graders:
+  - type: trigger
+    name: skill-should-activate
+    config:
+      skill_path: ../../skills/add-app-to-server/SKILL.md
+      mode: positive
+      threshold: 0.6
+  - type: skill_invocation
+    name: invokes-add-app-to-server
+    config:
+      required_skills:
+        - add-app-to-server
+      mode: any_order
+      allow_extra: true

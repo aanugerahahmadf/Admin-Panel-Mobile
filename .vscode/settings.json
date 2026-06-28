@@ -1,0 +1,49 @@
+{
+    "intelephense.environment.phpVersion": "8.3.0",
+    "php.validate.executablePath": "D:\\laragon\\bin\\php\\php-8.5.2-nts-Win32-vs17-x64\\php.exe",
+    "php.suggest.basic": false,
+    "php.validate.enable": false,
+
+    // MATIKAN SEMUA DIAGNOSTIK INTELEPHENSE (PEMBERSIHAN TOTAL)
+    "intelephense.diagnostics.undefinedTypes": false,
+    "intelephense.diagnostics.undefinedFunctions": false,
+    "intelephense.diagnostics.undefinedConstants": false,
+    "intelephense.diagnostics.undefinedClassConstants": false,
+    "intelephense.diagnostics.undefinedMethods": false,
+    "intelephense.diagnostics.undefinedProperties": false,
+    "intelephense.diagnostics.undefinedVariables": "local",
+    "intelephense.diagnostics.duplicateSymbols": false,
+    "intelephense.diagnostics.unusedSymbols": false,
+    "intelephense.diagnostics.argumentType": false,
+    "intelephense.diagnostics.typeHint": false,
+    "intelephense.diagnostics.memberAccess": false,
+    "intelephense.diagnostics.languageConstraints": false,
+    "intelephense.diagnostics.embeddedContent": false,
+    "intelephense.diagnostics.deprecatedSymbols": false,
+
+    // MATIKAN SPELL CHECKER (BIANG KEROK GARIS KUNING)
+    "cSpell.enabled": false,
+    "spellright.enabled": false,
+
+    // MATIKAN LINTER & ANALYZER LAINNYA
+    "phpstan.enabled": false,
+    "phpstan.enableStatusBar": false,
+    "phpcs.enable": false,
+    "phpmd.enabled": false,
+    "php-linter.enable": false,
+    "php.problems.exclude": {
+        "**/*": true
+    },
+
+    "intelephense.files.exclude": [
+        "**/.git/**",
+        "**/node_modules/**",
+        "**/storage/framework/views/**"
+    ],
+
+    "files.associations": {
+        "*.blade.php": "blade"
+    },
+    "kiroAgent.configureMCP": "Disabled",
+    "java.configuration.updateBuildConfiguration": "interactive"
+}

@@ -1,0 +1,21 @@
+id: negative-trigger-001
+name: Unrelated request — no web MCP conversion
+description: Unrelated prompt that must not activate convert-web-app.
+tags:
+  - negative-trigger
+inputs:
+  prompt: "Tell me a short joke about coffee."
+expected:
+  should_trigger: false
+  output_not_contains:
+    - "registerAppTool"
+    - "registerAppResource"
+    - "convert-web-app"
+    - "useApp"
+graders:
+  - type: trigger
+    name: skill-should-not-activate
+    config:
+      skill_path: ../../skills/convert-web-app/SKILL.md
+      mode: negative
+      threshold: 0.6

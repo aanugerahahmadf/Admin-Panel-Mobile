@@ -1,0 +1,19 @@
+{
+    "name": "Dekorasi Bunga Pernikahan",
+    "short_name": "Wedding",
+    "description": "Wedding organizer with AI visual search",
+    "start_url": "/user",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "portrait-primary",
+    "background_color": "#ffffff",
+    "theme_color": "#fbbf24",
+    "icons": [
+        {
+            "src": "/images/logo.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

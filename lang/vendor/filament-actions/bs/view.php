@@ -1,0 +1,27 @@
+<?php
+
+/** @return array<string, mixed> */
+
+return [
+
+    'single' => [
+
+        'label' => 'Pregledajte',
+
+        'modal' => [
+
+            'heading' => 'Pregled :label',
+
+            'actions' => [
+
+                'close' => [
+                    'label' => 'Zatvoriti',
+                ],
+
+            ],
+
+        ],
+
+    ],
+
+];

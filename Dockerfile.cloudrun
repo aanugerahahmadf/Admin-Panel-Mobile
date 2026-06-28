@@ -1,0 +1,43 @@
+FROM php:8.4-fpm
+
+ARG PORT=8080
+
+ENV PORT=${PORT}
+
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    zip \
+    unzip \
+    libpq-dev \
+    nginx \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN docker-php-ext-install pdo_pgsql pdo_mysql mbstring exif pcntl bcmath gd
+
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/html
+
+COPY . /var/www/html
+
+RUN mkdir -p /var/www/html/storage/framework/views \
+             /var/www/html/storage/framework/cache/data \
+             /var/www/html/storage/framework/sessions \
+             /var/www/html/storage/logs \
+             /var/www/html/bootstrap/cache
+
+RUN composer install --no-dev --optimize-autoloader --ignore-platform-reqs
+
+COPY ./docker/nginx.cloudrun.conf /etc/nginx/sites-available/default
+
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+
+RUN chmod +x /var/www/html/docker/start-cloudrun.sh
+
+EXPOSE ${PORT}
+
+CMD ["/var/www/html/docker/start-cloudrun.sh"]

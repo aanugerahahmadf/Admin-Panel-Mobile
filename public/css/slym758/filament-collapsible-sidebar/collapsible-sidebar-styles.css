@@ -1,0 +1,134 @@
+/* Desktop only - min-width: 1024px */
+@media (min-width: 1024px) {
+    /* Sidebar - sadece width transition */
+    html .fi-sidebar {
+        transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+        will-change: width !important;
+    }
+
+    /* Collapsed state */
+    html .fi-sidebar-collapsed {
+        width: 5rem !important;
+        min-width: 5rem !important;
+    }
+
+    /* Toggle button */
+    html .fi-sidebar-collapse-button {
+        position: absolute !important;
+        top: 0.2rem !important;
+        right: 1rem !important;
+        z-index: 50 !important;
+        width: 2rem !important;
+        height: 2rem !important;
+        padding: 0.5rem !important;
+        background: white !important;
+        border: 1px solid rgb(229 231 235) !important;
+        border-radius: 0.5rem !important;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+        cursor: pointer !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        transition: transform 200ms ease !important;
+    }
+
+    html .fi-sidebar-collapse-button:hover {
+        background: rgb(249 250 251) !important;
+        box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1) !important;
+    }
+
+    html .fi-sidebar-collapse-button:active {
+        transform: scale(0.95) !important;
+    }
+
+    /* Icon rotation */
+    html .fi-sidebar-collapse-button svg {
+        width: 1.25rem !important;
+        height: 1.25rem !important;
+        color: rgb(107 114 128) !important;
+        transition: transform 300ms ease !important;
+    }
+
+    html .fi-sidebar-collapsed .fi-sidebar-collapse-button svg {
+        transform: rotate(180deg) !important;
+    }
+
+    /* Dark mode */
+    html .dark .fi-sidebar-collapse-button {
+        background: rgb(31 41 55) !important;
+        border-color: rgb(55 65 81) !important;
+    }
+
+    html .dark .fi-sidebar-collapse-button:hover {
+        background: rgb(55 65 81) !important;
+    }
+
+    html .dark .fi-sidebar-collapse-button svg {
+        color: rgb(156 163 175) !important;
+    }
+
+    /* Menu items */
+    html .fi-sidebar-collapsed .fi-sidebar-item {
+        margin: 0.5rem auto !important;
+        width: 3rem !important;
+        height: 3rem !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    html .fi-sidebar-collapsed .fi-sidebar-item-btn {
+        justify-content: center !important;
+        width: 100% !important;
+        height: 100% !important;
+        padding: 0 !important;
+    }
+
+    /* Icons */
+    html .fi-sidebar-collapsed .fi-sidebar-item-icon {
+        margin: 0 !important;
+        width: 1.5rem !important;
+        height: 1.5rem !important;
+    }
+
+    html .fi-sidebar-collapsed .fi-icon {
+        width: 1.5rem !important;
+        height: 1.5rem !important;
+    }
+
+    /* Labels */
+    html .fi-sidebar-collapsed .fi-sidebar-item-label,
+    html .fi-sidebar-collapsed .fi-sidebar-group-label,
+    html .fi-sidebar-collapsed .fi-sidebar-item-badge {
+        display: none !important;
+    }
+
+    /* Groups */
+    html .fi-sidebar-collapsed .fi-sidebar-group {
+        padding: 0.5rem 0 !important;
+    }
+
+    html .fi-sidebar-collapsed .fi-sidebar-group-label {
+        display: none !important;
+    }
+
+    html .fi-sidebar-collapsed .fi-sidebar-group-items {
+        padding: 0 !important;
+    }
+
+    /* Active item */
+    html .fi-sidebar-collapsed .fi-sidebar-item.fi-active {
+        background: rgb(243 244 246) !important;
+    }
+
+    html .dark .fi-sidebar-collapsed .fi-sidebar-item.fi-active {
+        background: rgb(55 65 81) !important;
+    }
+}
+
+/* Mobile - button gizle */
+@media (max-width: 1023px) {
+    html .fi-sidebar-collapse-button {
+        display: none !important;
+    }
+}

@@ -1,0 +1,4 @@
+php_value upload_max_filesize 102400M
+php_value post_max_size 102400M
+php_value max_execution_time 0
+php_value max_input_time -1

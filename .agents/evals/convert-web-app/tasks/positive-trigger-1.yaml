@@ -1,0 +1,28 @@
+id: positive-trigger-001
+name: Add MCP App support to web app
+description: Natural trigger from skill description — should activate convert-web-app.
+tags:
+  - positive-trigger
+inputs:
+  prompt: "Add MCP App support to my existing web app while keeping it working as a standalone site."
+expected:
+  should_trigger: true
+  output_contains_any:
+    - "MCP App"
+    - "hybrid"
+    - "registerAppTool"
+    - "useApp"
+graders:
+  - type: trigger
+    name: skill-should-activate
+    config:
+      skill_path: ../../skills/convert-web-app/SKILL.md
+      mode: positive
+      threshold: 0.6
+  - type: skill_invocation
+    name: invokes-convert-web-app
+    config:
+      required_skills:
+        - convert-web-app
+      mode: any_order
+      allow_extra: true

@@ -1,0 +1,28 @@
+id: positive-trigger-002
+name: Turn SPA into hybrid MCP App
+description: Alternate natural trigger — should activate convert-web-app.
+tags:
+  - positive-trigger
+inputs:
+  prompt: "Turn my SPA into a hybrid MCP App that also renders inline in Claude Desktop."
+expected:
+  should_trigger: true
+  output_contains_any:
+    - "MCP App"
+    - "hybrid"
+    - "registerAppResource"
+    - "standalone"
+graders:
+  - type: trigger
+    name: skill-should-activate
+    config:
+      skill_path: ../../skills/convert-web-app/SKILL.md
+      mode: positive
+      threshold: 0.6
+  - type: skill_invocation
+    name: invokes-convert-web-app
+    config:
+      required_skills:
+        - convert-web-app
+      mode: any_order
+      allow_extra: true

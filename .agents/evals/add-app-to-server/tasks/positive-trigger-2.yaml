@@ -1,0 +1,28 @@
+id: positive-trigger-002
+name: Enrich MCP tools with UI
+description: Alternate natural trigger — should activate add-app-to-server.
+tags:
+  - positive-trigger
+inputs:
+  prompt: "I want to enrich my MCP tools with UI and add MCP Apps to my server."
+expected:
+  should_trigger: true
+  output_contains_any:
+    - "MCP App"
+    - "registerAppTool"
+    - "structuredContent"
+    - "getUiCapability"
+graders:
+  - type: trigger
+    name: skill-should-activate
+    config:
+      skill_path: ../../skills/add-app-to-server/SKILL.md
+      mode: positive
+      threshold: 0.6
+  - type: skill_invocation
+    name: invokes-add-app-to-server
+    config:
+      required_skills:
+        - add-app-to-server
+      mode: any_order
+      allow_extra: true
