@@ -57,7 +57,7 @@ jobs:
           key: ${{ runner.os }}-composer-${{ hashFiles('composer.lock') }}
 
       - name: Install PHP dependencies
-        run: composer install --no-progress --ignore-platform-reqs
+        run: composer install --no-progress --no-scripts --ignore-platform-reqs
 
       - name: Copy environment file
         run: cp .env.example .env && php artisan key:generate
@@ -133,7 +133,7 @@ jobs:
           cache: 'npm'
 
       - name: Install PHP dependencies
-        run: composer install --no-dev --optimize-autoloader --no-progress --ignore-platform-reqs
+        run: composer install --no-dev --optimize-autoloader --no-progress --no-scripts --ignore-platform-reqs
 
       - name: Install Node dependencies
         run: npm ci
@@ -199,7 +199,7 @@ jobs:
           cache: 'npm'
 
       - name: Install PHP dependencies
-        run: composer install --no-dev --optimize-autoloader --no-progress --ignore-platform-reqs
+        run: composer install --no-dev --optimize-autoloader --no-progress --no-scripts --ignore-platform-reqs
 
       - name: Install Node dependencies
         run: npm ci

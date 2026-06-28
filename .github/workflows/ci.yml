@@ -38,7 +38,7 @@ jobs:
           restore-keys: composer-${{ matrix.php-version }}-
 
       - name: Install dependencies
-        run: composer install --no-progress --prefer-dist --ignore-platform-reqs --optimize-autoloader --ignore-platform-reqs
+        run: composer install --no-progress --prefer-dist --optimize-autoloader --no-scripts --ignore-platform-reqs
 
       - name: Laravel Pint (code style)
         run: ./vendor/bin/pint --test --format=checkstyle | cs2pr --graceful-warnings
@@ -102,7 +102,7 @@ jobs:
           restore-keys: composer-${{ matrix.php-version }}-
 
       - name: Install dependencies
-        run: composer install --no-progress --prefer-dist --ignore-platform-reqs --optimize-autoloader --ignore-platform-reqs
+        run: composer install --no-progress --prefer-dist --optimize-autoloader --no-scripts --ignore-platform-reqs
 
       - name: Environment setup
         run: |
@@ -160,7 +160,7 @@ jobs:
           key: composer-security-${{ hashFiles('composer.lock') }}
 
       - name: Install dependencies
-        run: composer install --no-progress --prefer-dist --ignore-platform-reqs
+        run: composer install --no-progress --prefer-dist --no-scripts --ignore-platform-reqs
 
       - name: Composer audit
         run: composer audit
