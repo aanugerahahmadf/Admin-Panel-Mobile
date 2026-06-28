@@ -14,7 +14,7 @@ use App\Support\Platform\PlatformFeatureRegistry;
  */
 describe('Property 7: File System Availability Matches Platform Mode', function () {
     beforeEach(function () {
-        $this->registry = new PlatformFeatureRegistry();
+        $this->registry = new PlatformFeatureRegistry;
     });
 
     test('file_system returns true for all Mobile platforms', function () {
@@ -75,7 +75,7 @@ describe('Property 7: File System Availability Matches Platform Mode', function 
 
         foreach ($allPlatforms as $platform) {
             $fileSystemAvailable = $this->registry->isAvailable('file_system', $platform);
-            $isNativePlatform    = $platform->isMobileApp() || $platform->isDesktopApp();
+            $isNativePlatform = $platform->isMobileApp() || $platform->isDesktopApp();
 
             // Biconditional: available if and only if native
             expect($fileSystemAvailable)->toBe($isNativePlatform);
@@ -89,7 +89,7 @@ describe('Property 7: File System Availability Matches Platform Mode', function 
 
         foreach ($allPlatforms as $platform) {
             $fileSystemAvailable = $this->registry->isAvailable('file_system', $platform);
-            $isWebsite           = $platform->isWebsite();
+            $isWebsite = $platform->isWebsite();
 
             // file_system and isWebsite() must be mutually exclusive
             expect($fileSystemAvailable && $isWebsite)->toBeFalse();
@@ -107,7 +107,7 @@ describe('Property 7: File System Availability Matches Platform Mode', function 
 
         foreach ($allPlatforms as $platform) {
             $registryResult = $this->registry->isAvailable('file_system', $platform);
-            $enumResult     = $platform->hasFileSystemAccess();
+            $enumResult = $platform->hasFileSystemAccess();
 
             expect($registryResult)->toBe($enumResult);
         }

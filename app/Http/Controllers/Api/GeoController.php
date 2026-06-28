@@ -21,7 +21,7 @@ class GeoController extends Controller
             'state' => 'required|string',
         ]);
 
-        if (!$this->geoNames->isConfigured()) {
+        if (! $this->geoNames->isConfigured()) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'GeoNames belum dikonfigurasi. Isi GEONAMES_USERNAME di .env',
@@ -48,7 +48,7 @@ class GeoController extends Controller
             'district' => 'required|string',
         ]);
 
-        if (!$this->geoNames->isConfigured()) {
+        if (! $this->geoNames->isConfigured()) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'GeoNames belum dikonfigurasi. Isi GEONAMES_USERNAME di .env',
@@ -75,7 +75,7 @@ class GeoController extends Controller
             'city' => 'required|string',
         ]);
 
-        if (!$this->geoNames->isConfigured()) {
+        if (! $this->geoNames->isConfigured()) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'GeoNames belum dikonfigurasi. Isi GEONAMES_USERNAME di .env',

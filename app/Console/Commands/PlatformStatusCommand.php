@@ -31,9 +31,6 @@ class PlatformStatusCommand extends Command
 
     /**
      * Execute the console command.
-     *
-     * @param  PlatformFeatureRegistry  $registry
-     * @return int
      */
     public function handle(PlatformFeatureRegistry $registry): int
     {
@@ -43,10 +40,10 @@ class PlatformStatusCommand extends Command
         /** @var RuntimePlatform $runtimePlatform */
         $runtimePlatform = app('runtime.platform');
 
-        $envFile       = $mode->environmentFile();
-        $assetDir      = $mode->assetDirectory();
+        $envFile = $mode->environmentFile();
+        $assetDir = $mode->assetDirectory();
 
-        $allFeatures       = array_keys($this->allFeatures());
+        $allFeatures = array_keys($this->allFeatures());
         $availableFeatures = $registry->getAvailableFeatures($runtimePlatform);
         $unavailableFeatures = array_values(array_diff($allFeatures, $availableFeatures));
 

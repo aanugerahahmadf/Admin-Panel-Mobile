@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\LegalPage;
 use App\Models\PrivacyPolicy;
 use App\Models\TermsOfService;
 use Illuminate\Http\JsonResponse;
@@ -13,7 +14,7 @@ class LegalController extends Controller
     {
         $terms = TermsOfService::first();
 
-        if (!$terms) {
+        if (! $terms) {
             return response()->json([
                 'success' => false,
                 'message' => 'Syarat & Ketentuan belum tersedia.',
@@ -34,7 +35,7 @@ class LegalController extends Controller
     {
         $privacy = PrivacyPolicy::first();
 
-        if (!$privacy) {
+        if (! $privacy) {
             return response()->json([
                 'success' => false,
                 'message' => 'Kebijakan Privasi belum tersedia.',
@@ -55,7 +56,7 @@ class LegalController extends Controller
     public function getAbout(): JsonResponse
     {
         // Assuming about info is stored in AppSettings or a LegalPage with slug 'about'
-        $about = \App\Models\LegalPage::where('slug', 'about')->first();
+        $about = LegalPage::where('slug', 'about')->first();
 
         return response()->json([
             'success' => true,
@@ -70,7 +71,7 @@ class LegalController extends Controller
 
     public function getHelp(): JsonResponse
     {
-        $help = \App\Models\LegalPage::where('slug', 'help')->first();
+        $help = LegalPage::where('slug', 'help')->first();
 
         return response()->json([
             'success' => true,

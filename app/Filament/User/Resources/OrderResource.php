@@ -29,7 +29,6 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Blade;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\HtmlString;
 use Livewire\Component;
 
@@ -453,8 +452,6 @@ class OrderResource extends Resource
                             }
                         }),
 
-
-
                     // Detail
                     Tables\Actions\ViewAction::make()
                         ->label(__('Detail Pesanan'))
@@ -640,7 +637,7 @@ class OrderResource extends Resource
                                     ->hiddenLabel()
                                     ->weight(FontWeight::Bold)
                                     ->size(Infolists\Components\TextEntry\TextEntrySize::Large),
-                                
+
                                 Infolists\Components\TextEntry::make('booking_date')
                                     ->label(__('Untuk Tanggal Acara:'))
                                     ->inlineLabel()

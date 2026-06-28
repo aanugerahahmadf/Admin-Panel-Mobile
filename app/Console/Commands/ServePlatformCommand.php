@@ -40,12 +40,10 @@ class ServePlatformCommand extends Command
      * Web mode has no additional platform-specific package requirements, so
      * this command simply delegates to the built-in `serve` command after
      * confirming the platform context.
-     *
-     * @return int
      */
     public function handle(): int
     {
-        $this->line('Starting Laravel in <info>' . PlatformMode::Web->label() . '</info> mode...');
+        $this->line('Starting Laravel in <info>'.PlatformMode::Web->label().'</info> mode...');
 
         return $this->call('serve', array_filter([
             '--host' => $this->option('host'),

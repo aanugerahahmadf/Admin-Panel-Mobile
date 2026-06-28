@@ -50,14 +50,14 @@ describe('Property 1: Bug Condition - Desktop App Launch Failures', function () 
         $path = getElectronPackageJsonPath();
 
         if (! File::exists($path)) {
-            throw new \RuntimeException("Electron package.json not found at: {$path}");
+            throw new RuntimeException("Electron package.json not found at: {$path}");
         }
 
         $contents = File::get($path);
         $json = json_decode($contents, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \RuntimeException('Failed to parse Electron package.json: ' . json_last_error_msg());
+            throw new RuntimeException('Failed to parse Electron package.json: '.json_last_error_msg());
         }
 
         return $json;
@@ -191,8 +191,8 @@ describe('Property 1: Bug Condition - Desktop App Launch Failures', function () 
         // ASSERTION: phpSpawned = true
         // This assertion encodes the expected behavior
         expect($canSpawn)->toBeTrue(
-            'PHP binary spawn should succeed. ' .
-            'COUNTEREXAMPLE: PHP binary not found (errno -4094 "spawn UNKNOWN" expected). ' .
+            'PHP binary spawn should succeed. '.
+            'COUNTEREXAMPLE: PHP binary not found (errno -4094 "spawn UNKNOWN" expected). '.
             'This failure confirms the bug exists.'
         );
     });
@@ -218,8 +218,8 @@ describe('Property 1: Bug Condition - Desktop App Launch Failures', function () 
 
         // ASSERTION: PHP binary is accessible
         expect($isConfigured)->toBeTrue(
-            'PHP binary should be configured via NATIVEPHP_PHP_BINARY env var or available in system PATH. ' .
-            'COUNTEREXAMPLE: PHP binary not configured. ' .
+            'PHP binary should be configured via NATIVEPHP_PHP_BINARY env var or available in system PATH. '.
+            'COUNTEREXAMPLE: PHP binary not configured. '.
             'This failure confirms the bug exists.'
         );
     });
@@ -258,8 +258,8 @@ describe('Property 1: Bug Condition - Desktop App Launch Failures', function () 
         // ASSERTION: appVersionValid = true
         // This assertion encodes the expected behavior
         expect($isValid)->toBeTrue(
-            'App version should be valid semver format (e.g., "1.0.0", "1.0.0-dev"). ' .
-            "COUNTEREXAMPLE: App version is '{$appVersion}' (not semver compliant). " .
+            'App version should be valid semver format (e.g., "1.0.0", "1.0.0-dev"). '.
+            "COUNTEREXAMPLE: App version is '{$appVersion}' (not semver compliant). ".
             'This failure confirms the bug exists.'
         );
     });
@@ -296,8 +296,8 @@ describe('Property 1: Bug Condition - Desktop App Launch Failures', function () 
         // ASSERTION: appVersionValid = true OR autoUpdaterDisabled = true
         // This assertion encodes the expected behavior (either condition satisfies)
         expect($versionValid || $updaterDisabled)->toBeTrue(
-            'Either app version should be valid semver OR auto-updater should be disabled. ' .
-            "COUNTEREXAMPLE: App version is '{$appVersion}' (invalid) AND auto-updater is not disabled. " .
+            'Either app version should be valid semver OR auto-updater should be disabled. '.
+            "COUNTEREXAMPLE: App version is '{$appVersion}' (invalid) AND auto-updater is not disabled. ".
             'This failure confirms the bug exists.'
         );
     });
@@ -334,8 +334,8 @@ describe('Property 1: Bug Condition - Desktop App Launch Failures', function () 
         // ASSERTION: gpuCrash = false (GPU is disabled or has fallback)
         // This assertion encodes the expected behavior
         expect($gpuDisabled)->toBeTrue(
-            'GPU hardware acceleration should be disabled via ELECTRON_DISABLE_GPU env var. ' .
-            'COUNTEREXAMPLE: GPU acceleration is enabled, which will cause crashes (exit_code=-1073741515). ' .
+            'GPU hardware acceleration should be disabled via ELECTRON_DISABLE_GPU env var. '.
+            'COUNTEREXAMPLE: GPU acceleration is enabled, which will cause crashes (exit_code=-1073741515). '.
             'This failure confirms the bug exists.'
         );
     });
@@ -391,11 +391,11 @@ describe('Property 1: Bug Condition - Desktop App Launch Failures', function () 
         // ASSERTION: windowVisible = true AND applicationUsable = true
         // This requires all three conditions to be satisfied
         expect($allConditionsMet)->toBeTrue(
-            'Desktop app should launch successfully with: ' .
-            '(1) PHP binary spawnable, ' .
-            '(2) valid app version OR auto-updater disabled, ' .
-            '(3) GPU disabled or fallback enabled. ' .
-            'COUNTEREXAMPLE: One or more conditions not met, app fails to launch. ' .
+            'Desktop app should launch successfully with: '.
+            '(1) PHP binary spawnable, '.
+            '(2) valid app version OR auto-updater disabled, '.
+            '(3) GPU disabled or fallback enabled. '.
+            'COUNTEREXAMPLE: One or more conditions not met, app fails to launch. '.
             'This failure confirms the bugs exist.'
         );
     });

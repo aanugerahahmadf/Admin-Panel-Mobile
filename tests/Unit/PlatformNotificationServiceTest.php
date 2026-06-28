@@ -54,7 +54,7 @@ function unbindPlatform(): void
         // the binding completely via the IoC container's bindings array.
         // The cleanest approach in Laravel tests is to just fake the binding.
         app()->bind('runtime.platform', function () {
-            throw new \RuntimeException('runtime.platform not bound');
+            throw new RuntimeException('runtime.platform not bound');
         });
         app()->forgetInstance('runtime.platform');
     }
@@ -91,7 +91,7 @@ describe('PlatformNotificationService', function () {
                 $user = makeUser();
 
                 expect(fn () => PlatformNotificationService::send($user, 'Test Title', 'Test <b>body</b>'))
-                    ->not->toThrow(\Throwable::class);
+                    ->not->toThrow(Throwable::class);
             });
         }
     });
@@ -104,14 +104,14 @@ describe('PlatformNotificationService', function () {
         test('completes without exception when runtime.platform is not bound', function () {
             // Ensure no platform is bound
             app()->bind('runtime.platform', function () {
-                throw new \RuntimeException('runtime.platform not bound');
+                throw new RuntimeException('runtime.platform not bound');
             });
             app()->forgetInstance('runtime.platform');
 
             $user = makeUser();
 
             expect(fn () => PlatformNotificationService::send($user, 'Title', 'Body'))
-                ->not->toThrow(\Throwable::class);
+                ->not->toThrow(Throwable::class);
         });
     });
 
@@ -193,7 +193,7 @@ describe('PlatformNotificationService', function () {
 
     describe('send() – feature registry integration', function () {
         test('desktop_notifications is skipped on exactly the platforms registry says are unavailable', function () {
-            $registry = new PlatformFeatureRegistry();
+            $registry = new PlatformFeatureRegistry;
 
             // Count how many platforms do NOT support desktop_notifications
             $unavailablePlatforms = array_filter(
@@ -218,7 +218,7 @@ describe('PlatformNotificationService', function () {
         });
 
         test('push_notifications is skipped on exactly the platforms registry says are unavailable', function () {
-            $registry = new PlatformFeatureRegistry();
+            $registry = new PlatformFeatureRegistry;
 
             $unavailablePlatforms = array_filter(
                 RuntimePlatform::cases(),
@@ -269,9 +269,9 @@ describe('PlatformNotificationService', function () {
 
             try {
                 PlatformNotificationService::withRecipientLocale($user, function () {
-                    throw new \RuntimeException('Callback error');
+                    throw new RuntimeException('Callback error');
                 });
-            } catch (\RuntimeException) {
+            } catch (RuntimeException) {
                 // Expected — we just want to verify locale is restored.
             }
 
@@ -313,7 +313,7 @@ describe('PlatformNotificationService', function () {
                 expect($result[0])->toBe('Bonjour');
 
                 expect(fn () => PlatformNotificationService::send($user, $result[0], $result[1]))
-                    ->not->toThrow(\Throwable::class);
+                    ->not->toThrow(Throwable::class);
             }
         });
     });
@@ -329,7 +329,7 @@ describe('PlatformNotificationService', function () {
                 $user = makeUser();
 
                 expect(fn () => PlatformNotificationService::sendToWebOnly($user, 'Web Title', 'Web body'))
-                    ->not->toThrow(\Throwable::class);
+                    ->not->toThrow(Throwable::class);
             }
         });
 
@@ -350,14 +350,14 @@ describe('PlatformNotificationService', function () {
 
         test('works without runtime.platform binding', function () {
             app()->bind('runtime.platform', function () {
-                throw new \RuntimeException('runtime.platform not bound');
+                throw new RuntimeException('runtime.platform not bound');
             });
             app()->forgetInstance('runtime.platform');
 
             $user = makeUser();
 
             expect(fn () => PlatformNotificationService::sendToWebOnly($user, 'Title', 'Body'))
-                ->not->toThrow(\Throwable::class);
+                ->not->toThrow(Throwable::class);
         });
     });
 
@@ -410,13 +410,13 @@ describe('PlatformNotificationService', function () {
         });
 
         test('channels match the feature registry for all platforms', function () {
-            $registry = new PlatformFeatureRegistry();
+            $registry = new PlatformFeatureRegistry;
 
             foreach (RuntimePlatform::cases() as $platform) {
                 $channels = PlatformNotificationService::getActiveChannels($platform);
 
                 $expectedDesktop = $registry->isAvailable('desktop_notifications', $platform);
-                $expectedMobile  = $registry->isAvailable('push_notifications', $platform);
+                $expectedMobile = $registry->isAvailable('push_notifications', $platform);
 
                 expect(in_array('desktop', $channels, true))->toBe($expectedDesktop);
                 expect(in_array('mobile', $channels, true))->toBe($expectedMobile);

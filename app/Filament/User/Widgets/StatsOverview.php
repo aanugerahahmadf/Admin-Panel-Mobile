@@ -43,8 +43,8 @@ class StatsOverview extends BaseWidget
 
     protected function getStats(): array
     {
-        $user     = Auth::user();
-        $name     = $user->full_name ?? $user->username ?? __('User');
+        $user = Auth::user();
+        $name = $user->full_name ?? $user->username ?? __('User');
         $isMobile = PlatformContext::isAnyMobile(); // Android / iOS (native app & mobile browser)
 
         $stats = [

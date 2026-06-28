@@ -3,6 +3,9 @@
 namespace App\Support\Platform;
 
 use App\Enums\PlatformMode;
+use Native\Laravel\Facades\Window;
+use Native\Laravel\NativeServiceProvider;
+use Native\Mobile\Dialog;
 
 class PlatformDependencyValidator
 {
@@ -15,24 +18,24 @@ class PlatformDependencyValidator
      * Requirements: 7.1, 7.2, 7.3, 7.4
      *
      * @param  PlatformMode  $mode  The platform mode to validate dependencies for.
-     * @return string[]             Array of missing package names (e.g. ['nativephp/electron']).
+     * @return string[] Array of missing package names (e.g. ['nativephp/electron']).
      */
     public function validateDependencies(PlatformMode $mode): array
     {
         $missing = [];
 
         if ($mode === PlatformMode::Desktop) {
-            if (! class_exists(\Native\Laravel\Facades\Window::class)) {
+            if (! class_exists(Window::class)) {
                 $missing[] = 'nativephp/electron';
             }
 
-            if (! class_exists(\Native\Laravel\NativeServiceProvider::class)) {
+            if (! class_exists(NativeServiceProvider::class)) {
                 $missing[] = 'nativephp/laravel';
             }
         }
 
         if ($mode === PlatformMode::Mobile) {
-            if (! class_exists(\Native\Mobile\Dialog::class)) {
+            if (! class_exists(Dialog::class)) {
                 $missing[] = 'nativephp/mobile';
             }
         }

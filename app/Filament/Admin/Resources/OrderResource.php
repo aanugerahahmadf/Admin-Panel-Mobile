@@ -282,6 +282,7 @@ class OrderResource extends Resource
                             $transaction = $record->latestTransaction;
                             if (! $transaction) {
                                 Notification::make()->title(__('Transaksi Tidak Ditemukan'))->warning()->send();
+
                                 return;
                             }
                             Notification::make()->title(__('Status pembayaran tidak dapat diperiksa secara otomatis'))->info()->send();
@@ -500,7 +501,7 @@ class OrderResource extends Resource
                                     ->weight(FontWeight::Bold)
                                     ->size(Infolists\Components\TextEntry\TextEntrySize::Large)
                                     ->visible(fn ($record) => (bool) $record->product_id),
-                                
+
                                 Infolists\Components\TextEntry::make('booking_date')
                                     ->label(__('Tanggal Acara'))
                                     ->inlineLabel()

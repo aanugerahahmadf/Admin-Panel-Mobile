@@ -5,32 +5,32 @@ use App\Support\Platform\PlatformFeatureRegistry;
 
 describe('PlatformFeatureRegistry', function () {
     beforeEach(function () {
-        $this->registry = new PlatformFeatureRegistry();
+        $this->registry = new PlatformFeatureRegistry;
     });
 
     describe('isAvailable()', function () {
         describe('camera feature', function () {
             test('returns true for MobileAppAndroid', function () {
                 $result = $this->registry->isAvailable('camera', RuntimePlatform::MobileAppAndroid);
-                
+
                 expect($result)->toBeTrue();
             });
 
             test('returns true for MobileAppIos', function () {
                 $result = $this->registry->isAvailable('camera', RuntimePlatform::MobileAppIos);
-                
+
                 expect($result)->toBeTrue();
             });
 
             test('returns true for DesktopAppWindows', function () {
                 $result = $this->registry->isAvailable('camera', RuntimePlatform::DesktopAppWindows);
-                
+
                 expect($result)->toBeTrue();
             });
 
             test('returns true for DesktopAppMacOS', function () {
                 $result = $this->registry->isAvailable('camera', RuntimePlatform::DesktopAppMacOS);
-                
+
                 expect($result)->toBeTrue();
             });
 
@@ -44,7 +44,7 @@ describe('PlatformFeatureRegistry', function () {
 
                 foreach ($websitePlatforms as $platform) {
                     $result = $this->registry->isAvailable('camera', $platform);
-                    
+
                     expect($result)->toBeFalse();
                 }
             });
@@ -53,13 +53,13 @@ describe('PlatformFeatureRegistry', function () {
         describe('desktop_notifications feature', function () {
             test('returns true for DesktopAppWindows', function () {
                 $result = $this->registry->isAvailable('desktop_notifications', RuntimePlatform::DesktopAppWindows);
-                
+
                 expect($result)->toBeTrue();
             });
 
             test('returns true for DesktopAppMacOS', function () {
                 $result = $this->registry->isAvailable('desktop_notifications', RuntimePlatform::DesktopAppMacOS);
-                
+
                 expect($result)->toBeTrue();
             });
 
@@ -75,7 +75,7 @@ describe('PlatformFeatureRegistry', function () {
 
                 foreach ($otherPlatforms as $platform) {
                     $result = $this->registry->isAvailable('desktop_notifications', $platform);
-                    
+
                     expect($result)->toBeFalse();
                 }
             });
@@ -84,13 +84,13 @@ describe('PlatformFeatureRegistry', function () {
         describe('push_notifications feature', function () {
             test('returns true for MobileAppAndroid', function () {
                 $result = $this->registry->isAvailable('push_notifications', RuntimePlatform::MobileAppAndroid);
-                
+
                 expect($result)->toBeTrue();
             });
 
             test('returns true for MobileAppIos', function () {
                 $result = $this->registry->isAvailable('push_notifications', RuntimePlatform::MobileAppIos);
-                
+
                 expect($result)->toBeTrue();
             });
 
@@ -106,7 +106,7 @@ describe('PlatformFeatureRegistry', function () {
 
                 foreach ($otherPlatforms as $platform) {
                     $result = $this->registry->isAvailable('push_notifications', $platform);
-                    
+
                     expect($result)->toBeFalse();
                 }
             });
@@ -123,7 +123,7 @@ describe('PlatformFeatureRegistry', function () {
 
                 foreach ($nativePlatforms as $platform) {
                     $result = $this->registry->isAvailable('file_system', $platform);
-                    
+
                     expect($result)->toBeTrue();
                 }
             });
@@ -138,7 +138,7 @@ describe('PlatformFeatureRegistry', function () {
 
                 foreach ($websitePlatforms as $platform) {
                     $result = $this->registry->isAvailable('file_system', $platform);
-                    
+
                     expect($result)->toBeFalse();
                 }
             });
@@ -155,7 +155,7 @@ describe('PlatformFeatureRegistry', function () {
 
                 foreach ($websitePlatforms as $platform) {
                     $result = $this->registry->isAvailable('webrtc', $platform);
-                    
+
                     expect($result)->toBeTrue();
                 }
             });
@@ -170,7 +170,7 @@ describe('PlatformFeatureRegistry', function () {
 
                 foreach ($nativePlatforms as $platform) {
                     $result = $this->registry->isAvailable('webrtc', $platform);
-                    
+
                     expect($result)->toBeFalse();
                 }
             });
@@ -179,13 +179,13 @@ describe('PlatformFeatureRegistry', function () {
         describe('auto_updates feature', function () {
             test('returns true for DesktopAppWindows', function () {
                 $result = $this->registry->isAvailable('auto_updates', RuntimePlatform::DesktopAppWindows);
-                
+
                 expect($result)->toBeTrue();
             });
 
             test('returns true for DesktopAppMacOS', function () {
                 $result = $this->registry->isAvailable('auto_updates', RuntimePlatform::DesktopAppMacOS);
-                
+
                 expect($result)->toBeTrue();
             });
 
@@ -201,7 +201,7 @@ describe('PlatformFeatureRegistry', function () {
 
                 foreach ($otherPlatforms as $platform) {
                     $result = $this->registry->isAvailable('auto_updates', $platform);
-                    
+
                     expect($result)->toBeFalse();
                 }
             });
@@ -210,13 +210,13 @@ describe('PlatformFeatureRegistry', function () {
         describe('app_badge feature', function () {
             test('returns true for MobileAppAndroid', function () {
                 $result = $this->registry->isAvailable('app_badge', RuntimePlatform::MobileAppAndroid);
-                
+
                 expect($result)->toBeTrue();
             });
 
             test('returns true for MobileAppIos', function () {
                 $result = $this->registry->isAvailable('app_badge', RuntimePlatform::MobileAppIos);
-                
+
                 expect($result)->toBeTrue();
             });
 
@@ -232,7 +232,7 @@ describe('PlatformFeatureRegistry', function () {
 
                 foreach ($otherPlatforms as $platform) {
                     $result = $this->registry->isAvailable('app_badge', $platform);
-                    
+
                     expect($result)->toBeFalse();
                 }
             });
@@ -253,14 +253,14 @@ describe('PlatformFeatureRegistry', function () {
 
                 foreach ($allPlatforms as $platform) {
                     $result = $this->registry->isAvailable('nonexistent_feature', $platform);
-                    
+
                     expect($result)->toBeFalse();
                 }
             });
 
             test('returns false for empty string feature name', function () {
                 $result = $this->registry->isAvailable('', RuntimePlatform::WebsiteWindows);
-                
+
                 expect($result)->toBeFalse();
             });
         });
@@ -269,7 +269,7 @@ describe('PlatformFeatureRegistry', function () {
     describe('getAvailableFeatures()', function () {
         test('returns correct features for MobileAppAndroid', function () {
             $features = $this->registry->getAvailableFeatures(RuntimePlatform::MobileAppAndroid);
-            
+
             expect($features)->toBeArray();
             expect($features)->toContain('camera');
             expect($features)->toContain('push_notifications');
@@ -282,7 +282,7 @@ describe('PlatformFeatureRegistry', function () {
 
         test('returns correct features for MobileAppIos', function () {
             $features = $this->registry->getAvailableFeatures(RuntimePlatform::MobileAppIos);
-            
+
             expect($features)->toBeArray();
             expect($features)->toContain('camera');
             expect($features)->toContain('push_notifications');
@@ -295,7 +295,7 @@ describe('PlatformFeatureRegistry', function () {
 
         test('returns correct features for DesktopAppWindows', function () {
             $features = $this->registry->getAvailableFeatures(RuntimePlatform::DesktopAppWindows);
-            
+
             expect($features)->toBeArray();
             expect($features)->toContain('camera');
             expect($features)->toContain('desktop_notifications');
@@ -308,7 +308,7 @@ describe('PlatformFeatureRegistry', function () {
 
         test('returns correct features for DesktopAppMacOS', function () {
             $features = $this->registry->getAvailableFeatures(RuntimePlatform::DesktopAppMacOS);
-            
+
             expect($features)->toBeArray();
             expect($features)->toContain('camera');
             expect($features)->toContain('desktop_notifications');
@@ -321,7 +321,7 @@ describe('PlatformFeatureRegistry', function () {
 
         test('returns correct features for WebsiteWindows', function () {
             $features = $this->registry->getAvailableFeatures(RuntimePlatform::WebsiteWindows);
-            
+
             expect($features)->toBeArray();
             expect($features)->toContain('webrtc');
             expect($features)->not->toContain('camera');
@@ -334,7 +334,7 @@ describe('PlatformFeatureRegistry', function () {
 
         test('returns correct features for WebsiteMacOS', function () {
             $features = $this->registry->getAvailableFeatures(RuntimePlatform::WebsiteMacOS);
-            
+
             expect($features)->toBeArray();
             expect($features)->toContain('webrtc');
             expect($features)->not->toContain('camera');
@@ -342,7 +342,7 @@ describe('PlatformFeatureRegistry', function () {
 
         test('returns correct features for WebsiteAndroid', function () {
             $features = $this->registry->getAvailableFeatures(RuntimePlatform::WebsiteAndroid);
-            
+
             expect($features)->toBeArray();
             expect($features)->toContain('webrtc');
             expect($features)->not->toContain('camera');
@@ -350,7 +350,7 @@ describe('PlatformFeatureRegistry', function () {
 
         test('returns correct features for WebsiteIos', function () {
             $features = $this->registry->getAvailableFeatures(RuntimePlatform::WebsiteIos);
-            
+
             expect($features)->toBeArray();
             expect($features)->toContain('webrtc');
             expect($features)->not->toContain('camera');
@@ -358,7 +358,7 @@ describe('PlatformFeatureRegistry', function () {
 
         test('returns array of strings', function () {
             $features = $this->registry->getAvailableFeatures(RuntimePlatform::MobileAppAndroid);
-            
+
             expect($features)->toBeArray();
             foreach ($features as $feature) {
                 expect($feature)->toBeString();
@@ -367,7 +367,7 @@ describe('PlatformFeatureRegistry', function () {
 
         test('returns unique feature names', function () {
             $features = $this->registry->getAvailableFeatures(RuntimePlatform::DesktopAppWindows);
-            
+
             $uniqueFeatures = array_unique($features);
             expect(count($features))->toBe(count($uniqueFeatures));
         });
@@ -376,7 +376,7 @@ describe('PlatformFeatureRegistry', function () {
     describe('getPlatformsForFeature()', function () {
         test('returns correct platforms for camera feature', function () {
             $platforms = $this->registry->getPlatformsForFeature('camera');
-            
+
             expect($platforms)->toBeArray();
             expect($platforms)->toContain(RuntimePlatform::MobileAppAndroid);
             expect($platforms)->toContain(RuntimePlatform::MobileAppIos);
@@ -387,7 +387,7 @@ describe('PlatformFeatureRegistry', function () {
 
         test('returns correct platforms for desktop_notifications feature', function () {
             $platforms = $this->registry->getPlatformsForFeature('desktop_notifications');
-            
+
             expect($platforms)->toBeArray();
             expect($platforms)->toContain(RuntimePlatform::DesktopAppWindows);
             expect($platforms)->toContain(RuntimePlatform::DesktopAppMacOS);
@@ -396,7 +396,7 @@ describe('PlatformFeatureRegistry', function () {
 
         test('returns correct platforms for push_notifications feature', function () {
             $platforms = $this->registry->getPlatformsForFeature('push_notifications');
-            
+
             expect($platforms)->toBeArray();
             expect($platforms)->toContain(RuntimePlatform::MobileAppAndroid);
             expect($platforms)->toContain(RuntimePlatform::MobileAppIos);
@@ -405,7 +405,7 @@ describe('PlatformFeatureRegistry', function () {
 
         test('returns correct platforms for file_system feature', function () {
             $platforms = $this->registry->getPlatformsForFeature('file_system');
-            
+
             expect($platforms)->toBeArray();
             expect($platforms)->toContain(RuntimePlatform::MobileAppAndroid);
             expect($platforms)->toContain(RuntimePlatform::MobileAppIos);
@@ -416,7 +416,7 @@ describe('PlatformFeatureRegistry', function () {
 
         test('returns correct platforms for webrtc feature', function () {
             $platforms = $this->registry->getPlatformsForFeature('webrtc');
-            
+
             expect($platforms)->toBeArray();
             expect($platforms)->toContain(RuntimePlatform::WebsiteWindows);
             expect($platforms)->toContain(RuntimePlatform::WebsiteMacOS);
@@ -427,7 +427,7 @@ describe('PlatformFeatureRegistry', function () {
 
         test('returns correct platforms for auto_updates feature', function () {
             $platforms = $this->registry->getPlatformsForFeature('auto_updates');
-            
+
             expect($platforms)->toBeArray();
             expect($platforms)->toContain(RuntimePlatform::DesktopAppWindows);
             expect($platforms)->toContain(RuntimePlatform::DesktopAppMacOS);
@@ -436,7 +436,7 @@ describe('PlatformFeatureRegistry', function () {
 
         test('returns correct platforms for app_badge feature', function () {
             $platforms = $this->registry->getPlatformsForFeature('app_badge');
-            
+
             expect($platforms)->toBeArray();
             expect($platforms)->toContain(RuntimePlatform::MobileAppAndroid);
             expect($platforms)->toContain(RuntimePlatform::MobileAppIos);
@@ -445,14 +445,14 @@ describe('PlatformFeatureRegistry', function () {
 
         test('returns empty array for unknown feature', function () {
             $platforms = $this->registry->getPlatformsForFeature('nonexistent_feature');
-            
+
             expect($platforms)->toBeArray();
             expect($platforms)->toBeEmpty();
         });
 
         test('returns empty array for empty string feature name', function () {
             $platforms = $this->registry->getPlatformsForFeature('');
-            
+
             expect($platforms)->toBeArray();
             expect($platforms)->toBeEmpty();
         });
@@ -462,7 +462,7 @@ describe('PlatformFeatureRegistry', function () {
         describe('Property 7: File System Availability Matches Platform Mode', function () {
             /**
              * **Validates: Requirements 5.8**
-             * 
+             *
              * For all RuntimePlatform enum cases, file system access feature availability
              * SHALL return true if and only if the platform is in Mobile Native Mode or
              * Desktop App Mode (MobileAppAndroid, MobileAppIos, DesktopAppWindows, DesktopAppMacOS).
@@ -486,7 +486,7 @@ describe('PlatformFeatureRegistry', function () {
                 foreach ($nativePlatforms as $platform) {
                     $isAvailable = $this->registry->isAvailable('file_system', $platform);
                     $isNative = $platform->isMobileApp() || $platform->isDesktopApp();
-                    
+
                     expect($isAvailable)->toBe($isNative);
                     expect($isAvailable)->toBeTrue();
                 }
@@ -494,7 +494,7 @@ describe('PlatformFeatureRegistry', function () {
                 foreach ($websitePlatforms as $platform) {
                     $isAvailable = $this->registry->isAvailable('file_system', $platform);
                     $isNative = $platform->isMobileApp() || $platform->isDesktopApp();
-                    
+
                     expect($isAvailable)->toBe($isNative);
                     expect($isAvailable)->toBeFalse();
                 }
@@ -516,10 +516,10 @@ describe('PlatformFeatureRegistry', function () {
                 foreach ($allPlatforms as $platform) {
                     $fileSystemAvailable = $this->registry->isAvailable('file_system', $platform);
                     $isNativePlatform = $platform->isMobileApp() || $platform->isDesktopApp();
-                    
+
                     // The biconditional: available if and only if native
                     expect($fileSystemAvailable)->toBe($isNativePlatform);
-                    
+
                     // Verify consistency
                     if ($isNativePlatform) {
                         expect($fileSystemAvailable)->toBeTrue();
@@ -556,11 +556,11 @@ describe('PlatformFeatureRegistry', function () {
 
                 foreach ($allPlatforms as $platform) {
                     $availableFeatures = $this->registry->getAvailableFeatures($platform);
-                    
+
                     foreach ($allFeatures as $feature) {
                         $isAvailable = $this->registry->isAvailable($feature, $platform);
                         $inAvailableList = in_array($feature, $availableFeatures, true);
-                        
+
                         // Consistency check
                         expect($isAvailable)->toBe($inAvailableList);
                     }
@@ -592,11 +592,11 @@ describe('PlatformFeatureRegistry', function () {
 
                 foreach ($allFeatures as $feature) {
                     $platformsForFeature = $this->registry->getPlatformsForFeature($feature);
-                    
+
                     foreach ($allPlatforms as $platform) {
                         $isAvailable = $this->registry->isAvailable($feature, $platform);
                         $inPlatformList = in_array($platform, $platformsForFeature, true);
-                        
+
                         // Consistency check
                         expect($isAvailable)->toBe($inPlatformList);
                     }
@@ -628,7 +628,7 @@ describe('PlatformFeatureRegistry', function () {
 
                 foreach ($allFeatures as $feature) {
                     $platforms = $this->registry->getPlatformsForFeature($feature);
-                    
+
                     foreach ($platforms as $platform) {
                         expect($platform)->toBeInstanceOf(RuntimePlatform::class);
                         expect(in_array($platform, $validPlatforms, true))->toBeTrue();
@@ -661,7 +661,7 @@ describe('PlatformFeatureRegistry', function () {
 
                 foreach ($allPlatforms as $platform) {
                     $features = $this->registry->getAvailableFeatures($platform);
-                    
+
                     foreach ($features as $feature) {
                         expect(in_array($feature, $knownFeatures, true))->toBeTrue();
                     }

@@ -15,14 +15,14 @@ class PlatformCommandDetector
     public static function detectMode(): PlatformMode
     {
         $argv = $_SERVER['argv'] ?? [];
-        
+
         if (self::isRunningArtisan($argv)) {
             return self::detectFromCommand($argv);
         }
-        
+
         return self::detectFromRuntime();
     }
-    
+
     /**
      * Check if the current execution is through the Artisan CLI.
      */
@@ -30,7 +30,7 @@ class PlatformCommandDetector
     {
         return isset($argv[0]) && str_ends_with($argv[0], 'artisan');
     }
-    
+
     /**
      * Detect platform mode from the executed Artisan command.
      *
@@ -42,8 +42,8 @@ class PlatformCommandDetector
     private static function detectFromCommand(array $argv): PlatformMode
     {
         $command = $argv[1] ?? null;
-        
-        return match(true) {
+
+        return match (true) {
             $command === 'serve' => PlatformMode::Web,
             $command === 'native:run' => PlatformMode::Mobile,
             $command === 'native:serve' => PlatformMode::Desktop,
@@ -51,7 +51,7 @@ class PlatformCommandDetector
             default => PlatformMode::Web
         };
     }
-    
+
     /**
      * Detect platform mode from the current runtime environment.
      *
@@ -66,18 +66,18 @@ class PlatformCommandDetector
         if (isset($_ENV['NATIVEPHP_RUNNING']) || isset($_SERVER['NATIVEPHP_RUNNING'])) {
             return PlatformMode::Desktop;
         }
-        
+
         // Check if running in Laravel Native Mobile context
         // Laravel Native Mobile sets specific environment variables
         if (isset($_ENV['NATIVE_MOBILE_RUNNING']) || isset($_SERVER['NATIVE_MOBILE_RUNNING'])) {
             return PlatformMode::Mobile;
         }
-        
+
         // Check if we're in an Electron environment (alternative detection)
         if (isset($_ENV['ELECTRON_RUN_AS_NODE']) || isset($_SERVER['ELECTRON_RUN_AS_NODE'])) {
             return PlatformMode::Desktop;
         }
-        
+
         // Default to Web mode for HTTP requests and other contexts
         return PlatformMode::Web;
     }

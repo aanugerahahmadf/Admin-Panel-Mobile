@@ -2,6 +2,7 @@
 
 use App\Enums\PlatformMode;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\Route;
 
 /**
  * Property 10: Unsupported Platform Routes Return 404
@@ -25,7 +26,6 @@ use Illuminate\Routing\Router;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-
 /**
  * Build a fresh Router instance and load only the platform-specific route files
  * that would be registered for the given platform mode.
@@ -39,11 +39,11 @@ use Illuminate\Routing\Router;
  * Any request to an unregistered route will return HTTP 404 by Laravel's
  * default routing behaviour — which is what Requirement 9.5 mandates.
  *
- * @return array<string>  The list of registered platform-specific route URIs.
+ * @return array<string> The list of registered platform-specific route URIs.
  */
 function getRegisteredUrisForMode(PlatformMode $mode): array
 {
-    /** @var \Illuminate\Routing\Router $freshRouter */
+    /** @var Router $freshRouter */
     $freshRouter = new Router(app('events'), app());
 
     // Temporarily swap the app 'router' binding so that Route facade calls
@@ -51,7 +51,7 @@ function getRegisteredUrisForMode(PlatformMode $mode): array
     // We must also clear the Route facade's cached resolved instance.
     $originalRouter = app('router');
     app()->instance('router', $freshRouter);
-    Illuminate\Support\Facades\Route::clearResolvedInstance('router');
+    Route::clearResolvedInstance('router');
 
     try {
         if ($mode === PlatformMode::Mobile && file_exists(base_path('routes/mobile.php'))) {
@@ -68,7 +68,7 @@ function getRegisteredUrisForMode(PlatformMode $mode): array
     } finally {
         // Restore the original router and facade resolution
         app()->instance('router', $originalRouter);
-        Illuminate\Support\Facades\Route::clearResolvedInstance('router');
+        Route::clearResolvedInstance('router');
     }
 
     return collect($freshRouter->getRoutes()->getRoutes())
@@ -80,7 +80,7 @@ function getRegisteredUrisForMode(PlatformMode $mode): array
 /**
  * Returns true when at least one registered URI starts with the given prefix.
  *
- * @param array<string> $uris
+ * @param  array<string>  $uris
  */
 function hasUriWithPrefix(array $uris, string $prefix): bool
 {
@@ -256,13 +256,13 @@ describe('Property 10: Unsupported Platform Routes Return 404', function () {
          */
         test('platform-specific routes are absent from incompatible mode registrations', function () {
             // Known platform-specific route prefixes
-            $mobilePrefixes  = ['api/mobile'];
+            $mobilePrefixes = ['api/mobile'];
             $desktopPrefixes = ['api/desktop'];
 
             // [mode value => list of forbidden prefixes]
             $scenarios = [
-                'web'     => [...$mobilePrefixes, ...$desktopPrefixes],
-                'mobile'  => $desktopPrefixes,
+                'web' => [...$mobilePrefixes, ...$desktopPrefixes],
+                'mobile' => $desktopPrefixes,
                 'desktop' => $mobilePrefixes,
             ];
 
@@ -273,7 +273,7 @@ describe('Property 10: Unsupported Platform Routes Return 404', function () {
                 foreach ($forbiddenPrefixes as $prefix) {
                     expect(hasUriWithPrefix($uris, $prefix))->toBeFalse(
                         "Routes under [{$prefix}] MUST NOT be registered when PlatformMode is {$modeValue}. "
-                        . 'Accessing such routes must return HTTP 404 (Requirement 9.5).'
+                        .'Accessing such routes must return HTTP 404 (Requirement 9.5).'
                     );
                 }
             }

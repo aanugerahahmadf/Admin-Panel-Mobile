@@ -119,11 +119,11 @@ class PlatformModeServiceProvider extends ServiceProvider
             $runtimePlatform = $this->app->make('runtime.platform');
 
             Log::info('Platform detected', [
-                'mode'             => $mode->value,
-                'mode_label'       => $mode->label(),
+                'mode' => $mode->value,
+                'mode_label' => $mode->label(),
                 'runtime_platform' => $runtimePlatform->value,
-                'runtime_label'    => $runtimePlatform->label(),
-                'asset_directory'  => $assetManager->getBuildDirectory(),
+                'runtime_label' => $runtimePlatform->label(),
+                'asset_directory' => $assetManager->getBuildDirectory(),
                 'environment_file' => $mode->environmentFile(),
             ]);
         }

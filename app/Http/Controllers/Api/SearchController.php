@@ -64,7 +64,7 @@ class SearchController extends Controller
         $terms = TermsOfService::where(function ($q) use ($query) {
             $q->where('title', 'like', "%{$query}%")
                 ->orWhere('content', 'like', "%{$query}%");
-        })->get()->map(fn($t) => [
+        })->get()->map(fn ($t) => [
             '_type' => 'terms',
             'id' => $t->id,
             'name' => is_string($t->content)
@@ -76,7 +76,7 @@ class SearchController extends Controller
         $privacy = PrivacyPolicy::where(function ($q) use ($query) {
             $q->where('title', 'like', "%{$query}%")
                 ->orWhere('content', 'like', "%{$query}%");
-        })->get()->map(fn($p) => [
+        })->get()->map(fn ($p) => [
             '_type' => 'privacy',
             'id' => $p->id,
             'name' => is_string($p->content)
@@ -88,7 +88,7 @@ class SearchController extends Controller
         $helps = Help::where(function ($q) use ($query) {
             $q->where('title', 'like', "%{$query}%")
                 ->orWhere('subtitle', 'like', "%{$query}%");
-        })->get()->map(fn($h) => [
+        })->get()->map(fn ($h) => [
             '_type' => 'helps',
             'id' => $h->id,
             'name' => $h->subtitle ?? $h->title,

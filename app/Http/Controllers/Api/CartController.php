@@ -44,6 +44,7 @@ class CartController extends Controller
 
         if ($existing) {
             $existing->increment('quantity', $validated['quantity']);
+
             return response()->json(['status' => 'success', 'data' => $existing->fresh()->load(['product', 'package'])]);
         }
 

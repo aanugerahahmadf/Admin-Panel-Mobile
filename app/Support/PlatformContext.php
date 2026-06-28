@@ -34,8 +34,8 @@ class PlatformContext
             return self::$cached = self::resolveFromEnvOnly();
         }
 
-        $request    ??= request();
-        $userAgent    = $request?->userAgent() ?? '';
+        $request ??= request();
+        $userAgent = $request?->userAgent() ?? '';
         $nativePlatform = self::nativePlatformFlag(); // exact case-sensitive value
 
         // ── Priority 1: Explicit NATIVEPHP_PLATFORM flag ──────────────────
@@ -138,7 +138,7 @@ class PlatformContext
         // Exact case-sensitive matches as per spec Requirement 1.6
         return match ($flag) {
             'android' => RuntimePlatform::MobileAppAndroid,
-            'ios'     => RuntimePlatform::MobileAppIos,
+            'ios' => RuntimePlatform::MobileAppIos,
             'win32', 'windows' => RuntimePlatform::DesktopAppWindows,
             'mac', 'macos', 'darwin' => RuntimePlatform::DesktopAppMacOS,
             // Unrecognised token → fall through to UA detection

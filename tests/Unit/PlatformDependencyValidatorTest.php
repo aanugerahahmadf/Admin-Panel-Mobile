@@ -31,7 +31,7 @@ use App\Support\Platform\PlatformDependencyValidator;
 // ─── Known packages ──────────────────────────────────────────────────────────
 
 const KNOWN_DESKTOP_PACKAGES = ['nativephp/electron', 'nativephp/laravel'];
-const KNOWN_MOBILE_PACKAGES  = ['nativephp/mobile'];
+const KNOWN_MOBILE_PACKAGES = ['nativephp/mobile'];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -52,7 +52,7 @@ const KNOWN_MOBILE_PACKAGES  = ['nativephp/mobile'];
  */
 function formatMissingDependenciesMessage(string $mode, array $missing): string
 {
-    $lines   = [];
+    $lines = [];
     $lines[] = "Error: Required dependencies for {$mode} mode are not installed.";
     $lines[] = '';
     $lines[] = 'Missing packages:';
@@ -63,7 +63,7 @@ function formatMissingDependenciesMessage(string $mode, array $missing): string
 
     $lines[] = '';
     $lines[] = 'To install, run:';
-    $lines[] = '  composer require ' . implode(' ', $missing);
+    $lines[] = '  composer require '.implode(' ', $missing);
 
     return implode("\n", $lines);
 }
@@ -86,7 +86,7 @@ describe('Property 9: Missing Dependencies Are Fully Listed', function () {
         // **Validates: Requirements 7.5**
         // The return value must always be an array — never null or any other type.
         $validator = new PlatformDependencyValidator;
-        $result    = $validator->validateDependencies($mode);
+        $result = $validator->validateDependencies($mode);
 
         expect($result)->toBeArray();
     })->with(PlatformMode::cases());
@@ -98,7 +98,7 @@ describe('Property 9: Missing Dependencies Are Fully Listed', function () {
         // Web mode requires no native platform packages; the returned array
         // must always be empty regardless of what classes are loaded.
         $validator = new PlatformDependencyValidator;
-        $result    = $validator->validateDependencies(PlatformMode::Web);
+        $result = $validator->validateDependencies(PlatformMode::Web);
 
         expect($result)->toBeEmpty();
     });
@@ -110,7 +110,7 @@ describe('Property 9: Missing Dependencies Are Fully Listed', function () {
         // Every string in the returned array must be a valid Composer package name
         // of the form "vendor/package" — non-empty, containing exactly one slash.
         $validator = new PlatformDependencyValidator;
-        $result    = $validator->validateDependencies(PlatformMode::Desktop);
+        $result = $validator->validateDependencies(PlatformMode::Desktop);
 
         // Baseline: result is an array (always true regardless of content)
         expect($result)->toBeArray();
@@ -129,7 +129,7 @@ describe('Property 9: Missing Dependencies Are Fully Listed', function () {
     test('all returned package names for Mobile mode use vendor/package format', function () {
         // **Validates: Requirements 7.5**
         $validator = new PlatformDependencyValidator;
-        $result    = $validator->validateDependencies(PlatformMode::Mobile);
+        $result = $validator->validateDependencies(PlatformMode::Mobile);
 
         // Baseline: result is an array (always true regardless of content)
         expect($result)->toBeArray();
@@ -151,12 +151,12 @@ describe('Property 9: Missing Dependencies Are Fully Listed', function () {
         // The validator must never invent package names outside its own check list.
         // Any returned name must be in the well-known Desktop package set.
         $validator = new PlatformDependencyValidator;
-        $result    = $validator->validateDependencies(PlatformMode::Desktop);
+        $result = $validator->validateDependencies(PlatformMode::Desktop);
 
         // Baseline: result must be a subset of the known set (empty is a valid subset)
         expect(array_diff($result, KNOWN_DESKTOP_PACKAGES))->toBeEmpty(
             'Desktop mode returned package names not in the known Desktop set: '
-            . implode(', ', array_diff($result, KNOWN_DESKTOP_PACKAGES))
+            .implode(', ', array_diff($result, KNOWN_DESKTOP_PACKAGES))
         );
 
         foreach ($result as $package) {
@@ -168,12 +168,12 @@ describe('Property 9: Missing Dependencies Are Fully Listed', function () {
     test('Mobile mode only returns packages from the known Mobile package set', function () {
         // **Validates: Requirements 7.5**
         $validator = new PlatformDependencyValidator;
-        $result    = $validator->validateDependencies(PlatformMode::Mobile);
+        $result = $validator->validateDependencies(PlatformMode::Mobile);
 
         // Baseline: result must be a subset of the known set (empty is a valid subset)
         expect(array_diff($result, KNOWN_MOBILE_PACKAGES))->toBeEmpty(
             'Mobile mode returned package names not in the known Mobile set: '
-            . implode(', ', array_diff($result, KNOWN_MOBILE_PACKAGES))
+            .implode(', ', array_diff($result, KNOWN_MOBILE_PACKAGES))
         );
 
         foreach ($result as $package) {
@@ -188,7 +188,7 @@ describe('Property 9: Missing Dependencies Are Fully Listed', function () {
         // **Validates: Requirements 7.5**
         // Duplicate entries would lead to misleading error messages.
         $validator = new PlatformDependencyValidator;
-        $result    = $validator->validateDependencies(PlatformMode::Desktop);
+        $result = $validator->validateDependencies(PlatformMode::Desktop);
 
         expect($result)->toBe(array_unique($result));
     });
@@ -196,7 +196,7 @@ describe('Property 9: Missing Dependencies Are Fully Listed', function () {
     test('validateDependencies() never lists the same package twice for Mobile', function () {
         // **Validates: Requirements 7.5**
         $validator = new PlatformDependencyValidator;
-        $result    = $validator->validateDependencies(PlatformMode::Mobile);
+        $result = $validator->validateDependencies(PlatformMode::Mobile);
 
         expect($result)->toBe(array_unique($result));
     });
@@ -213,7 +213,7 @@ describe('Property 9: Missing Dependencies Are Fully Listed', function () {
         // Desktop packages (which depends on the current environment), then verifies
         // that a properly formatted error message contains every single one of them.
         $validator = new PlatformDependencyValidator;
-        $missing   = $validator->validateDependencies(PlatformMode::Desktop);
+        $missing = $validator->validateDependencies(PlatformMode::Desktop);
 
         if (empty($missing)) {
             // All Desktop packages are present; property vacuously holds.
@@ -227,7 +227,7 @@ describe('Property 9: Missing Dependencies Are Fully Listed', function () {
         foreach ($missing as $package) {
             expect(messageContainsPackage($message, $package))->toBeTrue(
                 "Error message MUST contain [{$package}] but it was omitted. "
-                . "Full message:\n{$message}"
+                ."Full message:\n{$message}"
             );
         }
     });
@@ -237,7 +237,7 @@ describe('Property 9: Missing Dependencies Are Fully Listed', function () {
         //
         // Same property applied to Mobile mode.
         $validator = new PlatformDependencyValidator;
-        $missing   = $validator->validateDependencies(PlatformMode::Mobile);
+        $missing = $validator->validateDependencies(PlatformMode::Mobile);
 
         if (empty($missing)) {
             expect($missing)->toBeEmpty();
@@ -250,7 +250,7 @@ describe('Property 9: Missing Dependencies Are Fully Listed', function () {
         foreach ($missing as $package) {
             expect(messageContainsPackage($message, $package))->toBeTrue(
                 "Error message MUST contain [{$package}] but it was omitted. "
-                . "Full message:\n{$message}"
+                ."Full message:\n{$message}"
             );
         }
     });
@@ -264,7 +264,7 @@ describe('Property 9: Missing Dependencies Are Fully Listed', function () {
         // that formatMissingDependenciesMessage() includes every package in each subset.
         // This is the property-based (exhaustive on a small domain) validation.
         $packages = KNOWN_DESKTOP_PACKAGES;
-        $count    = count($packages);
+        $count = count($packages);
 
         // Generate all 2^n - 1 non-empty subsets
         for ($mask = 1; $mask < (1 << $count); $mask++) {
@@ -280,8 +280,8 @@ describe('Property 9: Missing Dependencies Are Fully Listed', function () {
 
             foreach ($subset as $package) {
                 expect(messageContainsPackage($message, $package))->toBeTrue(
-                    "For subset [" . implode(', ', $subset) . "], "
-                    . "error message MUST contain [{$package}] but it was omitted."
+                    'For subset ['.implode(', ', $subset).'], '
+                    ."error message MUST contain [{$package}] but it was omitted."
                 );
             }
         }
@@ -295,7 +295,7 @@ describe('Property 9: Missing Dependencies Are Fully Listed', function () {
         //
         // Same exhaustive subset check for Mobile packages.
         $packages = KNOWN_MOBILE_PACKAGES;
-        $count    = count($packages);
+        $count = count($packages);
 
         for ($mask = 1; $mask < (1 << $count); $mask++) {
             $subset = [];
@@ -310,8 +310,8 @@ describe('Property 9: Missing Dependencies Are Fully Listed', function () {
 
             foreach ($subset as $package) {
                 expect(messageContainsPackage($message, $package))->toBeTrue(
-                    "For subset [" . implode(', ', $subset) . "], "
-                    . "error message MUST contain [{$package}] but it was omitted."
+                    'For subset ['.implode(', ', $subset).'], '
+                    ."error message MUST contain [{$package}] but it was omitted."
                 );
             }
         }
@@ -324,8 +324,8 @@ describe('Property 9: Missing Dependencies Are Fully Listed', function () {
     test('Desktop packages are never reported as missing in Web mode', function () {
         // **Validates: Requirements 7.5**
         // Web mode must not reference any platform-specific packages in its response.
-        $validator       = new PlatformDependencyValidator;
-        $webMissing      = $validator->validateDependencies(PlatformMode::Web);
+        $validator = new PlatformDependencyValidator;
+        $webMissing = $validator->validateDependencies(PlatformMode::Web);
         $desktopPackages = KNOWN_DESKTOP_PACKAGES;
 
         foreach ($desktopPackages as $package) {
@@ -337,8 +337,8 @@ describe('Property 9: Missing Dependencies Are Fully Listed', function () {
 
     test('Mobile packages are never reported as missing in Web mode', function () {
         // **Validates: Requirements 7.5**
-        $validator      = new PlatformDependencyValidator;
-        $webMissing     = $validator->validateDependencies(PlatformMode::Web);
+        $validator = new PlatformDependencyValidator;
+        $webMissing = $validator->validateDependencies(PlatformMode::Web);
         $mobilePackages = KNOWN_MOBILE_PACKAGES;
 
         foreach ($mobilePackages as $package) {
@@ -351,8 +351,8 @@ describe('Property 9: Missing Dependencies Are Fully Listed', function () {
     test('Desktop packages are never reported as missing in Mobile mode', function () {
         // **Validates: Requirements 7.5**
         // Mobile mode must not bleed Desktop package checks into its results.
-        $validator       = new PlatformDependencyValidator;
-        $mobileMissing   = $validator->validateDependencies(PlatformMode::Mobile);
+        $validator = new PlatformDependencyValidator;
+        $mobileMissing = $validator->validateDependencies(PlatformMode::Mobile);
         $desktopPackages = KNOWN_DESKTOP_PACKAGES;
 
         foreach ($desktopPackages as $package) {
@@ -365,7 +365,7 @@ describe('Property 9: Missing Dependencies Are Fully Listed', function () {
     test('Mobile packages are never reported as missing in Desktop mode', function () {
         // **Validates: Requirements 7.5**
         // Desktop mode must not bleed Mobile package checks into its results.
-        $validator      = new PlatformDependencyValidator;
+        $validator = new PlatformDependencyValidator;
         $desktopMissing = $validator->validateDependencies(PlatformMode::Desktop);
         $mobilePackages = KNOWN_MOBILE_PACKAGES;
 
@@ -381,7 +381,7 @@ describe('Property 9: Missing Dependencies Are Fully Listed', function () {
     test('all three PlatformMode cases are covered by this property', function () {
         // **Validates: Requirements 7.5**
         // Sanity: PlatformMode must have exactly the three cases the tests target.
-        $cases      = PlatformMode::cases();
+        $cases = PlatformMode::cases();
         $caseValues = array_map(fn (PlatformMode $m) => $m->value, $cases);
 
         expect($cases)->toHaveCount(3);

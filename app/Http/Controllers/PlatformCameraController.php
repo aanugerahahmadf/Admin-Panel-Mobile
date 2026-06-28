@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Enums\RuntimePlatform;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Native\Laravel\Facades\Window;
+use Native\Mobile\Camera;
 
 /**
  * Platform-aware camera controller.
@@ -23,8 +25,6 @@ class PlatformCameraController extends Controller
      *
      * Uses RuntimePlatform::cbirCameraMode() to determine the appropriate
      * camera mode and delegates to the correct platform API.
-     *
-     * @return JsonResponse
      */
     public function capture(Request $request): JsonResponse
     {
@@ -55,40 +55,40 @@ class PlatformCameraController extends Controller
     {
         // Guard: use class_exists() so the app doesn't crash when the
         // NativePHP Mobile package is not installed.
-        if (class_exists(\Native\Mobile\Camera::class)) {
+        if (class_exists(Camera::class)) {
             try {
                 // Trigger native camera capture.
                 // The NativePHP Mobile Camera API is event-driven; the
                 // result arrives via a broadcast event (CameraPhotoTaken).
                 // We fire the request here and acknowledge it.
-                \Native\Mobile\Camera::photo();
+                Camera::photo();
 
                 return response()->json([
                     'camera_mode' => $cameraMode,
-                    'platform'    => $platform->value,
-                    'status'      => 'triggered',
+                    'platform' => $platform->value,
+                    'status' => 'triggered',
                     'instructions' => 'Native mobile camera capture initiated. '
-                        . 'Listen for the CameraPhotoTaken event to receive the image.',
+                        .'Listen for the CameraPhotoTaken event to receive the image.',
                 ]);
             } catch (\Throwable $e) {
                 return response()->json([
-                    'camera_mode'  => $cameraMode,
-                    'platform'     => $platform->value,
-                    'status'       => 'error',
-                    'instructions' => 'Mobile camera capture failed: ' . $e->getMessage(),
+                    'camera_mode' => $cameraMode,
+                    'platform' => $platform->value,
+                    'status' => 'error',
+                    'instructions' => 'Mobile camera capture failed: '.$e->getMessage(),
                 ], 500);
             }
         }
 
         // NativePHP Mobile package not installed – return client-side instructions.
         return response()->json([
-            'camera_mode'  => $cameraMode,
-            'platform'     => $platform->value,
-            'status'       => 'instructions',
+            'camera_mode' => $cameraMode,
+            'platform' => $platform->value,
+            'status' => 'instructions',
             'instructions' => 'Use the Native\\Mobile\\Camera API to capture an image '
-                . 'and submit it to /api/cbir/search.',
-            'api_class'    => 'Native\\Mobile\\Camera',
-            'method'       => 'photo()',
+                .'and submit it to /api/cbir/search.',
+            'api_class' => 'Native\\Mobile\\Camera',
+            'method' => 'photo()',
         ]);
     }
 
@@ -101,27 +101,27 @@ class PlatformCameraController extends Controller
     protected function captureViaDesktopCamera(RuntimePlatform $platform, string $cameraMode): JsonResponse
     {
         // Check for NativePHP Desktop Window / screen capture class.
-        if (class_exists(\Native\Laravel\Facades\Window::class)) {
+        if (class_exists(Window::class)) {
             return response()->json([
-                'camera_mode'  => $cameraMode,
-                'platform'     => $platform->value,
-                'status'       => 'available',
+                'camera_mode' => $cameraMode,
+                'platform' => $platform->value,
+                'status' => 'available',
                 'instructions' => 'Use NativePHP Electron desktopCapturer APIs to capture '
-                    . 'a webcam image and submit it to /api/cbir/search.',
-                'api_class'    => 'Native\\Laravel\\Facades\\Window',
-                'hint'         => 'Trigger camera access via the Electron renderer process '
-                    . 'using navigator.mediaDevices.getUserMedia() within the NativePHP window.',
+                    .'a webcam image and submit it to /api/cbir/search.',
+                'api_class' => 'Native\\Laravel\\Facades\\Window',
+                'hint' => 'Trigger camera access via the Electron renderer process '
+                    .'using navigator.mediaDevices.getUserMedia() within the NativePHP window.',
             ]);
         }
 
         // NativePHP Desktop package not installed – return instructions.
         return response()->json([
-            'camera_mode'  => $cameraMode,
-            'platform'     => $platform->value,
-            'status'       => 'instructions',
+            'camera_mode' => $cameraMode,
+            'platform' => $platform->value,
+            'status' => 'instructions',
             'instructions' => 'Desktop camera capture is available via NativePHP Desktop Camera API. '
-                . 'Ensure the nativephp/electron package is installed.',
-            'api_package'  => 'nativephp/electron',
+                .'Ensure the nativephp/electron package is installed.',
+            'api_package' => 'nativephp/electron',
         ]);
     }
 
@@ -157,15 +157,15 @@ class PlatformCameraController extends Controller
     protected function captureViaWebRTC(RuntimePlatform $platform, string $cameraMode): JsonResponse
     {
         return response()->json([
-            'camera_mode'  => $cameraMode,  // 'webrtc' per cbirCameraMode()
-            'platform'     => $platform->value,
-            'status'       => 'instructions',
+            'camera_mode' => $cameraMode,  // 'webrtc' per cbirCameraMode()
+            'platform' => $platform->value,
+            'status' => 'instructions',
             'instructions' => 'Use getUserMedia API',
-            'hint'         => 'Call navigator.mediaDevices.getUserMedia({ video: true }) '
-                . 'in the browser, capture a frame to a canvas, and POST the image '
-                . 'as multipart/form-data to /api/cbir/search.',
-            'example_js'   => "navigator.mediaDevices.getUserMedia({ video: true })"
-                . ".then(stream => { /* capture frame */ });",
+            'hint' => 'Call navigator.mediaDevices.getUserMedia({ video: true }) '
+                .'in the browser, capture a frame to a canvas, and POST the image '
+                .'as multipart/form-data to /api/cbir/search.',
+            'example_js' => 'navigator.mediaDevices.getUserMedia({ video: true })'
+                .'.then(stream => { /* capture frame */ });',
         ]);
     }
 }

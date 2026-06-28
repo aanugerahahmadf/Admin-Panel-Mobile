@@ -12,13 +12,13 @@ class FirestoreServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Skip test jika credentials tidak ada
-        if (!file_exists(config('firebase.credentials'))) {
+        if (! file_exists(config('firebase.credentials'))) {
             $this->markTestSkipped('Firebase credentials file not found');
         }
-        
-        $this->firestoreService = new FirestoreService();
+
+        $this->firestoreService = new FirestoreService;
     }
 
     public function test_can_connect_to_firestore()
@@ -62,7 +62,7 @@ class FirestoreServiceTest extends TestCase
 
         // Update document
         $updateData = [
-            ['path' => 'name', 'value' => 'Updated Name']
+            ['path' => 'name', 'value' => 'Updated Name'],
         ];
         $this->firestoreService->updateDocument($testCollection, $documentId, $updateData);
 
@@ -77,13 +77,13 @@ class FirestoreServiceTest extends TestCase
     public function test_can_query_documents()
     {
         $testCollection = 'test_collection';
-        
+
         // Add multiple documents
         $doc1Id = $this->firestoreService->addDocument($testCollection, [
             'name' => 'User 1',
             'age' => 25,
         ]);
-        
+
         $doc2Id = $this->firestoreService->addDocument($testCollection, [
             'name' => 'User 2',
             'age' => 30,
@@ -91,7 +91,7 @@ class FirestoreServiceTest extends TestCase
 
         // Query documents
         $results = $this->firestoreService->queryDocuments($testCollection, [
-            ['age', '>=', 25]
+            ['age', '>=', 25],
         ]);
 
         $this->assertCount(2, $results);

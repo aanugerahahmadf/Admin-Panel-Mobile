@@ -35,5 +35,4 @@ class WalletController extends Controller
             ],
         ]);
     }
-
 }

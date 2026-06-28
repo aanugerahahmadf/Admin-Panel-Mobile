@@ -28,12 +28,10 @@
  */
 
 use App\Enums\PlatformMode;
-use App\Enums\RuntimePlatform;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Process;
-use Tests\TestHelpers\PlatformTestHelper;
 
 describe('Property 2: Preservation - Non-Desktop Platform Functionality', function () {
 
@@ -50,7 +48,7 @@ describe('Property 2: Preservation - Non-Desktop Platform Functionality', functi
             $commandName = str_replace('php artisan ', '', $command);
 
             return array_key_exists($commandName, $commands);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return false;
         }
     }
@@ -156,7 +154,7 @@ describe('Property 2: Preservation - Non-Desktop Platform Functionality', functi
         // For platforms that should be supported, the command must be available
         if (in_array($platform, ['mobile', 'web'])) {
             expect($commandAvailable)->toBeTrue(
-                "Command '{$command}' should be available for {$platform} platform. " .
+                "Command '{$command}' should be available for {$platform} platform. ".
                 'This is baseline behavior to preserve.'
             );
         }
@@ -192,7 +190,7 @@ describe('Property 2: Preservation - Non-Desktop Platform Functionality', functi
         $featureWorks = isFeatureWorking($feature, $platform);
 
         expect($featureWorks)->toBeTrue(
-            "Feature '{$feature}' should work on {$platform->value} platform. " .
+            "Feature '{$feature}' should work on {$platform->value} platform. ".
             'This is baseline behavior to preserve.'
         );
 
@@ -234,7 +232,7 @@ describe('Property 2: Preservation - Non-Desktop Platform Functionality', functi
 
         // For production builds, we expect environment configurations to exist
         expect($hasEnv)->toBeTrue(
-            "Environment file .env.{$platform}.example should exist for production builds. " .
+            "Environment file .env.{$platform}.example should exist for production builds. ".
             'This is baseline behavior to preserve.'
         );
 
@@ -246,7 +244,7 @@ describe('Property 2: Preservation - Non-Desktop Platform Functionality', functi
         foreach ($expectedKeys as $key) {
             $hasKey = array_key_exists($key, $config);
             expect($hasKey)->toBeTrue(
-                "Configuration key '{$key}' should exist in .env.{$platform}.example. " .
+                "Configuration key '{$key}' should exist in .env.{$platform}.example. ".
                 'This is baseline behavior to preserve.'
             );
         }
@@ -285,7 +283,7 @@ describe('Property 2: Preservation - Non-Desktop Platform Functionality', functi
 
             // For expected keys, they should be present
             expect($hasKey)->toBeTrue(
-                "Config key '{$configKey}' should exist in .env.{$platform}.example. " .
+                "Config key '{$configKey}' should exist in .env.{$platform}.example. ".
                 'This is baseline behavior to preserve.'
             );
 
@@ -332,7 +330,7 @@ describe('Property 2: Preservation - Non-Desktop Platform Functionality', functi
         if (! empty($envConfig)) {
             $hasViteKey = array_key_exists('VITE_PLATFORM', $envConfig);
             expect($hasViteKey)->toBeTrue(
-                "VITE_PLATFORM should be defined in .env.{$platform}.example for hot reload. " .
+                "VITE_PLATFORM should be defined in .env.{$platform}.example for hot reload. ".
                 'This is baseline behavior to preserve.'
             );
 
@@ -340,7 +338,7 @@ describe('Property 2: Preservation - Non-Desktop Platform Functionality', functi
 
             expect($vitePlatform)->toBe(
                 $platform,
-                "VITE_PLATFORM should match the platform ({$platform}) for correct hot reload. " .
+                "VITE_PLATFORM should match the platform ({$platform}) for correct hot reload. ".
                 'This is baseline behavior to preserve.'
             );
 

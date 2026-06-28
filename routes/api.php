@@ -2,30 +2,31 @@
 
 use App\Http\Controllers\Api\AppSettingsController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\CBIRController;
-use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\FirebaseController;
 use App\Http\Controllers\Api\FonnteWebhookController;
+use App\Http\Controllers\Api\GeoController;
 use App\Http\Controllers\Api\HistoryController;
 use App\Http\Controllers\Api\HomeController;
 use App\Http\Controllers\Api\LegalController;
 use App\Http\Controllers\Api\NotificationController;
-use App\Http\Controllers\Api\RegionController;
-use App\Http\Controllers\Api\WorldRegionController;
-use App\Http\Controllers\Api\GeoController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PackageController;
 use App\Http\Controllers\Api\ProductController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\RegionController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\UserLanguageController;
 use App\Http\Controllers\Api\VoucherController;
 use App\Http\Controllers\Api\WalletController;
 use App\Http\Controllers\Api\WishlistController;
+use App\Http\Controllers\Api\WorldRegionController;
 use App\Http\Controllers\DatabaseProxyController;
+use App\Http\Controllers\PusherAuthController;
 use App\Models\User;
 use App\Providers\NativeServiceProvider;
 use Illuminate\Http\Request;
@@ -251,5 +252,5 @@ Route::middleware('auth:sanctum')->group(function (): void {
     });
 
     // Pusher private/presence auth endpoint (requires authenticated user)
-    Route::post('/pusher/auth', [\App\Http\Controllers\PusherAuthController::class, 'auth']);
+    Route::post('/pusher/auth', [PusherAuthController::class, 'auth']);
 });

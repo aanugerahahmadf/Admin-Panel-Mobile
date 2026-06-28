@@ -95,7 +95,7 @@ class PackageResource extends Resource
                                     ->unique(ignorable: fn (?Package $record) => $record)
                                     ->maxLength(255)
                                     ->prefixIcon('heroicon-o-link'),
-                                
+
                                 Forms\Components\Select::make('category_id')
                                     ->searchable()
                                     ->label(__('Kategori Dekorasi'))
@@ -185,9 +185,9 @@ class PackageResource extends Resource
                                     ->columnSpanFull(),
                             ]),
 
-                            Forms\Components\Section::make(__('Status & Klasifikasi'))
-                                ->icon('heroicon-o-sparkles')
-                                ->schema([
+                        Forms\Components\Section::make(__('Status & Klasifikasi'))
+                            ->icon('heroicon-o-sparkles')
+                            ->schema([
                                 Forms\Components\Toggle::make('is_featured')
                                     ->label(__('Paket Unggulan'))
                                     ->helperText(__('Tampilkan paket ini di halaman rekomendasi.'))

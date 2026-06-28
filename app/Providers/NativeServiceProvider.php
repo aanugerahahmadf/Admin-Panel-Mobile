@@ -140,6 +140,7 @@ class NativeServiceProvider extends ServiceProvider
             if (PHP_OS_FAMILY === 'Windows') {
                 return $result = false;
             }
+
             return $result = true;
         }
 
@@ -152,6 +153,7 @@ class NativeServiceProvider extends ServiceProvider
             if (PHP_OS_FAMILY === 'Windows') {
                 return $result = false;
             }
+
             return $result = true;
         }
 
@@ -312,9 +314,9 @@ class NativeServiceProvider extends ServiceProvider
             return $url;
         }
 
-        $sourceRoot = $urlScheme . '://' . $urlHost . ($urlPort ? ':' . $urlPort : '');
+        $sourceRoot = $urlScheme.'://'.$urlHost.($urlPort ? ':'.$urlPort : '');
 
-        return preg_replace('#^' . preg_quote($sourceRoot, '#') . '#', $requestRoot, $url) ?: $url;
+        return preg_replace('#^'.preg_quote($sourceRoot, '#').'#', $requestRoot, $url) ?: $url;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -345,28 +347,28 @@ class NativeServiceProvider extends ServiceProvider
             // not 127.0.0.1:3306 which does not exist on the mobile device.
             $proxyUrl = env(
                 'NATIVE_DB_PROXY_URL',
-                rtrim(env('APP_URL', 'http://192.168.100.63:8000'), '/') . '/api/db-proxy'
+                rtrim(env('APP_URL', 'http://192.168.100.63:8000'), '/').'/api/db-proxy'
             );
             $proxySecret = env('NATIVE_DB_PROXY_SECRET', 'nativephp-db-proxy-secret-2024');
 
             config([
-                'database.default'                                  => 'mysql_proxy',
-                'database.connections.mysql_proxy.proxy_url'        => $proxyUrl,
-                'database.connections.mysql_proxy.proxy_secret'     => $proxySecret,
-                'database.connections.mysql_proxy.database'         => env('DB_DATABASE', 'wedding_flowers_decorasi'),
+                'database.default' => 'mysql_proxy',
+                'database.connections.mysql_proxy.proxy_url' => $proxyUrl,
+                'database.connections.mysql_proxy.proxy_secret' => $proxySecret,
+                'database.connections.mysql_proxy.database' => env('DB_DATABASE', 'wedding_flowers_decorasi'),
                 // Switch session/cache to file to avoid DB chicken-egg on boot
-                'session.driver'                                     => 'file',
-                'cache.default'                                      => 'file',
+                'session.driver' => 'file',
+                'cache.default' => 'file',
             ]);
 
-            error_log('[NativePHP Mobile] register() → DB switched to mysql_proxy. URL: ' . $proxyUrl);
+            error_log('[NativePHP Mobile] register() → DB switched to mysql_proxy. URL: '.$proxyUrl);
         }
 
         // ── DESKTOP: Switch session/cache to file (SQLite not available on Electron) ──
         if ($isDesktop) {
             config([
                 'session.driver' => env('SESSION_DRIVER', 'file'),
-                'cache.default'  => env('CACHE_STORE', 'file'),
+                'cache.default' => env('CACHE_STORE', 'file'),
             ]);
 
             error_log('[NativePHP Desktop] register() → session/cache switched to file driver.');
@@ -384,16 +386,16 @@ class NativeServiceProvider extends ServiceProvider
             return;
         }
 
-        $isMobile  = self::isNativeMobile();
+        $isMobile = self::isNativeMobile();
         $isDesktop = self::isNativeDesktop();
 
         // ── 1. RESOLVE HOST IPs ───────────────────────────────────────────
-        $hostIp     = self::mobileHostIp();
+        $hostIp = self::mobileHostIp();
         $serverPort = env('NATIVE_SERVER_PORT', 8000);
 
-        $dbHost     = env('DB_HOST', '127.0.0.1');
+        $dbHost = env('DB_HOST', '127.0.0.1');
         $reverbHost = env('REVERB_HOST', 'localhost');
-        $appUrl     = env('APP_URL', 'http://127.0.0.1');
+        $appUrl = env('APP_URL', 'http://127.0.0.1');
         $currentHost = parse_url($appUrl, PHP_URL_HOST) ?? '127.0.0.1';
 
         // ── 2. DYNAMIC HOST DETECTION ─────────────────────────────────────
@@ -407,9 +409,9 @@ class NativeServiceProvider extends ServiceProvider
                 ?? (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http');
             $host = $_SERVER['HTTP_X_FORWARDED_HOST'] ?? $_SERVER['HTTP_HOST'];
 
-            if (! $isMobile || ! in_array(parse_url('http://' . $host, PHP_URL_HOST), ['127.0.0.1', 'localhost'])) {
-                $appUrl      = "{$proto}://{$host}";
-                $hostIp      = parse_url($appUrl, PHP_URL_HOST);
+            if (! $isMobile || ! in_array(parse_url('http://'.$host, PHP_URL_HOST), ['127.0.0.1', 'localhost'])) {
+                $appUrl = "{$proto}://{$host}";
+                $hostIp = parse_url($appUrl, PHP_URL_HOST);
                 $currentHost = $host;
             }
         }
@@ -425,9 +427,9 @@ class NativeServiceProvider extends ServiceProvider
                 $reverbHost = $hostIp;
             }
 
-            $parsedUrl  = parse_url($appUrl);
-            $scheme     = $parsedUrl['scheme'] ?? 'http';
-            $port       = $parsedUrl['port'] ?? $serverPort;
+            $parsedUrl = parse_url($appUrl);
+            $scheme = $parsedUrl['scheme'] ?? 'http';
+            $port = $parsedUrl['port'] ?? $serverPort;
             $portSuffix = ($port == 80 || $port == 443) ? '' : ":$port";
             $hostServerUrl = "{$scheme}://{$hostIp}{$portSuffix}";
         } elseif ($isDesktop) {
@@ -453,19 +455,19 @@ class NativeServiceProvider extends ServiceProvider
                 : ($isDesktop ? env('SESSION_DRIVER', 'file') : env('SESSION_DRIVER', 'database')),
 
             // Database connection
-            'database.connections.mysql.host'     => $dbHost,
-            'database.connections.mysql.port'     => env('DB_PORT', '3306'),
+            'database.connections.mysql.host' => $dbHost,
+            'database.connections.mysql.port' => env('DB_PORT', '3306'),
             'database.connections.mysql.database' => env('DB_DATABASE', config('database.connections.mysql.database', 'wedding_flowers_decorasi')),
             'database.connections.mysql.username' => env('DB_USERNAME', 'root'),
             'database.connections.mysql.password' => env('DB_PASSWORD', ''),
 
             // Reverb / Broadcasting
-            'reverb.apps.0.host'                              => $reverbHost,
-            'broadcasting.connections.reverb.options.host'   => $reverbHost,
-            'broadcasting.connections.pusher.options.host'   => $reverbHost,
+            'reverb.apps.0.host' => $reverbHost,
+            'broadcasting.connections.reverb.options.host' => $reverbHost,
+            'broadcasting.connections.pusher.options.host' => $reverbHost,
 
             // AI / CBIR Service
-            'services.ai_core_url'  => $isMobile
+            'services.ai_core_url' => $isMobile
                 ? str_replace(['127.0.0.1', 'localhost'], $hostIp, env('AI_CORE_URL', 'http://127.0.0.1:5000'))
                 : env('AI_CORE_URL', 'http://127.0.0.1:5000'),
             'services.cbir_api_url' => $isMobile
@@ -477,10 +479,10 @@ class NativeServiceProvider extends ServiceProvider
         $proxyUrl = "{$hostServerUrl}/api/db-proxy";
 
         if ($isMobile) {
-            $runtimeConfig['database.default']                                  = 'mysql_proxy';
-            $runtimeConfig['database.connections.mysql_proxy.proxy_url']        = $proxyUrl;
-            $runtimeConfig['database.connections.mysql_proxy.proxy_secret']     = env('NATIVE_DB_PROXY_SECRET', 'nativephp-db-proxy-secret-2024');
-            $runtimeConfig['database.connections.mysql_proxy.database']         = env('DB_DATABASE', config('database.connections.mysql.database', 'wedding_flowers_decorasi'));
+            $runtimeConfig['database.default'] = 'mysql_proxy';
+            $runtimeConfig['database.connections.mysql_proxy.proxy_url'] = $proxyUrl;
+            $runtimeConfig['database.connections.mysql_proxy.proxy_secret'] = env('NATIVE_DB_PROXY_SECRET', 'nativephp-db-proxy-secret-2024');
+            $runtimeConfig['database.connections.mysql_proxy.database'] = env('DB_DATABASE', config('database.connections.mysql.database', 'wedding_flowers_decorasi'));
 
             // Google OAuth: redirect to deep-link scheme on Android/iOS
             if (env('GOOGLE_MOBILE_REDIRECT_URL')) {
@@ -506,7 +508,7 @@ class NativeServiceProvider extends ServiceProvider
         // ── 4c. PUBLIC DISK URL (absolute for both web & native) ─────────
         // Prevents Spatie Media Library from returning '/storage/...' which
         // causes Blade to double-prefix 'storage//storage/'.
-        $runtimeConfig['filesystems.disks.public.url'] = ($isMobile ? $hostServerUrl : $appUrl) . '/storage';
+        $runtimeConfig['filesystems.disks.public.url'] = ($isMobile ? $hostServerUrl : $appUrl).'/storage';
 
         config($runtimeConfig);
 
@@ -570,7 +572,7 @@ class NativeServiceProvider extends ServiceProvider
                             ]);
                             error_log("[NativePHP Mobile] Seeder done: {$seeder}");
                         } catch (\Throwable $e) {
-                            error_log("[NativePHP Mobile] Seeder failed ({$seeder}): " . $e->getMessage());
+                            error_log("[NativePHP Mobile] Seeder failed ({$seeder}): ".$e->getMessage());
                         }
                     }
 
@@ -579,7 +581,7 @@ class NativeServiceProvider extends ServiceProvider
 
                 file_put_contents($flagFile, date('Y-m-d H:i:s'));
             } catch (\Throwable $e) {
-                error_log('[NativePHP Mobile] Init failed: ' . $e->getMessage());
+                error_log('[NativePHP Mobile] Init failed: '.$e->getMessage());
             }
         }
 
@@ -593,7 +595,7 @@ class NativeServiceProvider extends ServiceProvider
                 error_log('[NativePHP Desktop] Migrations applied.');
                 file_put_contents($desktopFlagFile, date('Y-m-d H:i:s'));
             } catch (\Throwable $e) {
-                error_log('[NativePHP Desktop] Migration failed: ' . $e->getMessage());
+                error_log('[NativePHP Desktop] Migration failed: '.$e->getMessage());
             }
         }
     }

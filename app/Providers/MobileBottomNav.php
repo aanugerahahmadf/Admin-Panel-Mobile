@@ -19,6 +19,7 @@ class MobileBottomNav
     public function items(array $items): static
     {
         $this->items = $items;
+
         return $this;
     }
 

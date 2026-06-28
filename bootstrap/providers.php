@@ -8,6 +8,7 @@ use App\Providers\NativeServiceProvider;
 use App\Providers\PlatformModeServiceProvider;
 use App\Providers\PlatformSupportServiceProvider;
 use App\Providers\VoltServiceProvider;
+use Laravel\Boost\BoostServiceProvider;
 
 return [
     PlatformModeServiceProvider::class,
@@ -18,5 +19,5 @@ return [
     NativeServiceProvider::class,
     PlatformSupportServiceProvider::class,
     VoltServiceProvider::class,
-    \Laravel\Boost\BoostServiceProvider::class,
+    BoostServiceProvider::class,
 ];

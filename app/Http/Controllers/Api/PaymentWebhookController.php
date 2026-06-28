@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Transaction;
-use App\Services\MidtransService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Midtrans\Config;
@@ -13,10 +12,10 @@ class PaymentWebhookController extends Controller
 {
     public function __construct()
     {
-        Config::$serverKey    = config('midtrans.server_key');
+        Config::$serverKey = config('midtrans.server_key');
         Config::$isProduction = (bool) config('midtrans.is_production');
-        Config::$isSanitized  = (bool) config('midtrans.is_sanitized');
-        Config::$is3ds        = (bool) config('midtrans.is_3ds');
+        Config::$isSanitized = (bool) config('midtrans.is_sanitized');
+        Config::$is3ds = (bool) config('midtrans.is_3ds');
     }
 
     /**
@@ -33,14 +32,14 @@ class PaymentWebhookController extends Controller
             $payload = $request->all();
             Log::info('[Midtrans Webhook] Notification received', $payload);
 
-            $orderId        = $payload['order_id'] ?? null;
-            $transactionId  = $payload['transaction_id'] ?? null;
-            $statusCode     = $payload['status_code'] ?? null;
-            $grossAmount    = $payload['gross_amount'] ?? null;
-            $serverKey      = config('midtrans.server_key');
+            $orderId = $payload['order_id'] ?? null;
+            $transactionId = $payload['transaction_id'] ?? null;
+            $statusCode = $payload['status_code'] ?? null;
+            $grossAmount = $payload['gross_amount'] ?? null;
+            $serverKey = config('midtrans.server_key');
             $transactionStatus = $payload['transaction_status'] ?? null;
-            $fraudStatus    = $payload['fraud_status'] ?? null;
-            $paymentType    = $payload['payment_type'] ?? null;
+            $fraudStatus = $payload['fraud_status'] ?? null;
+            $paymentType = $payload['payment_type'] ?? null;
 
             if (! $orderId) {
                 Log::warning('[Midtrans Webhook] Missing order_id');
@@ -80,9 +79,9 @@ class PaymentWebhookController extends Controller
             // Map Midtrans transaction status to local status
             match ($transactionStatus) {
                 'capture', 'settlement' => $this->handleSuccess($transaction, $transactionId),
-                'pending'               => $this->handlePending($transaction),
-                'deny', 'cancel'        => $this->handleFailed($transaction, $transactionStatus),
-                'expire'                => $this->handleExpired($transaction),
+                'pending' => $this->handlePending($transaction),
+                'deny', 'cancel' => $this->handleFailed($transaction, $transactionStatus),
+                'expire' => $this->handleExpired($transaction),
                 'refund', 'partial_refund' => $this->handleRefund($transaction),
                 default => Log::warning('[Midtrans Webhook] Unknown transaction_status', [
                     'status' => $transactionStatus,

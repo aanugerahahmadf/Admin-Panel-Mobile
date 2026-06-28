@@ -2,6 +2,7 @@
 
 namespace App\Filament\User\Auth;
 
+use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Component;
 use Filament\Forms\Components\Hidden;
@@ -92,7 +93,7 @@ class Login extends BaseLogin
 
         $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
-        $user = \App\Models\User::where($field, $login)->orWhere('nik', $login)->orWhere('passport_number', $login)->first();
+        $user = User::where($field, $login)->orWhere('nik', $login)->orWhere('passport_number', $login)->first();
         if ($user) {
             if ($user->email === $login) {
                 $field = 'email';

@@ -43,9 +43,6 @@ class NativePlatformRunCommand extends Command
      * Validates that NativePHP Mobile dependencies are installed before
      * passing control to `native:run`. Returns exit code 1 with an
      * informative error message when dependencies are missing.
-     *
-     * @param  PlatformDependencyValidator  $validator
-     * @return int
      */
     public function handle(PlatformDependencyValidator $validator): int
     {
@@ -58,12 +55,12 @@ class NativePlatformRunCommand extends Command
         }
 
         return $this->call('native:run', array_filter([
-            'os'           => $this->argument('os'),
-            'udid'         => $this->argument('udid'),
-            '--build'      => $this->option('build'),
-            '--watch'      => $this->option('watch'),
-            '--start-url'  => $this->option('start-url'),
-            '--no-tty'     => $this->option('no-tty'),
+            'os' => $this->argument('os'),
+            'udid' => $this->argument('udid'),
+            '--build' => $this->option('build'),
+            '--watch' => $this->option('watch'),
+            '--start-url' => $this->option('start-url'),
+            '--no-tty' => $this->option('no-tty'),
         ], fn ($v) => $v !== null && $v !== false));
     }
 
@@ -71,9 +68,7 @@ class NativePlatformRunCommand extends Command
      * Display a formatted error message listing missing dependencies and
      * providing installation instructions.
      *
-     * @param  PlatformMode  $mode
-     * @param  string[]      $missing
-     * @return void
+     * @param  string[]  $missing
      */
     protected function displayMissingDependenciesError(PlatformMode $mode, array $missing): void
     {
@@ -87,6 +82,6 @@ class NativePlatformRunCommand extends Command
 
         $this->line('');
         $this->line('To install, run:');
-        $this->line('  composer require ' . implode(' ', $missing));
+        $this->line('  composer require '.implode(' ', $missing));
     }
 }

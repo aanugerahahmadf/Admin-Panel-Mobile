@@ -46,13 +46,13 @@ class PlatformFeatureRegistry
     /**
      * Check if a feature is available on the specified platform.
      *
-     * @param string $feature The feature name to check
-     * @param RuntimePlatform $platform The runtime platform to check against
+     * @param  string  $feature  The feature name to check
+     * @param  RuntimePlatform  $platform  The runtime platform to check against
      * @return bool True if the feature is available on the platform, false otherwise
      */
     public function isAvailable(string $feature, RuntimePlatform $platform): bool
     {
-        if (!isset(self::FEATURE_MATRIX[$feature])) {
+        if (! isset(self::FEATURE_MATRIX[$feature])) {
             return false;
         }
 
@@ -62,7 +62,7 @@ class PlatformFeatureRegistry
     /**
      * Get all features available on the specified platform.
      *
-     * @param RuntimePlatform $platform The runtime platform to query
+     * @param  RuntimePlatform  $platform  The runtime platform to query
      * @return array<string> Array of feature names available on the platform
      */
     public function getAvailableFeatures(RuntimePlatform $platform): array
@@ -81,7 +81,7 @@ class PlatformFeatureRegistry
     /**
      * Get all platforms that support a specific feature.
      *
-     * @param string $feature The feature name to query
+     * @param  string  $feature  The feature name to query
      * @return array<RuntimePlatform> Array of RuntimePlatform cases that support the feature
      */
     public function getPlatformsForFeature(string $feature): array

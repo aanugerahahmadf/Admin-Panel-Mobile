@@ -7,15 +7,23 @@ use Illuminate\Contracts\Support\Htmlable;
 
 class MobileBottomNavItem
 {
-    protected string | Htmlable | null $icon = null;
-    protected string | Htmlable | null $activeIcon = null;
-    protected string | Closure | null $url = null;
-    protected bool | Closure $isActive = false;
-    protected string | int | null | Closure $badge = null;
-    protected string | array | null | Closure $badgeColor = null;
+    protected string|Htmlable|null $icon = null;
+
+    protected string|Htmlable|null $activeIcon = null;
+
+    protected string|Closure|null $url = null;
+
+    protected bool|Closure $isActive = false;
+
+    protected string|int|null|Closure $badge = null;
+
+    protected string|array|null|Closure $badgeColor = null;
+
     protected int $sort = 0;
-    protected bool | Closure $isVisible = true;
-    protected string | Closure | null $labelOverride = null;
+
+    protected bool|Closure $isVisible = true;
+
+    protected string|Closure|null $labelOverride = null;
 
     final public function __construct(protected string $label) {}
 
@@ -24,97 +32,123 @@ class MobileBottomNavItem
         return new static($label);
     }
 
-    public function label(string | Closure $label): static
+    public function label(string|Closure $label): static
     {
         $this->labelOverride = $label;
+
         return $this;
     }
 
-    public function icon(string | Htmlable $icon): static
+    public function icon(string|Htmlable $icon): static
     {
         $this->icon = $icon;
+
         return $this;
     }
 
-    public function activeIcon(string | Htmlable $activeIcon): static
+    public function activeIcon(string|Htmlable $activeIcon): static
     {
         $this->activeIcon = $activeIcon;
+
         return $this;
     }
 
-    public function url(string | Closure $url): static
+    public function url(string|Closure $url): static
     {
         $this->url = $url;
+
         return $this;
     }
 
-    public function isActive(bool | Closure | null $isActive = null): static | bool
+    public function isActive(bool|Closure|null $isActive = null): static|bool
     {
         if ($isActive !== null) {
             $this->isActive = $isActive;
+
             return $this;
         }
-        if ($this->isActive instanceof Closure) return (bool) ($this->isActive)();
+        if ($this->isActive instanceof Closure) {
+            return (bool) ($this->isActive)();
+        }
+
         return $this->isActive;
     }
 
-    public function badge(string | int | null | Closure $badge, string | array | null | Closure $color = null): static
+    public function badge(string|int|null|Closure $badge, string|array|null|Closure $color = null): static
     {
         $this->badge = $badge;
         $this->badgeColor = $color;
+
         return $this;
     }
 
-    public function badgeColor(string | array | null | Closure $color): static
+    public function badgeColor(string|array|null|Closure $color): static
     {
         $this->badgeColor = $color;
+
         return $this;
     }
 
     public function sort(int $sort): static
     {
         $this->sort = $sort;
+
         return $this;
     }
 
-    public function visible(bool | Closure $condition = true): static
+    public function visible(bool|Closure $condition = true): static
     {
         $this->isVisible = $condition;
+
         return $this;
     }
 
     public function getLabel(): string
     {
-        if ($this->labelOverride instanceof Closure) return ($this->labelOverride)();
-        if ($this->labelOverride !== null) return $this->labelOverride;
+        if ($this->labelOverride instanceof Closure) {
+            return ($this->labelOverride)();
+        }
+        if ($this->labelOverride !== null) {
+            return $this->labelOverride;
+        }
+
         return $this->label;
     }
 
-    public function getIcon(): string | Htmlable | null
+    public function getIcon(): string|Htmlable|null
     {
         return $this->icon;
     }
 
-    public function getActiveIcon(): string | Htmlable | null
+    public function getActiveIcon(): string|Htmlable|null
     {
         return $this->activeIcon;
     }
 
     public function getUrl(): ?string
     {
-        if ($this->url instanceof Closure) return ($this->url)();
+        if ($this->url instanceof Closure) {
+            return ($this->url)();
+        }
+
         return $this->url;
     }
 
-    public function getBadge(): string | int | null
+    public function getBadge(): string|int|null
     {
-        if ($this->badge instanceof Closure) return ($this->badge)();
+        if ($this->badge instanceof Closure) {
+            return ($this->badge)();
+        }
+
         return $this->badge;
     }
 
-    public function getBadgeColor(): string | array | null
+    public function getBadgeColor(): string|array|null
     {
-        if ($this->badgeColor instanceof Closure) return ($this->badgeColor)();
+        if ($this->badgeColor instanceof Closure) {
+            return ($this->badgeColor)();
+        }
+
         return $this->badgeColor;
     }
 
@@ -125,7 +159,10 @@ class MobileBottomNavItem
 
     public function isVisible(): bool
     {
-        if ($this->isVisible instanceof Closure) return (bool) ($this->isVisible)();
+        if ($this->isVisible instanceof Closure) {
+            return (bool) ($this->isVisible)();
+        }
+
         return $this->isVisible;
     }
 }

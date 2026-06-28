@@ -12,6 +12,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class ProductResource extends Resource
 {
@@ -260,7 +261,7 @@ class ProductResource extends Resource
             return null;
         }
 
-        /** @var \Spatie\MediaLibrary\MediaCollections\Models\Media|null $media */
+        /** @var Media|null $media */
         $media = $component->getRecord()->getRelationValue('media')?->firstWhere('uuid', $file);
 
         if (! $media) {
@@ -275,7 +276,7 @@ class ProductResource extends Resource
             'name' => $media->getAttributeValue('name') ?? $media->getAttributeValue('file_name'),
             'size' => $media->getAttributeValue('size'),
             'type' => $media->getAttributeValue('mime_type'),
-            'url'  => $url,
+            'url' => $url,
         ];
     }
 }

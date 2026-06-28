@@ -478,7 +478,7 @@ class ProductResource extends Resource
         // Generate Midtrans Snap Token and open payment immediately
         $snapToken = null;
         try {
-            $snapToken = (new MidtransService())->createSnapToken($transaction->fresh(['order', 'user']));
+            $snapToken = (new MidtransService)->createSnapToken($transaction->fresh(['order', 'user']));
         } catch (\Throwable $e) {
             Log::error('Failed to generate snap token: '.$e->getMessage());
         }

@@ -52,14 +52,14 @@ class FirestoreService
         try {
             $docRef = $this->firestore->collection($collectionName)->document($documentId);
             $snapshot = $docRef->snapshot();
-            
+
             if ($snapshot->exists()) {
                 return $snapshot->data();
             }
-            
+
             return null;
         } catch (\Exception $e) {
-            Log::error('Firestore getDocument error: ' . $e->getMessage());
+            Log::error('Firestore getDocument error: '.$e->getMessage());
             throw $e;
         }
     }
@@ -72,10 +72,10 @@ class FirestoreService
         try {
             $docRef = $this->firestore->collection($collectionName)->document($documentId);
             $docRef->set($data);
-            
+
             return true;
         } catch (\Exception $e) {
-            Log::error('Firestore setDocument error: ' . $e->getMessage());
+            Log::error('Firestore setDocument error: '.$e->getMessage());
             throw $e;
         }
     }
@@ -87,10 +87,10 @@ class FirestoreService
     {
         try {
             $docRef = $this->firestore->collection($collectionName)->add($data);
-            
+
             return $docRef->id();
         } catch (\Exception $e) {
-            Log::error('Firestore addDocument error: ' . $e->getMessage());
+            Log::error('Firestore addDocument error: '.$e->getMessage());
             throw $e;
         }
     }
@@ -103,10 +103,10 @@ class FirestoreService
         try {
             $docRef = $this->firestore->collection($collectionName)->document($documentId);
             $docRef->update($data);
-            
+
             return true;
         } catch (\Exception $e) {
-            Log::error('Firestore updateDocument error: ' . $e->getMessage());
+            Log::error('Firestore updateDocument error: '.$e->getMessage());
             throw $e;
         }
     }
@@ -119,10 +119,10 @@ class FirestoreService
         try {
             $docRef = $this->firestore->collection($collectionName)->document($documentId);
             $docRef->delete();
-            
+
             return true;
         } catch (\Exception $e) {
-            Log::error('Firestore deleteDocument error: ' . $e->getMessage());
+            Log::error('Firestore deleteDocument error: '.$e->getMessage());
             throw $e;
         }
     }
@@ -130,11 +130,11 @@ class FirestoreService
     /**
      * Query documents
      */
-    public function queryDocuments(string $collectionName, array $filters = [], int $limit = null)
+    public function queryDocuments(string $collectionName, array $filters = [], ?int $limit = null)
     {
         try {
             $query = $this->firestore->collection($collectionName);
-            
+
             // Apply filters
             foreach ($filters as $filter) {
                 if (count($filter) === 3) {
@@ -142,15 +142,15 @@ class FirestoreService
                     $query = $query->where($field, $operator, $value);
                 }
             }
-            
+
             // Apply limit
             if ($limit) {
                 $query = $query->limit($limit);
             }
-            
+
             $documents = $query->documents();
             $results = [];
-            
+
             foreach ($documents as $document) {
                 if ($document->exists()) {
                     $results[] = [
@@ -159,10 +159,10 @@ class FirestoreService
                     ];
                 }
             }
-            
+
             return $results;
         } catch (\Exception $e) {
-            Log::error('Firestore queryDocuments error: ' . $e->getMessage());
+            Log::error('Firestore queryDocuments error: '.$e->getMessage());
             throw $e;
         }
     }

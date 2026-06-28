@@ -257,19 +257,19 @@ class AuthController extends Controller
         $user = User::where('clerk_id', $clerkId)->orWhere('email', $email)->first();
 
         if ($user) {
-            if (!$user->clerk_id) {
+            if (! $user->clerk_id) {
                 $user->update(['clerk_id' => $clerkId]);
             }
-            if ($request->name && !$user->full_name) {
+            if ($request->name && ! $user->full_name) {
                 $user->update(['full_name' => $request->name]);
             }
-            if ($request->avatar_url && !$user->avatar_url) {
+            if ($request->avatar_url && ! $user->avatar_url) {
                 $user->update(['avatar_url' => $request->avatar_url]);
             }
         } else {
-            $username = $request->username ?? 'user_' . Str::random(8);
+            $username = $request->username ?? 'user_'.Str::random(8);
             while (User::where('username', $username)->exists()) {
-                $username = 'user_' . Str::random(8);
+                $username = 'user_'.Str::random(8);
             }
 
             $user = User::create([
@@ -287,7 +287,7 @@ class AuthController extends Controller
             }
         }
 
-        if (!$user->active_status) {
+        if (! $user->active_status) {
             $user->update(['active_status' => true]);
         }
 

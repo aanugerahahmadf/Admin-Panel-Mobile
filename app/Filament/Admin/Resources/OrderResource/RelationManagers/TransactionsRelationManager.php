@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources\OrderResource\RelationManagers;
 
 use App\Models\Transaction;
 use Filament\Forms;
+use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -25,7 +26,7 @@ class TransactionsRelationManager extends RelationManager
         return __('Transaksi');
     }
 
-    public function form(\Filament\Forms\Form $form): \Filament\Forms\Form
+    public function form(Form $form): Form
     {
         return $form
             ->schema([

@@ -18,6 +18,7 @@ use App\Models\Order;
 use App\Models\Package;
 use App\Models\Product;
 use App\Models\Voucher;
+use App\Providers\NativeServiceProvider;
 use App\Services\CBIRService;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
@@ -48,6 +49,7 @@ use Livewire\Attributes\Computed;
 use Livewire\Component;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithPagination;
+use Native\Laravel\Facades\Camera;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 /**
@@ -698,13 +700,13 @@ class Messages extends Component implements HasActions, HasForms
      */
     public function openBrowseSource(string $mediaType = 'all', ?string $sourceId = null): void
     {
-        if (! \App\Providers\NativeServiceProvider::isNativeMobile()) {
+        if (! NativeServiceProvider::isNativeMobile()) {
             return;
         }
 
         $mediaType = in_array($mediaType, ['image', 'video', 'all'], true) ? $mediaType : 'all';
 
-        \Native\Laravel\Facades\Camera::pickImages($mediaType, false)
+        Camera::pickImages($mediaType, false)
             ->id('cbir-browse-'.($sourceId ?? $mediaType))
             ->start();
     }

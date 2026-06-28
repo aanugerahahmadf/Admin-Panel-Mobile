@@ -165,7 +165,7 @@ describe('Property 11: Route Cache Contains Only Compatible Routes', function ()
         );
         expect($webForbidden)->toBeEmpty(
             'Web mode must not contain api/mobile/* or api/desktop/* routes, '
-            . 'but found: ' . implode(', ', $webForbidden)
+            .'but found: '.implode(', ', $webForbidden)
         );
 
         // ── Mobile: routes added for Mobile must not include api/desktop/*
@@ -176,7 +176,7 @@ describe('Property 11: Route Cache Contains Only Compatible Routes', function ()
         );
         expect($mobileForbidden)->toBeEmpty(
             'Mobile mode must not contain api/desktop/* routes, '
-            . 'but found: ' . implode(', ', $mobileForbidden)
+            .'but found: '.implode(', ', $mobileForbidden)
         );
 
         // ── Desktop: routes added for Desktop must not include api/mobile/*
@@ -187,7 +187,7 @@ describe('Property 11: Route Cache Contains Only Compatible Routes', function ()
         );
         expect($desktopForbidden)->toBeEmpty(
             'Desktop mode must not contain api/mobile/* routes, '
-            . 'but found: ' . implode(', ', $desktopForbidden)
+            .'but found: '.implode(', ', $desktopForbidden)
         );
     });
 

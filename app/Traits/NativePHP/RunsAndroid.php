@@ -49,14 +49,14 @@ trait RunsAndroid
         $vars = [
             'ANDROID_AVD_HOME' => env('ANDROID_AVD_HOME', 'D:\\Android\\avd'),
             'ANDROID_SDK_ROOT' => env('ANDROID_SDK_ROOT', 'D:\\Android\\Sdk'),
-            'ANDROID_HOME'     => env('ANDROID_HOME', 'D:\\Android\\Sdk'),
-            'JAVA_HOME'        => env('JAVA_HOME', 'D:\\Android\\Sdk\\jdk-26.0.1'),
+            'ANDROID_HOME' => env('ANDROID_HOME', 'D:\\Android\\Sdk'),
+            'JAVA_HOME' => env('JAVA_HOME', 'D:\\Android\\Sdk\\jdk-26.0.1'),
         ];
 
         foreach ($vars as $key => $value) {
             if ($value) {
                 putenv("{$key}={$value}");
-                $_ENV[$key]    = $value;
+                $_ENV[$key] = $value;
                 $_SERVER[$key] = $value;
             }
         }

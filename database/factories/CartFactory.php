@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Cart;
+use App\Models\Package;
 use App\Models\Product;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -28,7 +29,7 @@ class CartFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'product_id' => null,
-            'package_id' => \App\Models\Package::factory(),
+            'package_id' => Package::factory(),
         ]);
     }
 }

@@ -5,7 +5,7 @@ use App\Support\Platform\PlatformFeatureRegistry;
 
 describe('RuntimePlatform Feature Integration', function () {
     beforeEach(function () {
-        $this->registry = new PlatformFeatureRegistry();
+        $this->registry = new PlatformFeatureRegistry;
     });
 
     describe('hasNativeCameraAccess()', function () {
@@ -41,7 +41,7 @@ describe('RuntimePlatform Feature Integration', function () {
             foreach ($allPlatforms as $platform) {
                 $hasNativeCamera = $platform->hasNativeCameraAccess();
                 $cameraInRegistry = $this->registry->isAvailable('camera', $platform);
-                
+
                 expect($hasNativeCamera)->toBe($cameraInRegistry);
             }
         });
@@ -77,7 +77,7 @@ describe('RuntimePlatform Feature Integration', function () {
             foreach ($allPlatforms as $platform) {
                 $hasWebRTC = $platform->hasWebRTCAccess();
                 $webrtcInRegistry = $this->registry->isAvailable('webrtc', $platform);
-                
+
                 expect($hasWebRTC)->toBe($webrtcInRegistry);
             }
         });
@@ -113,7 +113,7 @@ describe('RuntimePlatform Feature Integration', function () {
             foreach ($allPlatforms as $platform) {
                 $hasFileSystem = $platform->hasFileSystemAccess();
                 $fileSystemInRegistry = $this->registry->isAvailable('file_system', $platform);
-                
+
                 expect($hasFileSystem)->toBe($fileSystemInRegistry);
             }
         });
@@ -149,7 +149,7 @@ describe('RuntimePlatform Feature Integration', function () {
             foreach ($allPlatforms as $platform) {
                 $hasDesktopNotifications = $platform->hasDesktopNotifications();
                 $desktopNotificationsInRegistry = $this->registry->isAvailable('desktop_notifications', $platform);
-                
+
                 expect($hasDesktopNotifications)->toBe($desktopNotificationsInRegistry);
             }
         });
@@ -185,7 +185,7 @@ describe('RuntimePlatform Feature Integration', function () {
             foreach ($allPlatforms as $platform) {
                 $hasPushNotifications = $platform->hasPushNotifications();
                 $pushNotificationsInRegistry = $this->registry->isAvailable('push_notifications', $platform);
-                
+
                 expect($hasPushNotifications)->toBe($pushNotificationsInRegistry);
             }
         });
@@ -221,7 +221,7 @@ describe('RuntimePlatform Feature Integration', function () {
             foreach ($allPlatforms as $platform) {
                 $hasAutoUpdates = $platform->hasAutoUpdates();
                 $autoUpdatesInRegistry = $this->registry->isAvailable('auto_updates', $platform);
-                
+
                 expect($hasAutoUpdates)->toBe($autoUpdatesInRegistry);
             }
         });
@@ -257,7 +257,7 @@ describe('RuntimePlatform Feature Integration', function () {
             foreach ($allPlatforms as $platform) {
                 $hasAppBadge = $platform->hasAppBadge();
                 $appBadgeInRegistry = $this->registry->isAvailable('app_badge', $platform);
-                
+
                 expect($hasAppBadge)->toBe($appBadgeInRegistry);
             }
         });
@@ -280,25 +280,25 @@ describe('RuntimePlatform Feature Integration', function () {
                 $cameraMode = $platform->cbirCameraMode();
                 $hasNativeCamera = $this->registry->isAvailable('camera', $platform);
                 $hasWebRTC = $this->registry->isAvailable('webrtc', $platform);
-                
+
                 // If camera mode is 'native', then the native camera feature must be available
                 if ($cameraMode === 'native') {
                     expect($hasNativeCamera)->toBeTrue();
                     expect($hasWebRTC)->toBeFalse();
                 }
-                
+
                 // If camera mode is 'webrtc', then the webrtc feature must be available
                 if ($cameraMode === 'webrtc') {
                     expect($hasWebRTC)->toBeTrue();
                     expect($hasNativeCamera)->toBeFalse();
                 }
-            };
+            }
         });
 
         test('mobile app platforms use native camera mode', function () {
             expect(RuntimePlatform::MobileAppAndroid->cbirCameraMode())->toBe('native');
             expect(RuntimePlatform::MobileAppIos->cbirCameraMode())->toBe('native');
-            
+
             // Verify these platforms have camera feature
             expect($this->registry->isAvailable('camera', RuntimePlatform::MobileAppAndroid))->toBeTrue();
             expect($this->registry->isAvailable('camera', RuntimePlatform::MobileAppIos))->toBeTrue();
@@ -309,7 +309,7 @@ describe('RuntimePlatform Feature Integration', function () {
             expect(RuntimePlatform::WebsiteMacOS->cbirCameraMode())->toBe('webrtc');
             expect(RuntimePlatform::WebsiteAndroid->cbirCameraMode())->toBe('webrtc');
             expect(RuntimePlatform::WebsiteIos->cbirCameraMode())->toBe('webrtc');
-            
+
             // Verify these platforms have webrtc feature
             expect($this->registry->isAvailable('webrtc', RuntimePlatform::WebsiteWindows))->toBeTrue();
             expect($this->registry->isAvailable('webrtc', RuntimePlatform::WebsiteMacOS))->toBeTrue();
@@ -321,7 +321,7 @@ describe('RuntimePlatform Feature Integration', function () {
             // Desktop platforms have native camera (NativePHP Desktop Camera API)
             expect(RuntimePlatform::DesktopAppWindows->cbirCameraMode())->toBe('native');
             expect(RuntimePlatform::DesktopAppMacOS->cbirCameraMode())->toBe('native');
-            
+
             // Verify these platforms have camera feature (native capability)
             expect($this->registry->isAvailable('camera', RuntimePlatform::DesktopAppWindows))->toBeTrue();
             expect($this->registry->isAvailable('camera', RuntimePlatform::DesktopAppMacOS))->toBeTrue();
@@ -355,7 +355,7 @@ describe('RuntimePlatform Feature Integration', function () {
                 foreach ($allFeatures as $feature) {
                     $hasFeature = $platform->hasFeature($feature);
                     $registryResult = $this->registry->isAvailable($feature, $platform);
-                    
+
                     expect($hasFeature)->toBe($registryResult);
                 }
             }
@@ -391,7 +391,7 @@ describe('RuntimePlatform Feature Integration', function () {
             foreach ($allPlatforms as $platform) {
                 $features = $platform->getAvailableFeatures();
                 $registryFeatures = $this->registry->getAvailableFeatures($platform);
-                
+
                 expect($features)->toBe($registryFeatures);
                 expect($features)->toBeArray();
             }
@@ -399,7 +399,7 @@ describe('RuntimePlatform Feature Integration', function () {
 
         test('mobile platforms return expected features', function () {
             $features = RuntimePlatform::MobileAppAndroid->getAvailableFeatures();
-            
+
             expect($features)->toContain('camera');
             expect($features)->toContain('push_notifications');
             expect($features)->toContain('file_system');
@@ -408,7 +408,7 @@ describe('RuntimePlatform Feature Integration', function () {
 
         test('desktop platforms return expected features', function () {
             $features = RuntimePlatform::DesktopAppWindows->getAvailableFeatures();
-            
+
             expect($features)->toContain('camera');
             expect($features)->toContain('desktop_notifications');
             expect($features)->toContain('file_system');
@@ -417,7 +417,7 @@ describe('RuntimePlatform Feature Integration', function () {
 
         test('website platforms return expected features', function () {
             $features = RuntimePlatform::WebsiteWindows->getAvailableFeatures();
-            
+
             expect($features)->toContain('webrtc');
             expect($features)->not->toContain('camera');
         });
@@ -464,23 +464,23 @@ describe('RuntimePlatform Feature Integration', function () {
                 // Native camera = mobile or desktop app
                 $expectedNativeCamera = $platform->isMobileApp() || $platform->isDesktopApp();
                 expect($platform->hasNativeCameraAccess())->toBe($expectedNativeCamera);
-                
+
                 // WebRTC = website
                 expect($platform->hasWebRTCAccess())->toBe($platform->isWebsite());
-                
+
                 // File system = mobile or desktop app
                 $expectedFileSystem = $platform->isMobileApp() || $platform->isDesktopApp();
                 expect($platform->hasFileSystemAccess())->toBe($expectedFileSystem);
-                
+
                 // Desktop notifications = desktop app
                 expect($platform->hasDesktopNotifications())->toBe($platform->isDesktopApp());
-                
+
                 // Push notifications = mobile app
                 expect($platform->hasPushNotifications())->toBe($platform->isMobileApp());
-                
+
                 // Auto updates = desktop app
                 expect($platform->hasAutoUpdates())->toBe($platform->isDesktopApp());
-                
+
                 // App badge = mobile app
                 expect($platform->hasAppBadge())->toBe($platform->isMobileApp());
             }

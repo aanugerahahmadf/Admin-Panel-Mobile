@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Package;
 use App\Models\Product;
 use App\Models\Review;
 use App\Models\User;
@@ -25,7 +26,7 @@ class ReviewFactory extends Factory
     public function forPackage(): static
     {
         return $this->state(fn (array $attributes) => [
-            'package_id' => \App\Models\Package::factory(),
+            'package_id' => Package::factory(),
             'product_id' => null,
         ]);
     }

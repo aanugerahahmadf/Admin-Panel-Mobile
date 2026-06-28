@@ -37,7 +37,7 @@ trait PlatformTestHelper
      * Call this before making requests or running assertions that depend on
      * the active platform mode.
      *
-     * @param PlatformMode $mode The platform mode to simulate
+     * @param  PlatformMode  $mode  The platform mode to simulate
      */
     public function setPlatformMode(PlatformMode $mode): void
     {
@@ -50,7 +50,7 @@ trait PlatformTestHelper
      * Call this before making requests or running assertions that depend on
      * the active runtime platform.
      *
-     * @param RuntimePlatform $platform The runtime platform to simulate
+     * @param  RuntimePlatform  $platform  The runtime platform to simulate
      */
     public function setRuntimePlatform(RuntimePlatform $platform): void
     {
@@ -67,8 +67,8 @@ trait PlatformTestHelper
      * Also registers PlatformFeatureRegistry as a singleton so feature-gated
      * code works in integration tests without a full bootstrap.
      *
-     * @param PlatformMode|null    $mode     Platform mode to simulate (defaults to PlatformMode::Web)
-     * @param RuntimePlatform|null $platform Runtime platform to simulate (defaults to RuntimePlatform::WebsiteWindows)
+     * @param  PlatformMode|null  $mode  Platform mode to simulate (defaults to PlatformMode::Web)
+     * @param  RuntimePlatform|null  $platform  Runtime platform to simulate (defaults to RuntimePlatform::WebsiteWindows)
      */
     public function mockPlatformDetection(?PlatformMode $mode = null, ?RuntimePlatform $platform = null): void
     {
@@ -93,7 +93,7 @@ trait PlatformTestHelper
     /**
      * Assert that the current platform mode singleton matches the expected value.
      *
-     * @param PlatformMode $expected The expected platform mode
+     * @param  PlatformMode  $expected  The expected platform mode
      */
     public function assertPlatformMode(PlatformMode $expected): void
     {
@@ -113,7 +113,7 @@ trait PlatformTestHelper
     /**
      * Assert that the current runtime platform singleton matches the expected value.
      *
-     * @param RuntimePlatform $expected The expected runtime platform
+     * @param  RuntimePlatform  $expected  The expected runtime platform
      */
     public function assertRuntimePlatform(RuntimePlatform $expected): void
     {

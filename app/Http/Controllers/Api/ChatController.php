@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SendBotReply;
 use App\Models\Inbox;
 use App\Models\Message;
-use App\Jobs\SendBotReply;
+use App\Models\Order;
 use App\Models\User;
 use App\Services\ChatService;
 use Illuminate\Http\Request;
@@ -197,7 +198,7 @@ class ChatController extends Controller
         $orderId = $request->input('order_id');
 
         if ($orderId) {
-            $order = \App\Models\Order::find((int) $orderId);
+            $order = Order::find((int) $orderId);
             if ($order) {
                 ChatService::sendOrderMessage($inbox, $order);
             }

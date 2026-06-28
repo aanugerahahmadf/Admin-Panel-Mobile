@@ -65,8 +65,8 @@ class ProductionValidator
      * an exception that prevents application startup. In non-production environments
      * missing variables are only logged as a warning.
      *
-     * @param  PlatformMode  $mode    The active platform mode.
-     * @param  bool          $strict  When true, throw even in non-production environments.
+     * @param  PlatformMode  $mode  The active platform mode.
+     * @param  bool  $strict  When true, throw even in non-production environments.
      *
      * @throws \RuntimeException When required variables are missing in production mode.
      */
@@ -82,7 +82,7 @@ class ProductionValidator
         $isTesting = app()->environment('testing') || env('APP_ENV') === 'testing';
 
         $context = [
-            'mode'    => $mode->label(),
+            'mode' => $mode->label(),
             'missing' => $missing,
         ];
 
@@ -95,7 +95,7 @@ class ProductionValidator
         }
 
         // Non-production, non-testing: warn but continue
-        if (!$isTesting) {
+        if (! $isTesting) {
             Log::warning('Missing recommended environment variables for platform mode.', $context);
         }
     }
@@ -103,8 +103,7 @@ class ProductionValidator
     /**
      * Return the list of missing required environment variables for the given mode.
      *
-     * @param  PlatformMode  $mode
-     * @return string[]  Names of missing variables (empty array when all present).
+     * @return string[] Names of missing variables (empty array when all present).
      */
     public function getMissingVariables(PlatformMode $mode): array
     {
@@ -130,9 +129,6 @@ class ProductionValidator
      * Check whether the environment is valid for the given platform mode.
      *
      * Returns true when all required variables are present, false otherwise.
-     *
-     * @param  PlatformMode  $mode
-     * @return bool
      */
     public function isValid(PlatformMode $mode): bool
     {
@@ -142,7 +138,6 @@ class ProductionValidator
     /**
      * Return all required variable names for the given platform mode.
      *
-     * @param  PlatformMode  $mode
      * @return string[]
      */
     public function getRequiredVariables(PlatformMode $mode): array
@@ -156,9 +151,7 @@ class ProductionValidator
     /**
      * Build a human-readable error message listing all missing variables.
      *
-     * @param  PlatformMode  $mode
-     * @param  string[]      $missing
-     * @return string
+     * @param  string[]  $missing
      */
     private function buildErrorMessage(PlatformMode $mode, array $missing): string
     {

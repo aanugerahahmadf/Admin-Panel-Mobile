@@ -14,10 +14,10 @@ use App\Filament\User\Pages\MessagesPage;
 use App\Filament\User\Pages\ProfilePage;
 use App\Filament\User\Resources\CartResource;
 use App\Filament\User\Resources\OrderResource;
-use App\Filament\User\Resources\ReviewResource;
-use App\Http\Middleware\MidtransCspMiddleware;
 use App\Http\Middleware\ClerkFilamentAuth;
+use App\Http\Middleware\MidtransCspMiddleware;
 use App\Http\Middleware\SetLocale;
+use App\Providers\NativeServiceProvider;
 use Filament\Enums\ThemeMode;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -81,7 +81,7 @@ class UserPanelProvider extends PanelProvider
                 'panels::footer',
                 fn (): ?View => (
                     ! str_contains(request()->route()?->getName() ?? '', 'auth')
-                    && ! \App\Providers\NativeServiceProvider::isAnyMobile()
+                    && ! NativeServiceProvider::isAnyMobile()
                 ) ? view('filament.footer') : null
             )
             ->discoverResources(in: app_path('Filament/User/Resources'), for: 'App\\Filament\\User\\Resources')

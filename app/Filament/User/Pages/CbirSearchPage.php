@@ -20,11 +20,12 @@ use Illuminate\Support\HtmlString;
 use Livewire\Attributes\On;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
-use Native\Mobile\Events\Camera\PhotoCancelled;
 use Native\Mobile\Events\Camera\PermissionDenied;
+use Native\Mobile\Events\Camera\PhotoCancelled;
 use Native\Mobile\Events\Camera\PhotoTaken;
 use Native\Mobile\Events\Camera\VideoCancelled;
 use Native\Mobile\Events\Camera\VideoRecorded;
+use Native\Mobile\Events\Gallery\MediaSelected;
 use Native\Mobile\Facades\Camera;
 use Native\Mobile\Facades\File as NativeFile;
 use Symfony\Component\HttpFoundation\File\File;
@@ -150,7 +151,7 @@ class CbirSearchPage extends Page implements HasForms
         $this->processNativeFile($path, $mimeType);
     }
 
-    #[On('native:'.\Native\Mobile\Events\Gallery\MediaSelected::class)]
+    #[On('native:'.MediaSelected::class)]
     public function onMediaSelected(bool $success, array $files = [], int $count = 0, ?string $error = null, bool $cancelled = false): void
     {
         $this->isProcessing = false;

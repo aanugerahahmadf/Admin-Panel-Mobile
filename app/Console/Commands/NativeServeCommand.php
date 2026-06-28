@@ -40,9 +40,6 @@ class NativeServeCommand extends Command
      * Validates that NativePHP Electron dependencies are installed before
      * passing control to `native:serve`. Returns exit code 1 with an
      * informative error message when dependencies are missing.
-     *
-     * @param  PlatformDependencyValidator  $validator
-     * @return int
      */
     public function handle(PlatformDependencyValidator $validator): int
     {
@@ -55,9 +52,9 @@ class NativeServeCommand extends Command
         }
 
         return $this->call('native:serve', array_filter([
-            '--without-queue'    => $this->option('without-queue'),
+            '--without-queue' => $this->option('without-queue'),
             '--without-schedule' => $this->option('without-schedule'),
-            '--quiet-logs'       => $this->option('quiet-logs'),
+            '--quiet-logs' => $this->option('quiet-logs'),
         ], fn ($v) => $v !== false));
     }
 
@@ -65,9 +62,7 @@ class NativeServeCommand extends Command
      * Display a formatted error message listing missing dependencies and
      * providing installation instructions.
      *
-     * @param  PlatformMode  $mode
-     * @param  string[]      $missing
-     * @return void
+     * @param  string[]  $missing
      */
     protected function displayMissingDependenciesError(PlatformMode $mode, array $missing): void
     {
@@ -81,6 +76,6 @@ class NativeServeCommand extends Command
 
         $this->line('');
         $this->line('To install, run:');
-        $this->line('  composer require ' . implode(' ', $missing));
+        $this->line('  composer require '.implode(' ', $missing));
     }
 }

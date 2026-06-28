@@ -40,7 +40,7 @@ class PlatformCacheClearCommand extends Command
     {
         $clearRoutes = $this->option('routes');
         $clearConfig = $this->option('config');
-        $clearAll    = $this->option('all') || (! $clearRoutes && ! $clearConfig);
+        $clearAll = $this->option('all') || (! $clearRoutes && ! $clearConfig);
 
         $this->line('');
         $this->line('<fg=cyan;options=bold>Clearing Platform Cache</>');
@@ -79,7 +79,7 @@ class PlatformCacheClearCommand extends Command
             Artisan::call('route:clear');
             $this->line('  <fg=green>✔</> Route cache cleared.');
         } catch (\Throwable $e) {
-            $this->line('  <fg=yellow>⚠</> Route cache could not be cleared: ' . $e->getMessage());
+            $this->line('  <fg=yellow>⚠</> Route cache could not be cleared: '.$e->getMessage());
         }
     }
 
@@ -94,7 +94,7 @@ class PlatformCacheClearCommand extends Command
             Artisan::call('config:clear');
             $this->line('  <fg=green>✔</> Config cache cleared.');
         } catch (\Throwable $e) {
-            $this->line('  <fg=yellow>⚠</> Config cache could not be cleared: ' . $e->getMessage());
+            $this->line('  <fg=yellow>⚠</> Config cache could not be cleared: '.$e->getMessage());
         }
     }
 
@@ -109,7 +109,7 @@ class PlatformCacheClearCommand extends Command
             Artisan::call('view:clear');
             $this->line('  <fg=green>✔</> View cache cleared.');
         } catch (\Throwable $e) {
-            $this->line('  <fg=yellow>⚠</> View cache could not be cleared: ' . $e->getMessage());
+            $this->line('  <fg=yellow>⚠</> View cache could not be cleared: '.$e->getMessage());
         }
     }
 
@@ -124,7 +124,7 @@ class PlatformCacheClearCommand extends Command
             Artisan::call('cache:clear');
             $this->line('  <fg=green>✔</> Application cache cleared.');
         } catch (\Throwable $e) {
-            $this->line('  <fg=yellow>⚠</> Application cache could not be cleared: ' . $e->getMessage());
+            $this->line('  <fg=yellow>⚠</> Application cache could not be cleared: '.$e->getMessage());
         }
     }
 }

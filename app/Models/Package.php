@@ -253,5 +253,4 @@ class Package extends Model implements HasMedia
 
         return NativeServiceProvider::normalizeUrl($resolved);
     }
-
 }

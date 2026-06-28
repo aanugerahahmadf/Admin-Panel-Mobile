@@ -8,10 +8,6 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
-use Laravolt\Indonesia\Models\City as IndonesiaCity;
-use Laravolt\Indonesia\Models\District as IndonesiaDistrict;
-use Laravolt\Indonesia\Models\Province as IndonesiaProvince;
-use Laravolt\Indonesia\Models\Village as IndonesiaVillage;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -19,6 +15,10 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
+use Laravolt\Indonesia\Models\City as IndonesiaCity;
+use Laravolt\Indonesia\Models\District as IndonesiaDistrict;
+use Laravolt\Indonesia\Models\Province as IndonesiaProvince;
+use Laravolt\Indonesia\Models\Village as IndonesiaVillage;
 
 /**
  * @mixin \Eloquent

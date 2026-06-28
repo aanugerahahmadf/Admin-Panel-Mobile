@@ -29,7 +29,9 @@ class OrderController extends Controller
         try {
             $query = Order::where('user_id', Auth::id())
                 ->with([
-                    'package' => function ($q): void { $q->with('weddingFlowersDecorasi:id,name,rating'); },
+                    'package' => function ($q): void {
+                        $q->with('weddingFlowersDecorasi:id,name,rating');
+                    },
                     'product.category',
                     'user:id,full_name',
                 ]);
@@ -290,6 +292,7 @@ class OrderController extends Controller
             ], 404);
         } catch (\Exception $e) {
             Log::error('[Order] createOrder error: '.$e->getMessage());
+
             return response()->json([
                 'status' => 'error',
                 'message' => __('Gagal membuat pesanan'),
@@ -367,6 +370,7 @@ class OrderController extends Controller
             ], 404);
         } catch (\Exception $e) {
             Log::error('[Order] processPayment error: '.$e->getMessage());
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'Failed to process payment',

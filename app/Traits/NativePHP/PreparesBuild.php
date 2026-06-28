@@ -420,8 +420,10 @@ trait PreparesBuild
                 if ($item->isDir()) {
                     // Skip the entire directory subtree
                     $iterator->next();
+
                     continue;
                 }
+
                 continue;
             }
 

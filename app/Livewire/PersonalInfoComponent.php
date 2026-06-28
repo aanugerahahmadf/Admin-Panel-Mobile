@@ -10,17 +10,17 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
-use Filament\Forms\Get;
-use Laravolt\Indonesia\Models\City as IndonesiaCity;
-use Laravolt\Indonesia\Models\District as IndonesiaDistrict;
-use Laravolt\Indonesia\Models\Province as IndonesiaProvince;
-use Laravolt\Indonesia\Models\Village as IndonesiaVillage;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Forms\Set;
 use Filament\Notifications\Notification;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Auth;
+use Laravolt\Indonesia\Models\City as IndonesiaCity;
+use Laravolt\Indonesia\Models\District as IndonesiaDistrict;
+use Laravolt\Indonesia\Models\Province as IndonesiaProvince;
+use Laravolt\Indonesia\Models\Village as IndonesiaVillage;
 use Livewire\Component;
 use Native\Mobile\Notification as NativeNotification;
 
@@ -104,7 +104,7 @@ class PersonalInfoComponent extends Component implements HasForms
                             ->extraAttributes(['class' => 'flex flex-col items-center justify-center'])
                             ->extraInputAttributes([
                                 'accept' => 'image/*',
-                                'class'  => 'avatar-file-input',
+                                'class' => 'avatar-file-input',
                             ])
                             ->extraFieldWrapperAttributes(['class' => 'avatar-upload-centered'])
                             ->alignCenter()
@@ -154,7 +154,7 @@ class PersonalInfoComponent extends Component implements HasForms
                                 'female' => __('Perempuan'),
                             ])
                             ->native(false),
-                        TextArea::make('address')
+                        Textarea::make('address')
                             ->label(__('Alamat'))
                             ->rows(3)
                             ->maxLength(65535)

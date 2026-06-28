@@ -18,10 +18,14 @@ class WorldRegionService
                     ->timeout(15)
                     ->get("{$this->baseUrl}/countries");
                 $data = $res->json();
-                if (isset($data['error']) && $data['error']) return [];
+                if (isset($data['error']) && $data['error']) {
+                    return [];
+                }
+
                 return collect($data['data'] ?? [])->pluck('country')->toArray();
             } catch (\Throwable $e) {
                 Log::warning('[WorldRegion] Failed to fetch countries: '.$e->getMessage());
+
                 return [];
             }
         });
@@ -44,13 +48,16 @@ class WorldRegionService
             $data = $res->json();
             if (isset($data['error']) && $data['error']) {
                 Cache::put($key, [], 60);
+
                 return [];
             }
             $states = $data['data']['states'] ?? [];
             Cache::put($key, $states, 86400);
+
             return $states;
         } catch (\Throwable $e) {
             Log::warning('[WorldRegion] Failed to fetch states for '.$country.': '.$e->getMessage());
+
             // Don't cache errors — retry on next request
             return [];
         }
@@ -74,13 +81,16 @@ class WorldRegionService
             $data = $res->json();
             if (isset($data['error']) && $data['error']) {
                 Cache::put($key, [], 60);
+
                 return [];
             }
             $cities = $data['data'] ?? [];
             Cache::put($key, $cities, 86400);
+
             return $cities;
         } catch (\Throwable $e) {
             Log::warning('[WorldRegion] Failed to fetch cities for '.$country.'/'.$state.': '.$e->getMessage());
+
             return [];
         }
     }

@@ -37,15 +37,15 @@ class AndroidSdkEnvironment
         );
         // If the path already ends with \bin, derive the home from its parent
         $gradleHome = null;
-        $gradleBin  = null;
+        $gradleBin = null;
         if ($gradlePathRaw) {
             if (str_ends_with(strtolower($gradlePathRaw), DIRECTORY_SEPARATOR.'bin')
                 || str_ends_with(strtolower($gradlePathRaw), '/bin')) {
-                $gradleBin  = $gradlePathRaw;
+                $gradleBin = $gradlePathRaw;
                 $gradleHome = dirname($gradlePathRaw);
             } else {
                 $gradleHome = $gradlePathRaw;
-                $gradleBin  = $gradlePathRaw.DIRECTORY_SEPARATOR.'bin';
+                $gradleBin = $gradlePathRaw.DIRECTORY_SEPARATOR.'bin';
             }
         }
 

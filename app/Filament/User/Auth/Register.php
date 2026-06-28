@@ -3,8 +3,8 @@
 namespace App\Filament\User\Auth;
 
 use App\Models\User;
-use App\Services\GeoNamesService;
 use App\Services\GeoLocationService;
+use App\Services\GeoNamesService;
 use App\Services\PlatformNotificationService;
 use App\Services\WorldRegionService;
 use Filament\Actions\Action;
@@ -19,10 +19,6 @@ use Filament\Forms\Components\Wizard\Step;
 use Filament\Forms\Form;
 use Filament\Forms\Get;
 use Filament\Forms\Set;
-use Laravolt\Indonesia\Models\City as IndonesiaCity;
-use Laravolt\Indonesia\Models\District as IndonesiaDistrict;
-use Laravolt\Indonesia\Models\Province as IndonesiaProvince;
-use Laravolt\Indonesia\Models\Village as IndonesiaVillage;
 use Filament\Notifications\Notification;
 use Filament\Pages\Auth\Register as BaseRegister;
 use Illuminate\Contracts\Support\Htmlable;
@@ -30,6 +26,10 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\HtmlString;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
+use Laravolt\Indonesia\Models\City as IndonesiaCity;
+use Laravolt\Indonesia\Models\District as IndonesiaDistrict;
+use Laravolt\Indonesia\Models\Province as IndonesiaProvince;
+use Laravolt\Indonesia\Models\Village as IndonesiaVillage;
 use Spatie\Permission\Models\Role;
 
 class Register extends BaseRegister
@@ -91,7 +91,7 @@ class Register extends BaseRegister
                                     // but we leave it empty so the OS shows the full picker sheet
                                     // (Camera + Gallery + Drive). Setting capture="environment" would
                                     // skip gallery entirely on some Android browsers.
-                                    'class'  => 'avatar-file-input',
+                                    'class' => 'avatar-file-input',
                                 ])
                                 ->extraFieldWrapperAttributes(['class' => 'avatar-upload-centered']),
                             TextInput::make('username')
@@ -250,8 +250,11 @@ class Register extends BaseRegister
                                 ->live()
                                 ->getSearchResultsUsing(function (string $search, Get $get) {
                                     $country = $get('country');
-                                    if (!$country) return [];
+                                    if (! $country) {
+                                        return [];
+                                    }
                                     $states = app(WorldRegionService::class)->getStates($country);
+
                                     return collect($states)
                                         ->when($search, fn ($col) => $col->filter(fn ($s) => str_contains(
                                             strtolower($s['name'] ?? $s),
@@ -270,8 +273,11 @@ class Register extends BaseRegister
                                 ->getSearchResultsUsing(function (string $search, Get $get) {
                                     $country = $get('country');
                                     $state = $get('province_name');
-                                    if (!$country || !$state) return [];
+                                    if (! $country || ! $state) {
+                                        return [];
+                                    }
                                     $cities = app(WorldRegionService::class)->getCities($country, $state);
+
                                     return collect($cities)
                                         ->when($search, fn ($col) => $col->filter(fn ($c) => str_contains(
                                             strtolower($c),
@@ -290,7 +296,9 @@ class Register extends BaseRegister
                                 ->getSearchResultsUsing(function (string $search, Get $get) {
                                     $country = $get('country');
                                     $state = $get('province_name');
-                                    if (!$country || !$state) return $search ? [$search => $search] : [];
+                                    if (! $country || ! $state) {
+                                        return $search ? [$search => $search] : [];
+                                    }
                                     $districts = app(GeoNamesService::class)->getAdmin2ByStateName($country, $state);
                                     $results = collect($districts)
                                         ->when($search, fn ($col) => $col->filter(fn ($d) => str_contains(
@@ -302,6 +310,7 @@ class Register extends BaseRegister
                                     if (empty($results) && $search) {
                                         return [$search => $search];
                                     }
+
                                     return $results;
                                 })
                                 ->getOptionLabelUsing(fn ($value) => $value)
@@ -315,7 +324,9 @@ class Register extends BaseRegister
                                     $country = $get('country');
                                     $state = $get('province_name');
                                     $district = $get('district_name');
-                                    if (!$country || !$state || !$district) return $search ? [$search => $search] : [];
+                                    if (! $country || ! $state || ! $district) {
+                                        return $search ? [$search => $search] : [];
+                                    }
                                     $villages = app(GeoNamesService::class)->getAdmin3ByDistrictName($country, $state, $district);
                                     $results = collect($villages)
                                         ->when($search, fn ($col) => $col->filter(fn ($v) => str_contains(
@@ -327,6 +338,7 @@ class Register extends BaseRegister
                                     if (empty($results) && $search) {
                                         return [$search => $search];
                                     }
+
                                     return $results;
                                 })
                                 ->getOptionLabelUsing(fn ($value) => $value)
@@ -342,7 +354,9 @@ class Register extends BaseRegister
                                 ->getSearchResultsUsing(function (string $search, Get $get) {
                                     $country = $get('country');
                                     $city = $get('city_name');
-                                    if (!$country || !$city) return $search ? [$search => $search] : [];
+                                    if (! $country || ! $city) {
+                                        return $search ? [$search => $search] : [];
+                                    }
                                     $codes = app(GeoNamesService::class)->searchPostalCodes($country, $city);
                                     $results = collect($codes)
                                         ->when($search, fn ($col) => $col->filter(fn ($p) => str_contains(
@@ -354,6 +368,7 @@ class Register extends BaseRegister
                                     if (empty($results) && $search) {
                                         return [$search => $search];
                                     }
+
                                     return $results;
                                 })
                                 ->getOptionLabelUsing(fn ($value) => $value)
@@ -407,14 +422,14 @@ class Register extends BaseRegister
                 ])
                     ->submitAction(new HtmlString(
                         '<button type="submit"'
-                        . ' class="fi-btn fi-btn-size-md fi-color-custom fi-btn-color-primary fi-color-primary'
-                        . ' inline-flex items-center justify-center gap-1.5 font-semibold rounded-lg'
-                        . ' px-4 py-2 text-sm shadow-sm w-full'
-                        . ' bg-custom-600 text-white hover:bg-custom-500 focus:ring-custom-500/50 dark:bg-custom-500 dark:hover:bg-custom-400"'
-                        . ' style="--c-400:var(--primary-400);--c-500:var(--primary-500);--c-600:var(--primary-600);"'
-                        . '>'
-                        . __('Daftar')
-                        . '</button>'
+                        .' class="fi-btn fi-btn-size-md fi-color-custom fi-btn-color-primary fi-color-primary'
+                        .' inline-flex items-center justify-center gap-1.5 font-semibold rounded-lg'
+                        .' px-4 py-2 text-sm shadow-sm w-full'
+                        .' bg-custom-600 text-white hover:bg-custom-500 focus:ring-custom-500/50 dark:bg-custom-500 dark:hover:bg-custom-400"'
+                        .' style="--c-400:var(--primary-400);--c-500:var(--primary-500);--c-600:var(--primary-600);"'
+                        .'>'
+                        .__('Daftar')
+                        .'</button>'
                     )),
                 Hidden::make('agreement'),
                 Hidden::make('remember'),
@@ -454,33 +469,33 @@ class Register extends BaseRegister
         $ip = request()->ip();
 
         $user = User::create([
-            'avatar_url'  => $data['avatar_url'] ?? null,
-            'full_name'   => $data['full_name'],
-            'first_name'  => $data['first_name'] ?? null,
-            'mid_name'    => $data['mid_name'] ?? null,
-            'last_name'   => $data['last_name'] ?? null,
-            'username'    => $data['username'],
-            'email'       => $data['email'],
-            'password'    => Hash::make($data['password'] ?? ''),
-            'whatsapp'    => $data['whatsapp'] ?? null,
-            'nik'         => $data['nik'] ?? null,
+            'avatar_url' => $data['avatar_url'] ?? null,
+            'full_name' => $data['full_name'],
+            'first_name' => $data['first_name'] ?? null,
+            'mid_name' => $data['mid_name'] ?? null,
+            'last_name' => $data['last_name'] ?? null,
+            'username' => $data['username'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password'] ?? ''),
+            'whatsapp' => $data['whatsapp'] ?? null,
+            'nik' => $data['nik'] ?? null,
             'birth_place' => $data['birth_place'] ?? null,
-            'birth_date'  => $data['birth_date'] ?? null,
-            'country'     => $data['country'] ?? null,
-            'province_id'   => $data['province_id'] ?? null,
-            'city_id'       => $data['city_id'] ?? null,
-            'district_id'   => $data['district_id'] ?? null,
-            'village_id'    => $data['village_id'] ?? null,
+            'birth_date' => $data['birth_date'] ?? null,
+            'country' => $data['country'] ?? null,
+            'province_id' => $data['province_id'] ?? null,
+            'city_id' => $data['city_id'] ?? null,
+            'district_id' => $data['district_id'] ?? null,
+            'village_id' => $data['village_id'] ?? null,
             'province_name' => $data['province_name'] ?? ($data['country'] === 'Indonesia' ? IndonesiaProvince::find($data['province_id'])?->name : null),
-            'city_name'     => $data['city_name'] ?? ($data['country'] === 'Indonesia' ? IndonesiaCity::find($data['city_id'])?->name : null),
+            'city_name' => $data['city_name'] ?? ($data['country'] === 'Indonesia' ? IndonesiaCity::find($data['city_id'])?->name : null),
             'district_name' => $data['district_name'] ?? ($data['country'] === 'Indonesia' ? IndonesiaDistrict::find($data['district_id'])?->name : null),
-            'village_name'  => $data['village_name'] ?? ($data['country'] === 'Indonesia' ? IndonesiaVillage::find($data['village_id'])?->name : null),
-            'postal_code'   => $data['postal_code'] ?? null,
-            'ktp_photo'   => $data['ktp_photo'] ?? null,
+            'village_name' => $data['village_name'] ?? ($data['country'] === 'Indonesia' ? IndonesiaVillage::find($data['village_id'])?->name : null),
+            'postal_code' => $data['postal_code'] ?? null,
+            'ktp_photo' => $data['ktp_photo'] ?? null,
             'selfie_photo' => $data['selfie_photo'] ?? null,
-            'gender'      => $data['gender'] ?? null,
-            'address'     => $data['address'] ?? null,
-            'ip_address'  => $ip,
+            'gender' => $data['gender'] ?? null,
+            'address' => $data['address'] ?? null,
+            'ip_address' => $ip,
         ]);
 
         if (! empty($data['selfie_photo'])) {
@@ -506,18 +521,18 @@ class Register extends BaseRegister
             $user,
             __('Pendaftaran Berhasil'),
             __('Akun Anda telah terdaftar dari :ip (:location) pada :time.', [
-                'ip'       => $ip,
+                'ip' => $ip,
                 'location' => $locationText,
-                'time'     => now()->format('d M Y H:i:s'),
+                'time' => now()->format('d M Y H:i:s'),
             ])
         );
 
         Notification::make()
             ->title(__('Pendaftaran Berhasil'))
             ->body(__('Akun Anda Telah Terdaftar :ip (:location) pada :time.', [
-                'ip'       => $ip,
+                'ip' => $ip,
                 'location' => $locationText,
-                'time'     => now()->format('d M Y H:i:s'),
+                'time' => now()->format('d M Y H:i:s'),
             ]))
             ->success()
             ->send();

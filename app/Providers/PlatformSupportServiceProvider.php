@@ -21,7 +21,6 @@ class PlatformSupportServiceProvider extends ServiceProvider
         // rendering modal Livewire secara otomatis di semua halaman (termasuk Cart).
         DatabaseNotifications::trigger('filament-panels::topbar.database-notifications-trigger');
 
-
         FilamentView::registerRenderHook(
             PanelsRenderHook::HEAD_END,
             fn (): View => view('filament.components.pwa-head'),
@@ -37,7 +36,7 @@ class PlatformSupportServiceProvider extends ServiceProvider
             function (): View|string {
                 // Bell + modal: topbar/index.blade.php + BODY_END hook (semua platform).
                 // Di mobile: language switcher disembunyikan.
-                if (\App\Providers\NativeServiceProvider::isAnyMobile()) {
+                if (NativeServiceProvider::isAnyMobile()) {
                     return '';
                 }
 

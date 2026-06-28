@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Package;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Wishlist;
@@ -24,7 +25,7 @@ class WishlistFactory extends Factory
     {
         return $this->state(fn (array $attributes) => [
             'product_id' => null,
-            'package_id' => \App\Models\Package::factory(),
+            'package_id' => Package::factory(),
         ]);
     }
 }

@@ -15,7 +15,7 @@ class ClerkFilamentAuth
     {
         $token = $request->query('clerk_token') ?? $request->cookie('clerk_token');
 
-        if ($token && !Auth::check()) {
+        if ($token && ! Auth::check()) {
             $accessToken = PersonalAccessToken::findToken($token);
             if ($accessToken) {
                 $user = $accessToken->tokenable;

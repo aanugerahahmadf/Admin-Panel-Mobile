@@ -16,7 +16,7 @@ class PackageExporter extends Exporter
         return [
             ExportColumn::make('id')
                 ->label(__('ID')),
-            
+
             ExportColumn::make('category_id')
                 ->label(__('ID Kategori')),
             ExportColumn::make('wedding_flowers_decorasi_id')

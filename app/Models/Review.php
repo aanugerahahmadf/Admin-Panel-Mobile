@@ -37,7 +37,6 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $createdAt
  * @property Carbon|null $updatedAt
  *
- *
  * @mixin \Eloquent
  */
 class Review extends Model

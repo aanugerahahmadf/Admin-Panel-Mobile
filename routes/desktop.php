@@ -27,11 +27,11 @@ Route::post('/camera/capture', [PlatformCameraController::class, 'capture']);
 // Save a file to the desktop file system.
 Route::post('/file/save', function () {
     return response()->json([
-        'status'   => 'available',
+        'status' => 'available',
         'platform' => 'desktop',
-        'feature'  => 'file_system',
-        'message'  => 'Desktop file system access is available via NativePHP Electron File System APIs.',
-        'hint'     => 'Use NativePHP native file dialogs and file system APIs to save files.',
+        'feature' => 'file_system',
+        'message' => 'Desktop file system access is available via NativePHP Electron File System APIs.',
+        'hint' => 'Use NativePHP native file dialogs and file system APIs to save files.',
     ]);
 });
 
@@ -40,14 +40,14 @@ Route::post('/file/save', function () {
 // Retrieve the current desktop notification status.
 Route::get('/notifications', function () {
     return response()->json([
-        'status'   => 'available',
+        'status' => 'available',
         'platform' => 'desktop',
-        'feature'  => 'desktop_notifications',
-        'message'  => 'Desktop notifications are available on this platform.',
-        'hint'     => 'Use NativePHP Notification APIs to send native OS notifications.',
-        'data'     => [
+        'feature' => 'desktop_notifications',
+        'message' => 'Desktop notifications are available on this platform.',
+        'hint' => 'Use NativePHP Notification APIs to send native OS notifications.',
+        'data' => [
             'notifications_enabled' => true,
-            'notification_types'    => ['order_update', 'message', 'system'],
+            'notification_types' => ['order_update', 'message', 'system'],
         ],
     ]);
 });
@@ -57,14 +57,14 @@ Route::get('/notifications', function () {
 // Check for available desktop application updates.
 Route::get('/updates/check', function () {
     return response()->json([
-        'status'   => 'available',
+        'status' => 'available',
         'platform' => 'desktop',
-        'feature'  => 'auto_updates',
-        'message'  => 'Auto-update check is available on this desktop platform.',
-        'hint'     => 'Use NativePHP Auto Updater to check and apply application updates.',
-        'data'     => [
+        'feature' => 'auto_updates',
+        'message' => 'Auto-update check is available on this desktop platform.',
+        'hint' => 'Use NativePHP Auto Updater to check and apply application updates.',
+        'data' => [
             'update_available' => false,
-            'current_version'  => config('app.version', '1.0.0'),
+            'current_version' => config('app.version', '1.0.0'),
         ],
     ]);
 });

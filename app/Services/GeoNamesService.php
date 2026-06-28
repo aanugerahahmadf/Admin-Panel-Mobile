@@ -18,7 +18,7 @@ class GeoNamesService
 
     public function isConfigured(): bool
     {
-        return !empty($this->username);
+        return ! empty($this->username);
     }
 
     public function getUsername(): string
@@ -41,10 +41,14 @@ class GeoNamesService
                         'username' => $this->username,
                     ]);
                 $data = $res->json();
-                if (empty($data['geonames'])) return null;
+                if (empty($data['geonames'])) {
+                    return null;
+                }
+
                 return $data['geonames'][0]['geonameId'] ?? null;
             } catch (\Throwable $e) {
                 Log::warning('[GeoNames] Failed to get country ID for '.$countryName.': '.$e->getMessage());
+
                 return null;
             }
         });
@@ -73,14 +77,19 @@ class GeoNamesService
     public function getAdmin1ByName(string $countryName): array
     {
         $countryId = $this->getCountryGeoNameId($countryName);
-        if (!$countryId) return [];
+        if (! $countryId) {
+            return [];
+        }
+
         return $this->getAdmin1($countryId);
     }
 
     public function getAdmin2ByStateName(string $countryName, string $stateName): array
     {
         $countryId = $this->getCountryGeoNameId($countryName);
-        if (!$countryId) return [];
+        if (! $countryId) {
+            return [];
+        }
 
         $states = $this->getAdmin1($countryId);
         $stateId = null;
@@ -90,14 +99,19 @@ class GeoNamesService
                 break;
             }
         }
-        if (!$stateId) return [];
+        if (! $stateId) {
+            return [];
+        }
+
         return $this->getAdmin2($stateId);
     }
 
     public function getAdmin3ByDistrictName(string $countryName, string $stateName, string $districtName): array
     {
         $countryId = $this->getCountryGeoNameId($countryName);
-        if (!$countryId) return [];
+        if (! $countryId) {
+            return [];
+        }
 
         $states = $this->getAdmin1($countryId);
         $stateId = null;
@@ -107,7 +121,9 @@ class GeoNamesService
                 break;
             }
         }
-        if (!$stateId) return [];
+        if (! $stateId) {
+            return [];
+        }
 
         $districts = $this->getAdmin2($stateId);
         $districtId = null;
@@ -117,7 +133,10 @@ class GeoNamesService
                 break;
             }
         }
-        if (!$districtId) return [];
+        if (! $districtId) {
+            return [];
+        }
+
         return $this->getAdmin3($districtId);
     }
 
@@ -136,7 +155,10 @@ class GeoNamesService
                         'username' => $this->username,
                     ]);
                 $data = $res->json();
-                if (empty($data['postalCodes'])) return [];
+                if (empty($data['postalCodes'])) {
+                    return [];
+                }
+
                 return collect($data['postalCodes'])->map(fn ($p) => [
                     'postal_code' => $p['postalCode'] ?? '',
                     'place_name' => $p['placeName'] ?? '',
@@ -145,6 +167,7 @@ class GeoNamesService
                 ])->toArray();
             } catch (\Throwable $e) {
                 Log::warning('[GeoNames] Failed to search postal codes: '.$e->getMessage());
+
                 return [];
             }
         });
@@ -168,7 +191,9 @@ class GeoNamesService
                     ->timeout(10)
                     ->get("{$this->baseUrl}/childrenJSON", $params);
                 $data = $res->json();
-                if (empty($data['geonames'])) return [];
+                if (empty($data['geonames'])) {
+                    return [];
+                }
 
                 return collect($data['geonames'])->map(fn ($g) => [
                     'geonameId' => $g['geonameId'],
@@ -180,6 +205,7 @@ class GeoNamesService
                 ])->toArray();
             } catch (\Throwable $e) {
                 Log::warning('[GeoNames] Failed to fetch children for '.$geonameId.': '.$e->getMessage());
+
                 return [];
             }
         });

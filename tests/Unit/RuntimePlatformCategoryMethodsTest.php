@@ -24,9 +24,9 @@ class RuntimePlatformCategoryMethodsTest extends TestCase
     #[DataProvider('allPlatformCases')]
     public function test_exactly_one_category_method_returns_true(RuntimePlatform $platform): void
     {
-        $isWebsite    = $platform->isWebsite();
+        $isWebsite = $platform->isWebsite();
         $isDesktopApp = $platform->isDesktopApp();
-        $isMobileApp  = $platform->isMobileApp();
+        $isMobileApp = $platform->isMobileApp();
 
         $trueCount = (int) $isWebsite + (int) $isDesktopApp + (int) $isMobileApp;
 
@@ -48,9 +48,9 @@ class RuntimePlatformCategoryMethodsTest extends TestCase
         ];
 
         if (in_array($platform, $websiteCases, true)) {
-            $this->assertTrue($platform->isWebsite(),    "isWebsite() should be true for {$platform->value}");
+            $this->assertTrue($platform->isWebsite(), "isWebsite() should be true for {$platform->value}");
             $this->assertFalse($platform->isDesktopApp(), "isDesktopApp() should be false for {$platform->value}");
-            $this->assertFalse($platform->isMobileApp(),  "isMobileApp() should be false for {$platform->value}");
+            $this->assertFalse($platform->isMobileApp(), "isMobileApp() should be false for {$platform->value}");
         }
     }
 
@@ -63,7 +63,7 @@ class RuntimePlatformCategoryMethodsTest extends TestCase
         ];
 
         if (in_array($platform, $desktopCases, true)) {
-            $this->assertFalse($platform->isWebsite(),   "isWebsite() should be false for {$platform->value}");
+            $this->assertFalse($platform->isWebsite(), "isWebsite() should be false for {$platform->value}");
             $this->assertTrue($platform->isDesktopApp(), "isDesktopApp() should be true for {$platform->value}");
             $this->assertFalse($platform->isMobileApp(), "isMobileApp() should be false for {$platform->value}");
         }
@@ -78,9 +78,9 @@ class RuntimePlatformCategoryMethodsTest extends TestCase
         ];
 
         if (in_array($platform, $mobileCases, true)) {
-            $this->assertFalse($platform->isWebsite(),    "isWebsite() should be false for {$platform->value}");
+            $this->assertFalse($platform->isWebsite(), "isWebsite() should be false for {$platform->value}");
             $this->assertFalse($platform->isDesktopApp(), "isDesktopApp() should be false for {$platform->value}");
-            $this->assertTrue($platform->isMobileApp(),   "isMobileApp() should be true for {$platform->value}");
+            $this->assertTrue($platform->isMobileApp(), "isMobileApp() should be true for {$platform->value}");
         }
     }
 
@@ -98,7 +98,7 @@ class RuntimePlatformCategoryMethodsTest extends TestCase
         $this->assertSame(
             $expected,
             $platform->isMobileShell(),
-            "isMobileShell() for {$platform->value} should be " . ($expected ? 'true' : 'false')
+            "isMobileShell() for {$platform->value} should be ".($expected ? 'true' : 'false')
         );
     }
 

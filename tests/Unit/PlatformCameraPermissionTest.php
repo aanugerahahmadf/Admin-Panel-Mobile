@@ -21,8 +21,8 @@ describe('Property 8: Permission Denial Messages Are Platform-Aware', function (
 
     // ── Expected messages per category ───────────────────────────────────────
 
-    $webMessage     = 'Camera access denied. Please allow camera access in your browser settings.';
-    $mobileMessage  = 'Camera permission required. Please enable camera access in Settings > Privacy.';
+    $webMessage = 'Camera access denied. Please allow camera access in your browser settings.';
+    $mobileMessage = 'Camera permission required. Please enable camera access in Settings > Privacy.';
     $desktopMessage = 'Camera access denied. Please grant camera permission to this application.';
 
     // ── Universal non-empty property ─────────────────────────────────────────
@@ -134,7 +134,7 @@ describe('Property 8: Permission Denial Messages Are Platform-Aware', function (
         $allCases = RuntimePlatform::cases();
 
         $websiteCases = array_filter($allCases, fn ($p) => $p->isWebsite());
-        $mobileCases  = array_filter($allCases, fn ($p) => $p->isMobileApp());
+        $mobileCases = array_filter($allCases, fn ($p) => $p->isMobileApp());
         $desktopCases = array_filter($allCases, fn ($p) => $p->isDesktopApp());
 
         $coveredCount = count($websiteCases) + count($mobileCases) + count($desktopCases);

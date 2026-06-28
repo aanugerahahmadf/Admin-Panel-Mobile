@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use App\Support\Platform\PlatformFeatureRegistry;
+
 enum RuntimePlatform: string
 {
     case WebsiteWindows = 'website_windows';
@@ -147,11 +149,12 @@ enum RuntimePlatform: string
      * Check if a specific feature is available on this platform.
      * This method delegates to the PlatformFeatureRegistry for flexibility.
      *
-     * @param string $feature The feature name to check (camera, webrtc, file_system, etc.)
+     * @param  string  $feature  The feature name to check (camera, webrtc, file_system, etc.)
      */
     public function hasFeature(string $feature): bool
     {
-        $registry = app(\App\Support\Platform\PlatformFeatureRegistry::class);
+        $registry = app(PlatformFeatureRegistry::class);
+
         return $registry->isAvailable($feature, $this);
     }
 
@@ -162,7 +165,8 @@ enum RuntimePlatform: string
      */
     public function getAvailableFeatures(): array
     {
-        $registry = app(\App\Support\Platform\PlatformFeatureRegistry::class);
+        $registry = app(PlatformFeatureRegistry::class);
+
         return $registry->getAvailableFeatures($this);
     }
 }

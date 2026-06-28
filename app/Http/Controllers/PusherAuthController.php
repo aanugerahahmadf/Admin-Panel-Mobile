@@ -14,13 +14,13 @@ class PusherAuthController extends Controller
         $socketId = $request->input('socket_id');
         $channelName = $request->input('channel_name');
 
-        if (!$socketId || !$channelName) {
+        if (! $socketId || ! $channelName) {
             return response()->json(['error' => 'Missing parameters'], 400);
         }
 
         $user = $request->user();
         if (str_starts_with($channelName, 'private-') || str_starts_with($channelName, 'presence-')) {
-            if (!$user) {
+            if (! $user) {
                 return response()->json(['error' => 'Unauthorized'], 401);
             }
         }
@@ -30,9 +30,9 @@ class PusherAuthController extends Controller
         $appId = env('PUSHER_APP_ID');
 
         // Build auth signature manually to avoid requiring an SDK here
-        $stringToSign = $socketId . ':' . $channelName;
+        $stringToSign = $socketId.':'.$channelName;
         $signature = hash_hmac('sha256', $stringToSign, $secret);
-        $auth = $key . ':' . $signature;
+        $auth = $key.':'.$signature;
 
         $response = ['auth' => $auth];
 

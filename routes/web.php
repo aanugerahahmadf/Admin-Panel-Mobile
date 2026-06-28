@@ -4,9 +4,12 @@ use App\Http\Controllers\Auth\SocialiteController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Middleware\SetLocale;
 use App\Models\Order;
+use App\Models\User;
 use Dompdf\Dompdf;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
+use Laravel\Sanctum\PersonalAccessToken;
 use Native\Mobile\Facades\System;
 
 // Legal Routes using Filament Pages (HUBUNGKAN!)
@@ -48,25 +51,26 @@ Route::get('/auth/google/success', [SocialiteController::class, 'verifyMobileTok
     ->name('auth.google.success');
 
 // Clerk login bridge — exchanges Sanctum token for session auth (for Filament access)
-Route::get('/clerk/login', function (\Illuminate\Http\Request $request) {
+Route::get('/clerk/login', function (Request $request) {
     $token = $request->query('token');
-    if (!$token) {
+    if (! $token) {
         return redirect('/admin/login')->with('error', 'Token tidak ditemukan');
     }
 
-    $accessToken = \Laravel\Sanctum\PersonalAccessToken::findToken($token);
-    if (!$accessToken) {
+    $accessToken = PersonalAccessToken::findToken($token);
+    if (! $accessToken) {
         return redirect('/admin/login')->with('error', 'Token tidak valid');
     }
 
     $user = $accessToken->tokenable;
-    if (!$user || !$user instanceof \App\Models\User) {
+    if (! $user || ! $user instanceof User) {
         return redirect('/admin/login')->with('error', 'Pengguna tidak ditemukan');
     }
 
     Auth::login($user);
 
     $panel = $user->hasRole('super_admin') ? 'admin' : 'user';
+
     return redirect("/{$panel}");
 })->name('clerk.login');
 

@@ -7,7 +7,6 @@ use App\Filament\User\Resources\HistoryResource;
 use App\Filament\User\Resources\PackageResource;
 use App\Filament\User\Resources\ProductResource;
 use App\Filament\User\Resources\ReviewResource;
-
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -43,7 +42,7 @@ class ProfileOverview extends BaseWidget
                 ->extraAttributes([
                     'class' => 'home-stat-card profile-stat-card cursor-pointer hover:scale-105 transition-transform h-full',
                     'style' => 'grid-column: 1 / -1;',
-                    'onclick' => "window.location.href='" . EditProfilePage::getUrl() . "'",
+                    'onclick' => "window.location.href='".EditProfilePage::getUrl()."'",
                 ]),
 
             // Row 2: 2 kolom — Katalog Paket | Katalog Bunga
@@ -53,7 +52,7 @@ class ProfileOverview extends BaseWidget
                 ->color('warning')
                 ->extraAttributes([
                     'class' => 'home-stat-card profile-stat-card cursor-pointer hover:scale-105 transition-transform h-full',
-                    'onclick' => "window.location.href='" . PackageResource::getUrl() . "'",
+                    'onclick' => "window.location.href='".PackageResource::getUrl()."'",
                 ]),
 
             Stat::make(__('Katalog Bunga'), '')
@@ -61,7 +60,7 @@ class ProfileOverview extends BaseWidget
                 ->color('warning')
                 ->extraAttributes([
                     'class' => 'home-stat-card profile-stat-card cursor-pointer hover:scale-105 transition-transform h-full',
-                    'onclick' => "window.location.href='" . ProductResource::getUrl() . "'",
+                    'onclick' => "window.location.href='".ProductResource::getUrl()."'",
                 ]),
 
             // Row 3: Riwayat — full width (span 2)
@@ -71,7 +70,7 @@ class ProfileOverview extends BaseWidget
                 ->extraAttributes([
                     'class' => 'home-stat-card profile-stat-card cursor-pointer hover:scale-105 transition-transform h-full',
                     'style' => 'grid-column: 1 / -1;',
-                    'onclick' => "window.location.href='" . HistoryResource::getUrl() . "'",
+                    'onclick' => "window.location.href='".HistoryResource::getUrl()."'",
                 ]),
 
             // Row 4: Ulasan — full width (span 2)
@@ -81,7 +80,7 @@ class ProfileOverview extends BaseWidget
                 ->extraAttributes([
                     'class' => 'home-stat-card profile-stat-card cursor-pointer hover:scale-105 transition-transform h-full',
                     'style' => 'grid-column: 1 / -1;',
-                    'onclick' => "window.location.href='" . ReviewResource::getUrl() . "'",
+                    'onclick' => "window.location.href='".ReviewResource::getUrl()."'",
                 ]),
         ];
     }

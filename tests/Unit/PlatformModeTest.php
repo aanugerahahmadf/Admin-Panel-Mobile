@@ -47,7 +47,7 @@ describe('PlatformMode Enum', function () {
 
     test('all enum cases can be instantiated', function () {
         $cases = PlatformMode::cases();
-        
+
         expect($cases)->toHaveCount(3);
         expect($cases)->toContain(PlatformMode::Web);
         expect($cases)->toContain(PlatformMode::Mobile);

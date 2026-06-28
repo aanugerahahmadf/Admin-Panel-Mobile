@@ -46,7 +46,7 @@ enum PlatformMode: string
 
     /**
      * Check if this platform mode allows camera access.
-     * 
+     *
      * @return bool True for Mobile and Desktop modes, false for Web
      */
     public function allowsCameraAccess(): bool
@@ -56,7 +56,7 @@ enum PlatformMode: string
 
     /**
      * Check if this platform mode allows file system access.
-     * 
+     *
      * @return bool True for Mobile and Desktop modes, false for Web
      */
     public function allowsFileSystemAccess(): bool

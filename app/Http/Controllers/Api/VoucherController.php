@@ -24,7 +24,7 @@ class VoucherController extends Controller
     {
         $user = $request->user();
 
-        if (!$voucher->is_active || ($voucher->expires_at && $voucher->expires_at->isPast())) {
+        if (! $voucher->is_active || ($voucher->expires_at && $voucher->expires_at->isPast())) {
             return response()->json([
                 'status' => 'error',
                 'message' => __('Voucher tidak valid atau sudah kadaluarsa'),

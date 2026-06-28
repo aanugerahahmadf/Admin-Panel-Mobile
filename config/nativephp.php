@@ -402,7 +402,7 @@ return [
     |
     */
     'runtime' => [
-        'mode' => env('NATIVEPHP_RUNTIME_MODE', 'persistent'), 
+        'mode' => env('NATIVEPHP_RUNTIME_MODE', 'persistent'),
         'reset_instances' => true,
         'gc_between_dispatches' => false,
     ],

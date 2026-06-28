@@ -72,8 +72,8 @@ class PlatformNotificationService
      *   );
      *
      * @template T
-     * @param  User             $user
-     * @param  callable(): T   $callback
+     *
+     * @param  callable(): T  $callback
      * @return T
      */
     public static function withRecipientLocale(User $user, callable $callback): mixed
@@ -113,8 +113,7 @@ class PlatformNotificationService
      * Adds 'desktop' when the platform supports desktop_notifications.
      * Adds 'mobile' when the platform supports push_notifications.
      *
-     * @param  RuntimePlatform  $platform
-     * @return array<string>  e.g. ['database'], ['database', 'desktop'], ['database', 'mobile']
+     * @return array<string> e.g. ['database'], ['database', 'desktop'], ['database', 'mobile']
      */
     public static function getActiveChannels(RuntimePlatform $platform): array
     {
@@ -180,7 +179,7 @@ class PlatformNotificationService
             if (! $available) {
                 Log::info('PlatformNotificationService: desktop_notifications channel skipped', [
                     'platform' => $platform->value,
-                    'reason'   => 'Feature not available on this platform',
+                    'reason' => 'Feature not available on this platform',
                 ]);
             }
 
@@ -211,7 +210,7 @@ class PlatformNotificationService
             if (! $available) {
                 Log::info('PlatformNotificationService: push_notifications channel skipped', [
                     'platform' => $platform->value,
-                    'reason'   => 'Feature not available on this platform',
+                    'reason' => 'Feature not available on this platform',
                 ]);
             }
 
