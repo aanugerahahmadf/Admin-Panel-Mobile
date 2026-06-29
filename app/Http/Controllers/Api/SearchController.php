@@ -4,12 +4,16 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Models\Help;
 use App\Models\History;
 use App\Models\Order;
 use App\Models\Package;
+use App\Models\PrivacyPolicy;
 use App\Models\Product;
 use App\Models\Review;
+use App\Models\TermsOfService;
 use App\Models\Voucher;
+use App\Models\WeddingDecorationPolicy;
 use App\Services\CBIRService;
 use Illuminate\Http\Request;
 
@@ -95,6 +99,18 @@ class SearchController extends Controller
             'title' => $h->title,
         ]);
 
+        $weddingPolicy = WeddingDecorationPolicy::where(function ($q) use ($query) {
+            $q->where('title', 'like', "%{$query}%")
+                ->orWhere('content', 'like', "%{$query}%");
+        })->get()->map(fn ($w) => [
+            '_type' => 'wedding_policy',
+            'id' => $w->id,
+            'name' => is_string($w->content)
+                ? substr($w->content, 0, 120)
+                : (is_array($w->content) ? ($w->content['text'] ?? $w->title) : $w->title),
+            'title' => $w->title,
+        ]);
+
         $histories = History::where('user_id', $request->user()->id)
             ->where(function ($q) use ($query) {
                 $q->where('reference_number', 'like', "%{$query}%")
@@ -119,6 +135,7 @@ class SearchController extends Controller
                 'terms' => $terms,
                 'privacy' => $privacy,
                 'helps' => $helps,
+                'wedding_policy' => $weddingPolicy,
                 'histories' => $histories,
             ],
         ]);
