@@ -15,7 +15,7 @@ class PackageController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Package::with(['weddingFlowersDecorasi', 'category', 'reviews']);
+            $query = Package::with(['weddingFlowersDecorasi', 'category', 'reviews', 'media']);
 
             // Apply filters
             if ($request->filled('category_id')) {
@@ -125,7 +125,7 @@ class PackageController extends Controller
     public function featured(Request $request)
     {
         try {
-            $packages = Package::with(['weddingFlowersDecorasi', 'category', 'reviews'])
+            $packages = Package::with(['weddingFlowersDecorasi', 'category', 'reviews', 'media'])
                 ->where('is_featured', true)
                 ->paginate($request->get('per_page', 10), ['*']);
 
@@ -155,7 +155,7 @@ class PackageController extends Controller
     public function onSale(Request $request)
     {
         try {
-            $packages = Package::with(['weddingFlowersDecorasi', 'category', 'reviews'])
+            $packages = Package::with(['weddingFlowersDecorasi', 'category', 'reviews', 'media'])
                 ->whereNotNull('discount_price')
                 ->where('discount_price', '<', 'price')
                 ->paginate($request->get('per_page', 10), ['*']);

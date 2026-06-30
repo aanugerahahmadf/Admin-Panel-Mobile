@@ -12,7 +12,7 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Product::with(['category', 'reviews']);
+            $query = Product::with(['category', 'reviews', 'media']);
 
             if ($request->filled('category_id')) {
                 $query->where('category_id', $request->category_id);
@@ -79,6 +79,7 @@ class ProductController extends Controller
                 'reviews' => function ($query): void {
                     $query->with('user:id,full_name,avatar_url')->latest()->limit(5);
                 },
+                'media',
             ])->findOrFail($id, ['*']);
 
             return response()->json([
@@ -101,7 +102,7 @@ class ProductController extends Controller
 
     public function featured(Request $request)
     {
-        $products = Product::with(['category', 'reviews'])
+        $products = Product::with(['category', 'reviews', 'media'])
             ->where('is_featured', true)
             ->paginate($request->get('per_page', 10), ['*']);
 
@@ -120,7 +121,7 @@ class ProductController extends Controller
 
     public function onSale(Request $request)
     {
-        $products = Product::with(['category', 'reviews'])
+        $products = Product::with(['category', 'reviews', 'media'])
             ->whereNotNull('discount_price')
             ->where('discount_price', '<', 'price')
             ->paginate($request->get('per_page', 10), ['*']);

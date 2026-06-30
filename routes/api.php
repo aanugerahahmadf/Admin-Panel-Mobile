@@ -121,6 +121,9 @@ Route::get('/geo/postal-codes', [GeoController::class, 'postalCodes']);
 // Firebase Status (public)
 Route::get('/firebase/status', [FirebaseController::class, 'status']);
 
+// Midtrans Payment Webhook (public — no auth, Midtrans sends POST directly)
+Route::post('/webhooks/midtrans', [App\Http\Controllers\Api\PaymentWebhookController::class, 'notificationHandler']);
+
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::delete('/user/account', [AuthController::class, 'deleteAccount']);

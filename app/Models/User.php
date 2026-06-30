@@ -329,6 +329,11 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
 
                 $cleanPath = ltrim(str_replace('storage/', '', $path), '/');
 
+                // Return null for default avatar if file doesn't exist
+                if ($cleanPath === 'avatar.png' && ! file_exists(storage_path('app/public/avatar.png'))) {
+                    return null;
+                }
+
                 return asset('storage/'.$cleanPath);
             }
         );
