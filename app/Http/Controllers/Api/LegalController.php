@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Help;
 use App\Models\LegalPage;
 use App\Models\PrivacyPolicy;
 use App\Models\TermsOfService;
@@ -94,15 +95,15 @@ class LegalController extends Controller
 
     public function getHelp(): JsonResponse
     {
-        $help = LegalPage::where('slug', 'help')->first();
+        $help = Help::first();
 
         return response()->json([
             'success' => true,
             'data' => [
-                'title' => $help->title ?? 'Help Center',
-                'subtitle' => $help->content['subtitle'] ?? 'Our team is ready to assist you',
-                'faqs' => $help->content['faqs'] ?? [],
-                'contact_options' => $help->content['contacts'] ?? null,
+                'title' => $help->title ?? 'Pusat Bantuan',
+                'subtitle' => $help->subtitle ?? 'Tim kami siap membantu kebutuhan dekorasi pernikahan Anda.',
+                'faqs' => $help->faqs ?? [],
+                'contact_options' => $help->contact_options ?? null,
             ],
         ]);
     }

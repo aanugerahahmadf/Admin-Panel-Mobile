@@ -21,6 +21,8 @@ class DatabaseSeeder extends Seeder
             PackageSeeder::class,
             LegalSeeder::class,
             VoucherSeeder::class,
+            ReviewSeeder::class,
+            HelpSeeder::class,
         ]);
     }
 }

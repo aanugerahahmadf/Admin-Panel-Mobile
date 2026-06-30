@@ -126,6 +126,7 @@ class Package extends Model implements HasMedia
         'final_price',
         'is_wishlisted',
         'video_url',
+        'average_rating',
     ];
 
     protected static function boot()
@@ -208,6 +209,11 @@ class Package extends Model implements HasMedia
     public function getCategoryColorAttribute(): string
     {
         return $this->color ?? $this->category?->color ?? '#6366f1';
+    }
+
+    public function getAverageRatingAttribute(): float
+    {
+        return (float) number_format($this->reviews()->avg('rating') ?: 0, 1);
     }
 
     public function getFinalPriceAttribute(): float
