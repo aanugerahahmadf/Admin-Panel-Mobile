@@ -121,11 +121,70 @@ class UserResource extends Resource
                                 Forms\Components\Select::make('gender')
                                     ->label(__('Jenis Kelamin'))
                                     ->options([
-                                        'male' => __('Laki-laki'),
-                                        'female' => __('Perempuan'),
+                                        'Pria' => __('Pria'),
+                                        'Wanita' => __('Wanita'),
                                     ])
                                     ->native(false)
                                     ->prefixIcon('heroicon-o-variable'),
+                                Forms\Components\Select::make('religion')
+                                    ->label(__('Agama'))
+                                    ->options([
+                                        'Islam' => __('Islam'),
+                                        'Kristen' => __('Kristen'),
+                                        'Katolik' => __('Katolik'),
+                                        'Hindu' => __('Hindu'),
+                                        'Buddha' => __('Buddha'),
+                                        'Konghucu' => __('Konghucu'),
+                                    ])
+                                    ->native(false)
+                                    ->prefixIcon('heroicon-o-variable'),
+                                Forms\Components\Select::make('marital_status')
+                                    ->label(__('Status Pernikahan'))
+                                    ->options([
+                                        'Belum Menikah' => __('Belum Menikah'),
+                                        'Menikah' => __('Menikah'),
+                                        'Cerai' => __('Cerai'),
+                                    ])
+                                    ->native(false)
+                                    ->prefixIcon('heroicon-o-heart'),
+                                Forms\Components\TextInput::make('mother_name')
+                                    ->label(__('Nama Ibu Kandung'))
+                                    ->maxLength(255)
+                                    ->prefixIcon('heroicon-o-user'),
+                                Forms\Components\Select::make('occupation')
+                                    ->label(__('Pekerjaan'))
+                                    ->options([
+                                        'Karyawan' => __('Karyawan'),
+                                        'Wiraswasta' => __('Wiraswasta'),
+                                        'Pelajar/Mahasiswa' => __('Pelajar/Mahasiswa'),
+                                        'Ibu Rumah Tangga' => __('Ibu Rumah Tangga'),
+                                        'Profesional' => __('Profesional'),
+                                        'Lainnya' => __('Lainnya'),
+                                    ])
+                                    ->native(false)
+                                    ->prefixIcon('heroicon-o-briefcase'),
+                                Forms\Components\Select::make('income_range')
+                                    ->label(__('Rentang Penghasilan'))
+                                    ->options([
+                                        '< Rp 1 Juta' => __('< Rp 1 Juta'),
+                                        'Rp 1-5 Juta' => __('Rp 1-5 Juta'),
+                                        'Rp 5-10 Juta' => __('Rp 5-10 Juta'),
+                                        'Rp 10-50 Juta' => __('Rp 10-50 Juta'),
+                                        '> Rp 50 Juta' => __('> Rp 50 Juta'),
+                                    ])
+                                    ->native(false)
+                                    ->prefixIcon('heroicon-o-currency-dollar'),
+                                Forms\Components\Select::make('source_of_funds')
+                                    ->label(__('Sumber Dana'))
+                                    ->options([
+                                        'Gaji' => __('Gaji'),
+                                        'Bisnis/Usaha' => __('Bisnis/Usaha'),
+                                        'Investasi' => __('Investasi'),
+                                        'Hadiah/Warisan' => __('Hadiah/Warisan'),
+                                        'Lainnya' => __('Lainnya'),
+                                    ])
+                                    ->native(false)
+                                    ->prefixIcon('heroicon-o-banknotes'),
                                 Forms\Components\TextInput::make('whatsapp')
                                     ->label(__('Nomor WhatsApp'))
                                     ->tel()
@@ -454,15 +513,51 @@ class UserResource extends Resource
                     ->label(__('Jenis Kelamin'))
                     ->badge()
                     ->color(fn (?string $state): string => match ($state) {
-                        'male' => 'info',
-                        'female' => 'danger',
+                        'Pria' => 'info',
+                        'Wanita' => 'danger',
                         default => 'gray',
                     })
                     ->formatStateUsing(fn (?string $state): string => match ($state) {
-                        'male' => __('Laki-laki'),
-                        'female' => __('Perempuan'),
+                        'Pria' => __('Pria'),
+                        'Wanita' => __('Wanita'),
                         default => $state ?? '-',
                     })
+                    ->alignment('center'),
+
+                Tables\Columns\TextColumn::make('religion')
+                    ->label(__('Agama'))
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->placeholder('-')
+                    ->alignment('center'),
+
+                Tables\Columns\TextColumn::make('marital_status')
+                    ->label(__('Status Pernikahan'))
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->placeholder('-')
+                    ->alignment('center'),
+
+                Tables\Columns\TextColumn::make('mother_name')
+                    ->label(__('Nama Ibu Kandung'))
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->placeholder('-'),
+
+                Tables\Columns\TextColumn::make('occupation')
+                    ->label(__('Pekerjaan'))
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->placeholder('-')
+                    ->alignment('center'),
+
+                Tables\Columns\TextColumn::make('income_range')
+                    ->label(__('Rentang Penghasilan'))
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->placeholder('-')
+                    ->alignment('center'),
+
+                Tables\Columns\TextColumn::make('source_of_funds')
+                    ->label(__('Sumber Dana'))
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->placeholder('-')
                     ->alignment('center'),
 
                 Tables\Columns\TextColumn::make('first_name')

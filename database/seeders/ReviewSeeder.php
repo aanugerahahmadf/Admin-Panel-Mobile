@@ -15,17 +15,19 @@ class ReviewSeeder extends Seeder
         $testUsers = [];
         $names = ['Andi', 'Sari', 'Budi', 'Dewi', 'Rudi', 'Maya', 'Agus', 'Rina'];
         foreach ($names as $name) {
-            $testUsers[] = User::create([
-                'identity_type' => 'ktp',
-                'full_name' => $name,
-                'first_name' => $name,
-                'last_name' => 'User',
-                'username' => strtolower($name).'_reviewer',
-                'email' => strtolower($name).'@reviewer.test',
-                'password' => bcrypt('password'),
-                'email_verified_at' => now(),
-                'whatsapp' => '628'.str_pad((string) random_int(100000000, 999999999), 9, '0', STR_PAD_LEFT),
-            ]);
+            $testUsers[] = User::firstOrCreate(
+                ['email' => strtolower($name).'@reviewer.test'],
+                [
+                    'identity_type' => 'ktp',
+                    'full_name' => $name,
+                    'first_name' => $name,
+                    'last_name' => 'User',
+                    'username' => strtolower($name).'_reviewer',
+                    'password' => bcrypt('password'),
+                    'email_verified_at' => now(),
+                    'whatsapp' => '628'.str_pad((string) random_int(100000000, 999999999), 9, '0', STR_PAD_LEFT),
+                ]
+            );
         }
 
         $comments = [

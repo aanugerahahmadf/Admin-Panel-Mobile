@@ -23,7 +23,7 @@ class NotificationController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $notifications->products(),
+                'data' => $notifications->items(),
                 'pagination' => [
                     'current_page' => $notifications->currentPage(),
                     'last_page' => $notifications->lastPage(),

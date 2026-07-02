@@ -61,6 +61,12 @@ class PersonalInfoComponent extends Component implements HasForms
                 'email' => $user->email,
                 'whatsapp' => $user->whatsapp,
                 'gender' => $user->gender,
+                'religion' => $user->religion,
+                'marital_status' => $user->marital_status,
+                'mother_name' => $user->mother_name,
+                'occupation' => $user->occupation,
+                'income_range' => $user->income_range,
+                'source_of_funds' => $user->source_of_funds,
                 'address' => $user->address,
                 'nik' => $nik,
                 'passport_number' => $user->passport_number,
@@ -152,8 +158,61 @@ class PersonalInfoComponent extends Component implements HasForms
                         Select::make('gender')
                             ->label(__('Jenis Kelamin'))
                             ->options([
-                                'male' => __('Laki-laki'),
-                                'female' => __('Perempuan'),
+                                'Pria' => __('Pria'),
+                                'Wanita' => __('Wanita'),
+                            ])
+                            ->native(false),
+                        Select::make('religion')
+                            ->label(__('Agama'))
+                            ->options([
+                                'Islam' => __('Islam'),
+                                'Kristen' => __('Kristen'),
+                                'Katolik' => __('Katolik'),
+                                'Hindu' => __('Hindu'),
+                                'Buddha' => __('Buddha'),
+                                'Konghucu' => __('Konghucu'),
+                            ])
+                            ->native(false),
+                        Select::make('marital_status')
+                            ->label(__('Status Pernikahan'))
+                            ->options([
+                                'Belum Menikah' => __('Belum Menikah'),
+                                'Menikah' => __('Menikah'),
+                                'Cerai' => __('Cerai'),
+                            ])
+                            ->native(false),
+                        TextInput::make('mother_name')
+                            ->label(__('Nama Ibu Kandung'))
+                            ->maxLength(255),
+                        Select::make('occupation')
+                            ->label(__('Pekerjaan'))
+                            ->options([
+                                'Karyawan' => __('Karyawan'),
+                                'Wiraswasta' => __('Wiraswasta'),
+                                'Pelajar/Mahasiswa' => __('Pelajar/Mahasiswa'),
+                                'Ibu Rumah Tangga' => __('Ibu Rumah Tangga'),
+                                'Profesional' => __('Profesional'),
+                                'Lainnya' => __('Lainnya'),
+                            ])
+                            ->native(false),
+                        Select::make('income_range')
+                            ->label(__('Rentang Penghasilan'))
+                            ->options([
+                                '< Rp 1 Juta' => __('< Rp 1 Juta'),
+                                'Rp 1-5 Juta' => __('Rp 1-5 Juta'),
+                                'Rp 5-10 Juta' => __('Rp 5-10 Juta'),
+                                'Rp 10-50 Juta' => __('Rp 10-50 Juta'),
+                                '> Rp 50 Juta' => __('> Rp 50 Juta'),
+                            ])
+                            ->native(false),
+                        Select::make('source_of_funds')
+                            ->label(__('Sumber Dana'))
+                            ->options([
+                                'Gaji' => __('Gaji'),
+                                'Bisnis/Usaha' => __('Bisnis/Usaha'),
+                                'Investasi' => __('Investasi'),
+                                'Hadiah/Warisan' => __('Hadiah/Warisan'),
+                                'Lainnya' => __('Lainnya'),
                             ])
                             ->native(false),
                         Textarea::make('address')

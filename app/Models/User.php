@@ -247,6 +247,12 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
         'dream_venue',
         'active_status',
         'gender',
+        'religion',
+        'marital_status',
+        'mother_name',
+        'occupation',
+        'income_range',
+        'source_of_funds',
         'social_id',
         'social_type',
         'otp_code',
@@ -260,7 +266,6 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
      * @var list<string>
      */
     protected $appends = [
-        'avatar_url',
         'ktp_photo_url',
         'selfie_photo_url',
     ];
@@ -313,72 +318,59 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
         );
     }
 
-    protected function avatarUrl(): Attribute
+    public function getAvatarUrlAttribute($value): ?string
     {
-        return Attribute::make(
-            get: function ($value) {
-                $path = $value ?: $this->avatar;
+        $path = $value ?: $this->attributes['avatar'] ?? null;
 
-                if (! $path) {
-                    return null;
-                }
+        if (! $path) {
+            return null;
+        }
 
-                if (filter_var($path, FILTER_VALIDATE_URL)) {
-                    return $path;
-                }
+        if (filter_var($path, FILTER_VALIDATE_URL)) {
+            return $path;
+        }
 
-                $cleanPath = ltrim(str_replace('storage/', '', $path), '/');
+        $cleanPath = ltrim(str_replace('storage/', '', $path), '/');
 
-                // Return null for default avatar if file doesn't exist
-                if ($cleanPath === 'avatar.png' && ! file_exists(storage_path('app/public/avatar.png'))) {
-                    return null;
-                }
+        if ($cleanPath === 'avatar.png' && ! file_exists(storage_path('app/public/avatar.png'))) {
+            return null;
+        }
 
-                return asset('storage/'.$cleanPath);
-            }
-        );
+        return url('media/'.$cleanPath);
     }
 
-    protected function ktpPhotoUrl(): Attribute
+    public function getKtpPhotoUrlAttribute($value): ?string
     {
-        return Attribute::make(
-            get: function ($value) {
-                $path = $this->ktp_photo;
+        $path = $this->attributes['ktp_photo'] ?? null;
 
-                if (! $path) {
-                    return null;
-                }
+        if (! $path) {
+            return null;
+        }
 
-                if (filter_var($path, FILTER_VALIDATE_URL)) {
-                    return $path;
-                }
+        if (filter_var($path, FILTER_VALIDATE_URL)) {
+            return $path;
+        }
 
-                $cleanPath = ltrim(str_replace('storage/', '', $path), '/');
+        $cleanPath = ltrim(str_replace('storage/', '', $path), '/');
 
-                return asset('storage/'.$cleanPath);
-            }
-        );
+        return url('media/'.$cleanPath);
     }
 
-    protected function selfiePhotoUrl(): Attribute
+    public function getSelfiePhotoUrlAttribute($value): ?string
     {
-        return Attribute::make(
-            get: function ($value) {
-                $path = $this->selfie_photo;
+        $path = $this->attributes['selfie_photo'] ?? null;
 
-                if (! $path) {
-                    return null;
-                }
+        if (! $path) {
+            return null;
+        }
 
-                if (filter_var($path, FILTER_VALIDATE_URL)) {
-                    return $path;
-                }
+        if (filter_var($path, FILTER_VALIDATE_URL)) {
+            return $path;
+        }
 
-                $cleanPath = ltrim(str_replace('storage/', '', $path), '/');
+        $cleanPath = ltrim(str_replace('storage/', '', $path), '/');
 
-                return asset('storage/'.$cleanPath);
-            }
-        );
+        return url('media/'.$cleanPath);
     }
 
     public function transactions()

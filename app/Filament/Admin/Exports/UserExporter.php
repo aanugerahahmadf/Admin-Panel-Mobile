@@ -32,6 +32,20 @@ class UserExporter extends Exporter
                 ->label(__('Telepon')),
             ExportColumn::make('address')
                 ->label(__('Alamat')),
+            ExportColumn::make('gender')
+                ->label(__('Jenis Kelamin')),
+            ExportColumn::make('religion')
+                ->label(__('Agama')),
+            ExportColumn::make('marital_status')
+                ->label(__('Status Pernikahan')),
+            ExportColumn::make('mother_name')
+                ->label(__('Nama Ibu Kandung')),
+            ExportColumn::make('occupation')
+                ->label(__('Pekerjaan')),
+            ExportColumn::make('income_range')
+                ->label(__('Rentang Penghasilan')),
+            ExportColumn::make('source_of_funds')
+                ->label(__('Sumber Dana')),
             ExportColumn::make('active_status')
                 ->label(__('Status Aktif')),
             ExportColumn::make('created_at')

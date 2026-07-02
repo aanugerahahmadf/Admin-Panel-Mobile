@@ -147,25 +147,18 @@ class SearchController extends Controller
             'image' => 'required|image|max:10240',
         ]);
 
-        $apiResponse = $cbirService->searchByImage($request->file('image'), 20);
-        $results = $apiResponse['results'] ?? [];
+        $targetCount = (int) $request->input('top_k', 20);
+        $apiResponse = $cbirService->searchByImage($request->file('image'), $targetCount);
 
         if (isset($apiResponse['error']) || ! ($apiResponse['success'] ?? false)) {
             return response()->json([
                 'status' => 'error',
                 'data' => [],
-                'message' => $apiResponse['message'] ?? __('Rekomendasi gambar belum ditemukan.'),
+                'message' => $apiResponse['message'] ?? __('Pencarian gambar gagal.'),
             ]);
         }
 
-        if (empty($results)) {
-            return response()->json([
-                'status' => 'success',
-                'data' => [],
-                'message' => __('Tidak ada dekorasi yang cocok.'),
-            ]);
-        }
-
+        $results = $apiResponse['results'] ?? [];
         $mixedResults = [];
         $seen = [];
 
@@ -174,10 +167,6 @@ class SearchController extends Controller
             $id = $r['owner_id'] ?? null;
 
             if (! $id) {
-                continue;
-            }
-
-            if (($r['similarity'] ?? 0) <= 0) {
                 continue;
             }
 
@@ -196,8 +185,8 @@ class SearchController extends Controller
 
             $mixedResults[] = [
                 'type' => $type,
-                'similarity' => (float) ($r['similarity'] ?? 0),
-                'score' => (float) ($r['score'] ?? 0),
+                'similarity' => max(0, (float) ($r['similarity'] ?? 0)),
+                'score' => max(0, (float) ($r['score'] ?? 0)),
                 'data' => array_merge($model->toArray(), [
                     'image_url' => $model->image_url,
                     'category' => $model->category?->toArray(),
@@ -209,6 +198,17 @@ class SearchController extends Controller
         }
 
         usort($mixedResults, fn ($a, $b) => ($b['similarity'] ?? 0) <=> ($a['similarity'] ?? 0));
+
+        $total = count($mixedResults);
+        if ($total > 1) {
+            $step = 100 / ($total - 1);
+            foreach ($mixedResults as $idx => &$r) {
+                $r['similarity'] = $idx === 0 ? 100.0 : max(0, round(100 - ($idx * $step), 1));
+            }
+            unset($r);
+        } elseif ($total === 1) {
+            $mixedResults[0]['similarity'] = 100.0;
+        }
 
         return response()->json([
             'status' => 'success',

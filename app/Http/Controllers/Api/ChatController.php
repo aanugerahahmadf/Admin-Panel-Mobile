@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\Messages\MediaCollectionType;
 use App\Http\Controllers\Controller;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 use App\Jobs\SendBotReply;
 use App\Models\Inbox;
 use App\Models\Message;
@@ -101,6 +103,7 @@ class ChatController extends Controller
                 'is_me' => $message->user_id === $user->id,
                 'read_by' => [],
                 'attachments' => [],
+                'meta' => $message->meta,
                 'created_at' => $message->created_at->toIso8601String(),
             ];
         });
@@ -115,7 +118,14 @@ class ChatController extends Controller
     {
         $request->validate([
             'inbox_id' => 'required',
-            'message' => 'required|string',
+            'message' => 'required_without_all:attachment,type,order_id|nullable|string',
+            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp|max:10240',
+            'type' => 'nullable|string',
+            'item_id' => 'nullable|integer',
+            'item_name' => 'nullable|string',
+            'item_price' => 'nullable|numeric',
+            'item_image' => 'nullable|string',
+            'order_id' => 'nullable|integer',
         ]);
 
         $user = Auth::user();
@@ -128,19 +138,67 @@ class ChatController extends Controller
             return response()->json(['success' => false, 'message' => __('Tidak terautentikasi')], 403);
         }
 
+        $meta = null;
+        if ($request->filled('order_id')) {
+            $order = Order::with(['package.media', 'product.media'])->find((int) $request->input('order_id'));
+            if ($order) {
+                $firstMedia = $order->package?->media?->first() ?? $order->product?->media?->first();
+                $meta = [
+                    'is_order' => true,
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'order_status' => $order->status,
+                    'payment_status' => $order->payment_status,
+                    'name' => $order->package?->name ?? $order->product?->name ?? '',
+                    'image' => $firstMedia ? str_replace('/storage/', '/media/', $firstMedia->getFullUrl()) : '',
+                ];
+            }
+        } elseif ($request->filled('type') && $request->filled('item_id')) {
+            $meta = [
+                'type' => $request->input('type'),
+                'id' => (int) $request->input('item_id'),
+                'name' => $request->input('item_name', ''),
+                'price' => $request->input('item_price'),
+                'image' => $request->input('item_image', ''),
+            ];
+        }
+
         $message = Message::create([
             'inbox_id' => $request->inbox_id,
             'user_id' => $user->id,
-            'message' => $request->message,
+            'message' => $request->input('message', ''),
+            'meta' => $meta,
         ]);
+
+        if ($request->hasFile('attachment')) {
+            $message->addMedia($request->file('attachment'))
+                ->toMediaCollection(MediaCollectionType::FILAMENT_MESSAGES->value);
+        }
 
         if (! $user->hasRole('super_admin')) {
             SendBotReply::dispatch($message->id)->delay(now()->addSeconds(5));
         }
 
+        $message->load('attachments');
+
         return response()->json([
             'success' => true,
-            'data' => $message,
+            'data' => [
+                'id' => $message->id,
+                'inbox_id' => $message->inbox_id,
+                'user_id' => $message->user_id,
+                'message' => $message->message,
+                'meta' => $message->meta,
+                'created_at' => $message->created_at->toIso8601String(),
+                'attachments' => $message->attachments->map(fn (Media $m) => [
+                    'id' => $m->id,
+                    'url' => str_replace('/storage/', '/media/', $m->getFullUrl()),
+                    'original_url' => str_replace('/storage/', '/media/', $m->getFullUrl()),
+                    'name' => $m->name,
+                    'size' => $m->size,
+                    'mime_type' => $m->mime_type,
+                ]),
+            ],
         ], 201);
     }
 
@@ -152,17 +210,10 @@ class ChatController extends Controller
             $q->where('name', 'super_admin');
         })->first(['*']);
         $adminId = $adminUser ? (int) $adminUser->id : 1;
-        $isAdmin = $user->hasRole('super_admin');
 
-        if ($isAdmin) {
-            // Superadmin chat dengan user/customer — wajib kirim with_user_id
-            $withUserId = $request->input('with_user_id');
-            if (! $withUserId) {
-                return response()->json([
-                    'success' => false,
-                    'message' => __('Pilih customer untuk memulai chat.'),
-                ], 400);
-            }
+        $withUserId = $request->input('with_user_id');
+
+        if ($withUserId) {
             $withUserId = (int) $withUserId;
             if ($withUserId === (int) $user->id) {
                 return response()->json([
@@ -180,13 +231,35 @@ class ChatController extends Controller
                 ]);
             }
         } else {
-            // Customer chat dengan admin/superadmin
+            $targetId = $adminId;
+
+            if ((int) $user->id === $targetId) {
+                $other = User::whereHas('roles', function ($q) {
+                    $q->where('name', 'super_admin');
+                })->where('id', '!=', $user->id)->first(['id']);
+                if ($other) {
+                    $targetId = (int) $other->id;
+                } else {
+                    $anyUser = User::where('id', '!=', $user->id)->first(['id']);
+                    if ($anyUser) {
+                        $targetId = (int) $anyUser->id;
+                    }
+                }
+            }
+
+            if ((int) $user->id === $targetId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => __('Tidak ada pengguna lain untuk memulai chat.'),
+                ], 400);
+            }
+
             $inbox = Inbox::whereJsonContains('user_ids', (int) $user->id, 'and', false)
-                ->whereJsonContains('user_ids', $adminId, 'and', false)
+                ->whereJsonContains('user_ids', $targetId, 'and', false)
                 ->first(['*']);
             if (! $inbox) {
                 $inbox = Inbox::create([
-                    'user_ids' => [(int) $user->id, $adminId],
+                    'user_ids' => [(int) $user->id, $targetId],
                     'title' => __('Chat Bantuan'),
                 ]);
             }

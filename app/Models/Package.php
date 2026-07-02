@@ -143,6 +143,7 @@ class Package extends Model implements HasMedia
     {
         $fallback = NativeServiceProvider::normalizeUrl(asset('images/placeholders/image-placeholder.png'));
         $url = $this->getFirstMediaUrl('package_image') ?: null;
+        $url = $url ? str_replace('/storage/', '/media/', $url) : $url;
 
         return $this->normalizeImageUrl($url, $fallback);
     }
@@ -255,7 +256,7 @@ class Package extends Model implements HasMedia
         }
 
         // Otherwise, resolve via the public storage disk
-        $resolved = asset('storage/'.ltrim($url, '/'));
+        $resolved = asset('media/'.ltrim($url, '/'));
 
         return NativeServiceProvider::normalizeUrl($resolved);
     }

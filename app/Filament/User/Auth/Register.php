@@ -168,8 +168,8 @@ class Register extends BaseRegister
                             Select::make('gender')
                                 ->label(__('Jenis Kelamin'))
                                 ->options([
-                                    'male' => __('Laki-laki'),
-                                    'female' => __('Perempuan'),
+                                    'Pria' => __('Pria'),
+                                    'Wanita' => __('Wanita'),
                                 ])
                                 ->native(false),
                         ]),

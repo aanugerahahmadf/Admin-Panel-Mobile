@@ -145,6 +145,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::put('/profile/nik', [ProfileController::class, 'updateNik']);
     Route::post('/profile/ktp-photo', [ProfileController::class, 'uploadKtp']);
     Route::post('/profile/selfie', [ProfileController::class, 'uploadSelfie']);
+    Route::post('/profile/face-scan', [ProfileController::class, 'uploadFaceScan']);
     Route::get('/profile/completion', [ProfileController::class, 'completion']);
 
     // Cart
@@ -189,6 +190,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
 

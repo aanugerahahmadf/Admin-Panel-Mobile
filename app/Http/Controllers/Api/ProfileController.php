@@ -76,6 +76,12 @@ class ProfileController extends Controller
                 ],
                 'whatsapp' => 'nullable|string|max:20',
                 'gender' => 'nullable|string|max:20',
+                'religion' => 'nullable|string|max:50',
+                'marital_status' => 'nullable|string|max:50',
+                'mother_name' => 'nullable|string|max:255',
+                'occupation' => 'nullable|string|max:100',
+                'income_range' => 'nullable|string|max:50',
+                'source_of_funds' => 'nullable|string|max:100',
                 'birth_place' => 'nullable|string|max:255',
                 'birth_date' => 'nullable|date',
                 'country' => 'nullable|string|max:255',
@@ -355,7 +361,7 @@ class ProfileController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $orders->products(),
+                'data' => $orders->items(),
                 'pagination' => [
                     'current_page' => $orders->currentPage(),
                     'last_page' => $orders->lastPage(),
@@ -502,6 +508,55 @@ class ProfileController extends Controller
     }
 
     /**
+     * Upload face scan photo for identity verification
+     */
+    public function uploadFaceScan(Request $request)
+    {
+        try {
+            /** @var User $user */
+            $user = Auth::user();
+
+            $request->validate([
+                'face_scan_photo' => 'required|image|mimes:jpeg,png,jpg|max:5120',
+            ]);
+
+            if ($user->selfie_photo) {
+                Storage::disk('public')->delete($user->selfie_photo);
+            }
+
+            $fileName = 'face_scan_'.$user->id.'_'.time().'.'.$request->file('face_scan_photo')->getClientOriginalExtension();
+            $path = $request->file('face_scan_photo')->storeAs('selfies', $fileName, 'public');
+
+            $user->update([
+                'selfie_photo' => $path,
+                'identity_verified_at' => now(),
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => __('Face scan berhasil diunggah, identitas terverifikasi'),
+                'data' => [
+                    'selfie_photo' => $user->selfie_photo,
+                    'selfie_photo_url' => $user->selfie_photo_url,
+                    'identity_verified_at' => $user->identity_verified_at,
+                ],
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Validasi gagal'),
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Gagal mengunggah face scan'),
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Get profile completion percentage
      */
     public function completion()
@@ -511,11 +566,18 @@ class ProfileController extends Controller
             $user = Auth::user();
 
             $profileItems = [
-                'full_name' => 15,
-                'username' => 10,
-                'whatsapp' => 15,
-                'avatar_url' => 10,
-                'email_verified_at' => 15,
+                'full_name' => 10,
+                'username' => 5,
+                'whatsapp' => 5,
+                'avatar_url' => 5,
+                'email_verified_at' => 5,
+                'gender' => 5,
+                'religion' => 5,
+                'marital_status' => 5,
+                'mother_name' => 5,
+                'occupation' => 5,
+                'income_range' => 5,
+                'source_of_funds' => 5,
                 'ktp_photo' => 10,
                 'selfie_photo' => 10,
             ];
@@ -550,6 +612,13 @@ class ProfileController extends Controller
                         'whatsapp' => ! empty($user->whatsapp),
                         'avatar_url' => ! empty($user->avatar_url),
                         'email_verified' => ! empty($user->email_verified_at),
+                        'gender' => ! empty($user->gender),
+                        'religion' => ! empty($user->religion),
+                        'marital_status' => ! empty($user->marital_status),
+                        'mother_name' => ! empty($user->mother_name),
+                        'occupation' => ! empty($user->occupation),
+                        'income_range' => ! empty($user->income_range),
+                        'source_of_funds' => ! empty($user->source_of_funds),
                         'nik' => ! empty($user->nik) || ! empty($user->passport_number) || ! empty($user->sim_number) || ! empty($user->npwp_number),
                         'ktp_photo' => ! empty($user->ktp_photo),
                         'selfie_photo' => ! empty($user->selfie_photo),
