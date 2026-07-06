@@ -9,6 +9,21 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
+    protected function localizedProduct($product)
+    {
+        $locale = app()->getLocale();
+        $product->name = $product->trans('name', $locale);
+        $product->description = $product->trans('description', $locale);
+        return $product;
+    }
+
+    protected function localizedProducts($products)
+    {
+        return $products->map(function ($p) {
+            return $this->localizedProduct($p);
+        });
+    }
+
     public function index(Request $request)
     {
         try {
@@ -53,7 +68,7 @@ class ProductController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $products->items(),
+                'data' => $this->localizedProducts(collect($products->items())),
                 'pagination' => [
                     'current_page' => $products->currentPage(),
                     'last_page' => $products->lastPage(),
@@ -75,7 +90,7 @@ class ProductController extends Controller
     {
         try {
             $product = Product::with([
-                'category:id,name,description',
+                'category:id,name,description,name_translations,description_translations',
                 'reviews' => function ($query): void {
                     $query->with('user:id,full_name,avatar_url')->latest()->limit(5);
                 },
@@ -84,7 +99,7 @@ class ProductController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $product,
+                'data' => $this->localizedProduct($product),
             ]);
         } catch (ModelNotFoundException $e) {
             return response()->json([
@@ -108,7 +123,7 @@ class ProductController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => $products->items(),
+            'data' => $this->localizedProducts(collect($products->items())),
             'pagination' => [
                 'current_page' => $products->currentPage(),
                 'last_page' => $products->lastPage(),
@@ -128,7 +143,7 @@ class ProductController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => $products->items(),
+            'data' => $this->localizedProducts(collect($products->items())),
             'pagination' => [
                 'current_page' => $products->currentPage(),
                 'last_page' => $products->lastPage(),

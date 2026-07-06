@@ -12,30 +12,39 @@ class WishlistController extends Controller
     public function index(Request $request)
     {
         try {
+            $locale = app()->getLocale();
             $query = Wishlist::query()
                 ->with(['package.weddingFlowersDecorasi', 'package.category', 'package.reviews', 'product.category', 'product.reviews'])
                 ->where('user_id', Auth::id());
 
             $wishlistItems = $query->latest()->paginate($request->get('per_page', 10));
 
-            $items = $wishlistItems->getCollection()->map(function (Wishlist $item): array {
+            $items = $wishlistItems->getCollection()->map(function (Wishlist $item) use ($locale): array {
                 if ($item->product_id && $item->product) {
+                    $productData = $item->product->toArray();
+                    $productData['name'] = $item->product->trans('name', $locale);
+                    $productData['description'] = $item->product->trans('description', $locale);
+
                     return [
                         'id' => $item->id,
                         'resource_type' => 'product',
                         'product_id' => $item->product_id,
                         'created_at' => $item->created_at?->toIso8601String(),
-                        ...$item->product->toArray(),
+                        ...$productData,
                     ];
                 }
 
                 if ($item->package_id && $item->package) {
+                    $packageData = $item->package->toArray();
+                    $packageData['name'] = $item->package->trans('name', $locale);
+                    $packageData['description'] = $item->package->trans('description', $locale);
+
                     return [
                         'id' => $item->id,
                         'resource_type' => 'package',
                         'package_id' => $item->package_id,
                         'created_at' => $item->created_at?->toIso8601String(),
-                        ...$item->package->toArray(),
+                        ...$packageData,
                     ];
                 }
 

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Providers\NativeServiceProvider;
+use App\Traits\HasTranslations;
 use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,7 +13,9 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 
 class Product extends Model implements HasMedia
 {
-    use HasFactory, InteractsWithMedia;
+    use HasFactory, HasTranslations, InteractsWithMedia;
+
+    protected array $translatable = ['name', 'description'];
 
     public function registerMediaCollections(): void
     {
@@ -25,6 +28,8 @@ class Product extends Model implements HasMedia
         'name',
         'slug',
         'description',
+        'name_translations',
+        'description_translations',
         'price',
         'discount_price',
         'stock',
@@ -39,6 +44,8 @@ class Product extends Model implements HasMedia
 
     protected $casts = [
         'features' => 'array',
+        'name_translations' => 'json',
+        'description_translations' => 'json',
         'price' => 'decimal:2',
         'discount_price' => 'decimal:2',
         'is_active' => 'boolean',
@@ -62,6 +69,16 @@ class Product extends Model implements HasMedia
                 $product->slug = Str::slug($product->name).'-'.Str::random(5);
             }
         });
+    }
+
+    public function getNameAttribute($value): ?string
+    {
+        return $this->trans('name') ?? $value;
+    }
+
+    public function getDescriptionAttribute($value): ?string
+    {
+        return $this->trans('description') ?? $value;
     }
 
     public function getImageUrlAttribute()

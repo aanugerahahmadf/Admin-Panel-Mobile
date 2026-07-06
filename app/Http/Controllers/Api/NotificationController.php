@@ -86,6 +86,58 @@ class NotificationController extends Controller
     }
 
     /**
+     * Delete a notification
+     */
+    public function destroy($id)
+    {
+        try {
+            /** @var User $user */
+            $user = Auth::user();
+            $notification = $user->notifications()->findOrFail($id);
+            $notification->delete();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => __('Notifikasi berhasil dihapus'),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Gagal menghapus notifikasi'),
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Register FCM token for push notifications
+     */
+    public function registerFcmToken(Request $request)
+    {
+        try {
+            $request->validate([
+                'token' => 'required|string',
+                'platform' => 'nullable|string|in:android,ios',
+            ]);
+
+            /** @var User $user */
+            $user = Auth::user();
+            $user->update(['fcm_token' => $request->token]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => __('Token FCM berhasil didaftarkan'),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Gagal mendaftarkan token FCM'),
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Get unread notifications count
      */
     public function unreadCount()

@@ -141,6 +141,90 @@ class CBIRService
         }
     }
 
+    public function arithmeticSearch($image1, $image2, string $operation, int $topK = 20, ?array $weights = null): array
+    {
+        try {
+            $safeTopK = max(1, min($topK, 50));
+
+            Log::info("CBIR Arithmetic search: operation={$operation}");
+
+            $request = Http::timeout($this->timeoutSeconds)
+                ->retry(1, 300, throw: false);
+
+            // Attach files (bisa UploadedFile atau SplFileInfo)
+            $request = $request->attach(
+                'image_1',
+                file_get_contents($image1->getRealPath()),
+                method_exists($image1, 'getClientOriginalName') ? $image1->getClientOriginalName() : $image1->getFilename()
+            );
+            $request = $request->attach(
+                'image_2',
+                file_get_contents($image2->getRealPath()),
+                method_exists($image2, 'getClientOriginalName') ? $image2->getClientOriginalName() : $image2->getFilename()
+            );
+
+            $payload = [
+                'operation' => $operation,
+                'top_k' => $safeTopK,
+                'method' => 'combined',
+                'metric' => 'euclidean',
+            ];
+            if ($weights !== null) {
+                $payload['weights'] = $weights;
+            }
+
+            $response = $request->post("{$this->baseUrl}/api/arithmetic", $payload);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                if (! is_array($data)) {
+                    return $this->errorResponse('Format respons AI tidak valid.');
+                }
+
+                $normalizedResults = collect($data['results'] ?? [])
+                    ->filter(fn ($row) => is_array($row) && isset($row['owner_id']))
+                    ->map(function (array $row): array {
+                        return [
+                            'owner_id' => (int) $row['owner_id'],
+                            'type' => (string) ($row['type'] ?? 'product'),
+                            'score' => (float) ($row['distance'] ?? 0),
+                            'similarity' => (float) ($row['similarity'] ?? 0),
+                            'image_url' => $row['image_url'] ?? null,
+                        ];
+                    })
+                    ->values()
+                    ->all();
+
+                return [
+                    'success' => true,
+                    'results' => $normalizedResults,
+                    'query_time_seconds' => (float) ($data['query_time_seconds'] ?? 0),
+                    'operation' => $data['operation'] ?? null,
+                    'source_images' => $data['source_images'] ?? [],
+                ];
+            }
+
+            Log::error('AI Core arithmetic error: ' . $response->body());
+            return $this->errorResponse('Pencarian aritmetika sedang gangguan.');
+        } catch (\Exception $e) {
+            Log::error('AI Core arithmetic connection error: ' . $e->getMessage());
+            return $this->errorResponse('Layanan AI Scanner sedang offline.');
+        }
+    }
+
+    public function getArithmeticOps(): array
+    {
+        try {
+            $response = Http::timeout(5)->get("{$this->baseUrl}/api/arithmetic/ops");
+            if ($response->successful()) {
+                return $response->json()['operations'] ?? [];
+            }
+        } catch (\Exception $e) {
+            Log::error('AI Core arithmetic ops error: ' . $e->getMessage());
+        }
+        return [];
+    }
+
     protected function errorResponse(string $message): array
     {
         return [

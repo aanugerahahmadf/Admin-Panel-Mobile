@@ -28,7 +28,7 @@ class UserLanguageController extends Controller
     public function update(Request $request): JsonResponse
     {
         $request->validate([
-            'lang' => 'required|string|size:2',
+            'lang' => 'required|string|max:10',
         ]);
 
         $user = $request->user();

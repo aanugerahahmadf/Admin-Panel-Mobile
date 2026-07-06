@@ -53,7 +53,8 @@ class CBIRController extends Controller
             ->get()
             ->keyBy('id');
 
-        $enrichedResults = collect($results)->map(function (array $res) use ($packages, $products): ?array {
+        $locale = app()->getLocale();
+        $enrichedResults = collect($results)->map(function (array $res) use ($packages, $products, $locale): ?array {
             $type = $res['type'] ?? 'unknown';
             $id = (int) ($res['owner_id'] ?? 0);
 
@@ -69,9 +70,9 @@ class CBIRController extends Controller
                 'score' => $res['score'] ?? 0,
                 'data' => [
                     'id' => $model->id,
-                    'name' => $model->name,
+                    'name' => $model->trans('name', $locale),
                     'slug' => $model->slug,
-                    'description' => strip_tags($model->description),
+                    'description' => strip_tags($model->trans('description', $locale)),
                     'price' => $model->price,
                     'discount_price' => $model->discount_price ?? 0,
                     'image_url' => $model->image_url,
@@ -198,6 +199,98 @@ class CBIRController extends Controller
                 'server_status' => 'offline',
                 'total_database_items' => Product::query()->count(),
             ],
+        ]);
+    }
+
+    /**
+     * Aritmetika Citra: gabungkan fitur dari beberapa gambar
+     * lalu cari hasilnya di database CBIR.
+     *
+     * Request JSON:
+     * {
+     *   "images": ["/path/gambar1.jpg", "/path/gambar2.jpg"],
+     *   "operation": "add|average|subtract|multiply|divide",
+     *   "top_k": 20,
+     *   "weights": [0.7, 0.3]
+     * }
+     */
+    public function arithmeticSearch(Request $request, CBIRService $cbirService): JsonResponse
+    {
+        $request->validate([
+            'image_1' => 'required|image|max:10240',
+            'image_2' => 'required|image|max:10240',
+            'operation' => 'required|string|in:add,average,subtract,multiply,divide',
+            'top_k' => 'nullable|integer|min:1|max:50',
+            'weights' => 'nullable|array',
+            'weights.*' => 'numeric|min:0|max:1',
+        ]);
+
+        $apiResponse = $cbirService->arithmeticSearch(
+            $request->file('image_1'),
+            $request->file('image_2'),
+            $request->input('operation'),
+            $request->input('top_k', 20),
+            $request->input('weights'),
+        );
+
+        if (isset($apiResponse['error']) || ! ($apiResponse['success'] ?? false)) {
+            return response()->json([
+                'success' => false,
+                'message' => $apiResponse['message'] ?? 'Error',
+                'results' => [],
+            ]);
+        }
+
+        $results = $apiResponse['results'] ?? [];
+        $idsByType = collect($results)->groupBy('type');
+        $packageIds = $idsByType->get('package', collect())->pluck('owner_id')->all();
+        $itemIds = $idsByType->get('product', collect())->pluck('owner_id')->all();
+
+        $packages = Package::with(['category'])->whereIn('id', $packageIds)->get()->keyBy('id');
+        $products = Product::with(['category'])->whereIn('id', $itemIds)->get()->keyBy('id');
+        $locale = app()->getLocale();
+
+        $enrichedResults = collect($results)->map(function (array $res) use ($packages, $products, $locale): ?array {
+            $type = $res['type'] ?? 'unknown';
+            $id = (int) ($res['owner_id'] ?? 0);
+            $model = ($type === 'package') ? $packages->get($id) : (($type === 'product') ? $products->get($id) : null);
+            if (! $model) return null;
+            return [
+                'type' => $type,
+                'similarity' => $res['similarity'] ?? 0,
+                'score' => $res['score'] ?? 0,
+                'data' => [
+                    'id' => $model->id,
+                    'name' => $model->trans('name', $locale),
+                    'slug' => $model->slug,
+                    'description' => strip_tags($model->trans('description', $locale)),
+                    'price' => $model->price,
+                    'discount_price' => $model->discount_price ?? 0,
+                    'image_url' => $model->image_url,
+                    'category' => $model->category?->name,
+                ],
+            ];
+        })->filter()->values();
+
+        return response()->json([
+            'success' => true,
+            'results' => $enrichedResults,
+            'total_results' => $enrichedResults->count(),
+            'query_time_seconds' => $apiResponse['query_time_seconds'] ?? 0,
+            'operation' => $apiResponse['operation'] ?? null,
+            'source_images' => $apiResponse['source_images'] ?? [],
+        ]);
+    }
+
+    /**
+     * Daftar operasi aritmetika citra yang tersedia
+     */
+    public function arithmeticOps(CBIRService $cbirService): JsonResponse
+    {
+        $ops = $cbirService->getArithmeticOps();
+        return response()->json([
+            'success' => true,
+            'operations' => $ops,
         ]);
     }
 

@@ -10,18 +10,27 @@ class VoucherController extends Controller
 {
     public function index()
     {
+        $locale = app()->getLocale();
+        $vouchers = Voucher::where('is_active', true)
+            ->where(function ($q): void {
+                $q->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })->get();
+
+        $vouchers->transform(function ($voucher) use ($locale) {
+            $voucher->description = $voucher->trans('description', $locale);
+            return $voucher;
+        });
+
         return response()->json([
             'status' => 'success',
-            'data' => Voucher::where('is_active', true)
-                ->where(function ($q): void {
-                    $q->whereNull('expires_at')
-                        ->orWhere('expires_at', '>', now());
-                })->get(['*']),
+            'data' => $vouchers,
         ]);
     }
 
     public function claim(Request $request, Voucher $voucher): JsonResponse
     {
+        $locale = app()->getLocale();
         $user = $request->user();
 
         if (! $voucher->is_active || ($voucher->expires_at && $voucher->expires_at->isPast())) {
@@ -40,6 +49,8 @@ class VoucherController extends Controller
 
         $voucher->assignToUser($user->id);
 
+        $voucher->description = $voucher->trans('description', $locale);
+
         return response()->json([
             'status' => 'success',
             'message' => __('Voucher berhasil diklaim'),
@@ -49,6 +60,8 @@ class VoucherController extends Controller
 
     public function validateVoucher(Request $request)
     {
+        $locale = app()->getLocale();
+
         $request->validate([
             'code' => 'required|string',
             'amount' => 'required|numeric',
@@ -74,6 +87,8 @@ class VoucherController extends Controller
                 'message' => __('Minimum pembelian untuk voucher ini adalah Rp').' '.number_format($voucher->min_purchase, 0, ',', '.'),
             ], 400);
         }
+
+        $voucher->description = $voucher->trans('description', $locale);
 
         return response()->json([
             'status' => 'success',

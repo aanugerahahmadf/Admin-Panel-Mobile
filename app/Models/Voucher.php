@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\HasTranslations;
 use App\Enums\DiscountType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -50,9 +51,13 @@ use Illuminate\Support\Carbon;
  */
 class Voucher extends Model
 {
+    use HasTranslations;
+
+    protected array $translatable = ['description'];
     protected $fillable = [
         'code',
         'description',
+        'description_translations',
         'discount_amount',
         'discount_type',
         'min_purchase',
@@ -67,10 +72,16 @@ class Voucher extends Model
         'expires_at' => 'datetime',
         'is_active' => 'boolean',
         'is_global' => 'boolean',
+        'description_translations' => 'json',
         'discount_amount' => 'decimal:2',
         'min_purchase' => 'decimal:2',
         'discount_type' => DiscountType::class,
     ];
+
+    public function getDescriptionAttribute($value): ?string
+    {
+        return $this->trans('description') ?? $value;
+    }
 
     // ─── Relations ────────────────────────────────────────────
 

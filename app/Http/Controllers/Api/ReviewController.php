@@ -153,7 +153,7 @@ class ReviewController extends Controller
     public function getOrganizerReviews($organizerId, Request $request)
     {
         try {
-            $query = Review::with(['user:id,full_name,avatar_url', 'package:id,name'])
+            $query = Review::with(['user:id,full_name,avatar_url', 'package:id,name,name_translations'])
                 ->join('packages', 'reviews.package_id', '=', 'packages.id')
                 ->where('packages.wedding_flowers_decorasi_id', $organizerId)
                 ->select('reviews.*')
@@ -195,7 +195,7 @@ class ReviewController extends Controller
     public function getUserReviews(Request $request)
     {
         try {
-            $query = Review::with(['package:id,name,price', 'product:id,name,price'])
+            $query = Review::with(['package:id,name,price,name_translations', 'product:id,name,price,name_translations'])
                 ->where('user_id', Auth::id())
                 ->orderByDesc('created_at');
 

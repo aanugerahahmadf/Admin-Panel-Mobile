@@ -129,7 +129,7 @@ class ProductResource extends Resource
                 SelectFilter::make('category_id')
                     ->searchable()
                     ->label(__('Kategori'))
-                    ->relationship('category', 'name')
+                    ->relationship('category', 'name', fn ($query) => $query->forProducts())
                     ->preload(),
                 SelectFilter::make('has_discount')
                     ->searchable()

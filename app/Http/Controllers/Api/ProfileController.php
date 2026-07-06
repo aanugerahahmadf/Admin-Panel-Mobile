@@ -31,8 +31,9 @@ class ProfileController extends Controller
 
             // Prepare user data
             $data = $user->toArray();
-            $data['is_admin'] = $data['is_super_admin'] = $user->hasRole('super_admin');
-            $data['roles'] = $user->getRoleNames()->toArray();
+            $isSuperAdmin = $user->roles()->where('name', 'super_admin')->exists();
+            $data['is_admin'] = $data['is_super_admin'] = $isSuperAdmin;
+            $data['roles'] = $user->roles()->pluck('name')->toArray();
 
             return response()->json([
                 'status' => 'success',

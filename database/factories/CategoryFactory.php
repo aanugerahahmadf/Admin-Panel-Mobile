@@ -25,6 +25,7 @@ class CategoryFactory extends Factory
             'icon' => 'heroicon-m-squares-plus',
             'color' => fake()->hexColor(),
             'description' => fake()->sentence(),
+            'type' => fake()->randomElement(['package', 'product']),
         ];
     }
 }

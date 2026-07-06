@@ -133,7 +133,7 @@ class PackageResource extends Resource
                 SelectFilter::make('category_id')
                     ->searchable()
                     ->label(__('Kategori'))
-                    ->relationship('category', 'name')
+                    ->relationship('category', 'name', fn ($query) => $query->forPackages())
                     ->preload(),
                 SelectFilter::make('has_discount')
                     ->searchable()

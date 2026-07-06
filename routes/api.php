@@ -97,10 +97,11 @@ Route::get('/legal/help', [LegalController::class, 'getHelp']);
 Route::post('/webhooks/fonnte', [FonnteWebhookController::class, 'handleIncomingMessage']);
 Route::post('/webhooks/fonnte/connect', [FonnteWebhookController::class, 'handleConnectionStatus']);
 Route::post('/webhooks/fonnte/status', [FonnteWebhookController::class, 'handleMessageStatus']);
-
 // CBIR - AI Visual Search Public Probing
+
 Route::get('/cbir/stats', [CBIRController::class, 'getStats']);
 Route::get('/cbir/health', [CBIRController::class, 'healthCheck']);
+Route::get('/cbir/arithmetic/ops', [CBIRController::class, 'arithmeticOps']);
 
 // Regions (public — for cascading selects)
 Route::get('/regions/provinces', [RegionController::class, 'provinces']);
@@ -190,9 +191,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     // Notifications
     Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::post('/notifications/fcm-token', [NotificationController::class, 'registerFcmToken']);
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
     Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
     Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy']);
 
     // User Language
     Route::get('/user/language', [UserLanguageController::class, 'show']);
@@ -238,6 +241,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     // CBIR - AI Visual Search
     Route::post('/cbir/search', [CBIRController::class, 'searchSimilar']);
+    Route::post('/cbir/arithmetic', [CBIRController::class, 'arithmeticSearch']);
+    Route::get('/cbir/arithmetic/ops', [CBIRController::class, 'arithmeticOps']);
     Route::post('/cbir/index/product', [CBIRController::class, 'indexItem']);
     Route::post('/cbir/index/build', [CBIRController::class, 'buildIndex']);
     Route::get('/cbir/stats', [CBIRController::class, 'getStats']);
@@ -260,4 +265,137 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     // Pusher private/presence auth endpoint (requires authenticated user)
     Route::post('/pusher/auth', [PusherAuthController::class, 'auth']);
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Admin only routes (super_admin role required)
+    // ─────────────────────────────────────────────────────────────────────────
+    Route::prefix('admin')->middleware(\App\Http\Middleware\SuperAdmin::class)->group(function (): void {
+        // Dashboard
+        Route::get('/dashboard', [\App\Http\Controllers\Api\Admin\DashboardController::class, 'index']);
+
+        // Search
+        Route::get('/search', [\App\Http\Controllers\Api\SearchController::class, 'byTextAdmin']);
+
+        // Users
+        Route::get('/users', [\App\Http\Controllers\Api\Admin\UserController::class, 'index']);
+        Route::get('/users/roles', [\App\Http\Controllers\Api\Admin\UserController::class, 'roles']);
+        Route::get('/users/{id}', [\App\Http\Controllers\Api\Admin\UserController::class, 'show']);
+        Route::post('/users', [\App\Http\Controllers\Api\Admin\UserController::class, 'store']);
+        Route::put('/users/{id}', [\App\Http\Controllers\Api\Admin\UserController::class, 'update']);
+        Route::delete('/users/{id}', [\App\Http\Controllers\Api\Admin\UserController::class, 'destroy']);
+        Route::post('/users/{id}/toggle-active', [\App\Http\Controllers\Api\Admin\UserController::class, 'toggleActive']);
+
+        // Packages
+        Route::get('/packages', [\App\Http\Controllers\Api\Admin\PackageController::class, 'index']);
+        Route::get('/packages/{id}', [\App\Http\Controllers\Api\Admin\PackageController::class, 'show']);
+        Route::post('/packages', [\App\Http\Controllers\Api\Admin\PackageController::class, 'store']);
+        Route::put('/packages/{id}', [\App\Http\Controllers\Api\Admin\PackageController::class, 'update']);
+        Route::delete('/packages/{id}', [\App\Http\Controllers\Api\Admin\PackageController::class, 'destroy']);
+        Route::post('/packages/{id}/upload-image', [\App\Http\Controllers\Api\Admin\PackageController::class, 'uploadImage']);
+
+        // Products
+        Route::get('/products', [\App\Http\Controllers\Api\Admin\ProductController::class, 'index']);
+        Route::get('/products/{id}', [\App\Http\Controllers\Api\Admin\ProductController::class, 'show']);
+        Route::post('/products', [\App\Http\Controllers\Api\Admin\ProductController::class, 'store']);
+        Route::put('/products/{id}', [\App\Http\Controllers\Api\Admin\ProductController::class, 'update']);
+        Route::delete('/products/{id}', [\App\Http\Controllers\Api\Admin\ProductController::class, 'destroy']);
+        Route::post('/products/{id}/upload-image', [\App\Http\Controllers\Api\Admin\ProductController::class, 'uploadImage']);
+
+        // Categories
+        Route::get('/categories', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'index']);
+        Route::get('/categories/{id}', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'show']);
+        Route::post('/categories', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'store']);
+        Route::put('/categories/{id}', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'update']);
+        Route::delete('/categories/{id}', [\App\Http\Controllers\Api\Admin\CategoryController::class, 'destroy']);
+
+        // Orders
+        Route::get('/orders', [\App\Http\Controllers\Api\Admin\OrderController::class, 'index']);
+        Route::get('/orders/{id}', [\App\Http\Controllers\Api\Admin\OrderController::class, 'show']);
+        Route::put('/orders/{id}/status', [\App\Http\Controllers\Api\Admin\OrderController::class, 'updateStatus']);
+        Route::get('/orders/statuses/list', [\App\Http\Controllers\Api\Admin\OrderController::class, 'statuses']);
+
+        // Vouchers
+        Route::get('/vouchers', [\App\Http\Controllers\Api\Admin\VoucherController::class, 'index']);
+        Route::get('/vouchers/{id}', [\App\Http\Controllers\Api\Admin\VoucherController::class, 'show']);
+        Route::post('/vouchers', [\App\Http\Controllers\Api\Admin\VoucherController::class, 'store']);
+        Route::put('/vouchers/{id}', [\App\Http\Controllers\Api\Admin\VoucherController::class, 'update']);
+        Route::delete('/vouchers/{id}', [\App\Http\Controllers\Api\Admin\VoucherController::class, 'destroy']);
+
+        // Reviews
+        Route::get('/reviews', [\App\Http\Controllers\Api\Admin\ReviewController::class, 'index']);
+        Route::get('/reviews/{id}', [\App\Http\Controllers\Api\Admin\ReviewController::class, 'show']);
+        Route::put('/reviews/{id}', [\App\Http\Controllers\Api\Admin\ReviewController::class, 'update']);
+        Route::delete('/reviews/{id}', [\App\Http\Controllers\Api\Admin\ReviewController::class, 'destroy']);
+
+        // Transactions
+        Route::get('/transactions', [\App\Http\Controllers\Api\Admin\TransactionController::class, 'index']);
+        Route::get('/transactions/{id}', [\App\Http\Controllers\Api\Admin\TransactionController::class, 'show']);
+
+        // Banks
+        Route::get('/banks', [\App\Http\Controllers\Api\Admin\BankController::class, 'index']);
+        Route::get('/banks/{id}', [\App\Http\Controllers\Api\Admin\BankController::class, 'show']);
+        Route::post('/banks', [\App\Http\Controllers\Api\Admin\BankController::class, 'store']);
+        Route::put('/banks/{id}', [\App\Http\Controllers\Api\Admin\BankController::class, 'update']);
+        Route::delete('/banks/{id}', [\App\Http\Controllers\Api\Admin\BankController::class, 'destroy']);
+
+        // Payment Methods
+        Route::get('/payment-methods', [\App\Http\Controllers\Api\Admin\PaymentMethodController::class, 'index']);
+        Route::get('/payment-methods/{id}', [\App\Http\Controllers\Api\Admin\PaymentMethodController::class, 'show']);
+        Route::post('/payment-methods', [\App\Http\Controllers\Api\Admin\PaymentMethodController::class, 'store']);
+        Route::put('/payment-methods/{id}', [\App\Http\Controllers\Api\Admin\PaymentMethodController::class, 'update']);
+        Route::delete('/payment-methods/{id}', [\App\Http\Controllers\Api\Admin\PaymentMethodController::class, 'destroy']);
+
+        // Help Pages
+        Route::get('/helps', [\App\Http\Controllers\Api\Admin\HelpController::class, 'index']);
+        Route::get('/helps/{id}', [\App\Http\Controllers\Api\Admin\HelpController::class, 'show']);
+        Route::post('/helps', [\App\Http\Controllers\Api\Admin\HelpController::class, 'store']);
+        Route::put('/helps/{id}', [\App\Http\Controllers\Api\Admin\HelpController::class, 'update']);
+        Route::delete('/helps/{id}', [\App\Http\Controllers\Api\Admin\HelpController::class, 'destroy']);
+
+        // Legal Pages (generic)
+        Route::get('/legal-pages', [\App\Http\Controllers\Api\Admin\LegalPageController::class, 'indexPages']);
+        Route::get('/legal-pages/{id}', [\App\Http\Controllers\Api\Admin\LegalPageController::class, 'showPage']);
+        Route::post('/legal-pages', [\App\Http\Controllers\Api\Admin\LegalPageController::class, 'storePage']);
+        Route::put('/legal-pages/{id}', [\App\Http\Controllers\Api\Admin\LegalPageController::class, 'updatePage']);
+        Route::delete('/legal-pages/{id}', [\App\Http\Controllers\Api\Admin\LegalPageController::class, 'destroyPage']);
+
+        // Terms of Service
+        Route::get('/terms', [\App\Http\Controllers\Api\Admin\LegalPageController::class, 'indexTerms']);
+        Route::get('/terms/{id}', [\App\Http\Controllers\Api\Admin\LegalPageController::class, 'showTerm']);
+        Route::post('/terms', [\App\Http\Controllers\Api\Admin\LegalPageController::class, 'storeTerm']);
+        Route::put('/terms/{id}', [\App\Http\Controllers\Api\Admin\LegalPageController::class, 'updateTerm']);
+        Route::delete('/terms/{id}', [\App\Http\Controllers\Api\Admin\LegalPageController::class, 'destroyTerm']);
+
+        // Privacy Policies
+        Route::get('/privacy-policies', [\App\Http\Controllers\Api\Admin\LegalPageController::class, 'indexPolicies']);
+        Route::get('/privacy-policies/{id}', [\App\Http\Controllers\Api\Admin\LegalPageController::class, 'showPolicy']);
+        Route::post('/privacy-policies', [\App\Http\Controllers\Api\Admin\LegalPageController::class, 'storePolicy']);
+        Route::put('/privacy-policies/{id}', [\App\Http\Controllers\Api\Admin\LegalPageController::class, 'updatePolicy']);
+        Route::delete('/privacy-policies/{id}', [\App\Http\Controllers\Api\Admin\LegalPageController::class, 'destroyPolicy']);
+
+        // Wedding Decoration Policies
+        Route::get('/wedding-policies', [\App\Http\Controllers\Api\Admin\LegalPageController::class, 'indexWeddingPolicies']);
+        Route::get('/wedding-policies/{id}', [\App\Http\Controllers\Api\Admin\LegalPageController::class, 'showWeddingPolicy']);
+        Route::post('/wedding-policies', [\App\Http\Controllers\Api\Admin\LegalPageController::class, 'storeWeddingPolicy']);
+        Route::put('/wedding-policies/{id}', [\App\Http\Controllers\Api\Admin\LegalPageController::class, 'updateWeddingPolicy']);
+        Route::delete('/wedding-policies/{id}', [\App\Http\Controllers\Api\Admin\LegalPageController::class, 'destroyWeddingPolicy']);
+
+        // Notifications
+        Route::get('/notifications', [\App\Http\Controllers\Api\Admin\NotificationController::class, 'index']);
+        Route::get('/notifications/{id}', [\App\Http\Controllers\Api\Admin\NotificationController::class, 'show']);
+        Route::post('/notifications/send', [\App\Http\Controllers\Api\Admin\NotificationController::class, 'sendToUser']);
+        Route::post('/notifications/send-bulk', [\App\Http\Controllers\Api\Admin\NotificationController::class, 'sendBulk']);
+        Route::delete('/notifications/{id}', [\App\Http\Controllers\Api\Admin\NotificationController::class, 'destroy']);
+
+        // Messages / Chat
+        Route::get('/messages/inboxes', [\App\Http\Controllers\Api\Admin\MessageController::class, 'inboxes']);
+        Route::get('/messages/inboxes/{id}', [\App\Http\Controllers\Api\Admin\MessageController::class, 'showInbox']);
+        Route::post('/messages/send', [\App\Http\Controllers\Api\Admin\MessageController::class, 'sendMessage']);
+        Route::delete('/messages/inboxes/{id}', [\App\Http\Controllers\Api\Admin\MessageController::class, 'destroyInbox']);
+        Route::delete('/messages/{id}', [\App\Http\Controllers\Api\Admin\MessageController::class, 'destroyMessage']);
+
+        // Wishlists
+        Route::get('/wishlists', [\App\Http\Controllers\Api\Admin\WishlistController::class, 'index']);
+        Route::delete('/wishlists/{id}', [\App\Http\Controllers\Api\Admin\WishlistController::class, 'destroy']);
+    });
 });

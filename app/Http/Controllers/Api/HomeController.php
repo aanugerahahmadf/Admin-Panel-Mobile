@@ -19,19 +19,37 @@ class HomeController extends Controller
         try {
             /** @var User|null $user */
             $user = Auth::user();
+            $locale = app()->getLocale();
 
-            $categories = Category::query()->get(['*']);
+            $categories = Category::query()->get(['*'])->map(function ($cat) use ($locale) {
+                $cat->name = $cat->trans('name', $locale);
+                $cat->description = $cat->trans('description', $locale);
+                return $cat;
+            });
 
             $featuredPackages = Package::with(['media', 'category'])
                 ->where('is_featured', true)
                 ->limit(6)
-                ->get(['*']);
+                ->get(['*'])
+                ->map(function ($pkg) use ($locale) {
+                    $pkg->name = $pkg->trans('name', $locale);
+                    $pkg->description = $pkg->trans('description', $locale);
+                    return $pkg;
+                });
 
-            $vouchers = Voucher::where('is_active', true)->where('expires_at', '>', now())->limit(5)->get(['*']);
+            $vouchers = Voucher::where('is_active', true)->where('expires_at', '>', now())->limit(5)->get(['*'])->map(function ($v) use ($locale) {
+                $v->description = $v->trans('description', $locale);
+                return $v;
+            });
             $flashSale = Package::with(['media'])
                 ->whereNotNull('discount_price')
                 ->limit(5)
-                ->get(['*']);
+                ->get(['*'])
+                ->map(function ($pkg) use ($locale) {
+                    $pkg->name = $pkg->trans('name', $locale);
+                    $pkg->description = $pkg->trans('description', $locale);
+                    return $pkg;
+                });
 
             $upcomingBookings = [];
             $unreadNotifications = 0;
@@ -79,6 +97,7 @@ class HomeController extends Controller
     private function formatOrder($order): array
     {
         $pkg = $order->package;
+        $locale = app()->getLocale();
 
         return [
             'id' => $order->id,
@@ -91,7 +110,7 @@ class HomeController extends Controller
             'notes' => $order->notes,
             'package' => $pkg ? [
                 'id' => $pkg->id,
-                'name' => $pkg->name,
+                'name' => $pkg->trans('name', $locale),
                 'price' => $pkg->price,
                 'image_url' => $pkg->image_url,
             ] : null,

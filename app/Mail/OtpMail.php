@@ -46,7 +46,7 @@ class OtpMail extends Mailable
 <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
 <table style="max-width:480px; background:#fff; border-radius:12px; overflow:hidden; box-shadow:0 2px 12px rgba(0,0,0,0.08);">
 <tr><td style="padding:30px 24px 20px; text-align:center; background:linear-gradient(135deg,#6C63FF,#E040FB);">
-<h1 style="color:#fff; margin:0; font-size:22px;">🌸 Dekorasi Bunga Pernikahan</h1>
+<h1 style="color:#fff; margin:0; font-size:22px;">Dekorasi Bunga Pernikahan</h1>
 </td></tr>
 <tr><td style="padding:30px 24px; text-align:center;">
 <h2 style="margin:0 0 8px; color:#333; font-size:18px;">Halo, {$this->name}!</h2>

@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Mail\OtpMail;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
@@ -217,7 +220,16 @@ class AuthController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Email tidak terdaftar.'], 404);
         }
 
-        // TODO: kirim OTP ke email (notification/mail)
+        $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+        User::where('email', $request->email)->update([
+            'otp_code' => $otp,
+            'otp_expires_at' => now()->addMinutes(5),
+            'otp_purpose' => 'forgot_password',
+        ]);
+
+        Mail::to($request->email)->send(new OtpMail($otp, $user->name ?? 'Pengguna'));
+
         return response()->json([
             'status' => 'success',
             'message' => 'Instruksi reset password akan dikirim ke email Anda.',
@@ -229,16 +241,26 @@ class AuthController extends Controller
     {
         $request->validate([
             'email' => 'required|email',
-            'otp' => 'required',
+            'otp' => 'required|string|size:6',
             'password' => 'required|confirmed|min:12',
         ]);
 
-        $user = User::where('email', $request->email)->first(['*']);
+        $user = User::where('email', $request->email)
+            ->where('otp_code', $request->otp)
+            ->where('otp_purpose', 'forgot_password')
+            ->where('otp_expires_at', '>', now())
+            ->first();
+
         if (! $user) {
-            return response()->json(['status' => 'error', 'message' => __('Pengguna tidak ditemukan')], 404);
+            return response()->json(['status' => 'error', 'message' => __('Kode OTP tidak valid atau sudah kedaluwarsa')], 422);
         }
 
-        $user->update(['password' => Hash::make($request->password)]);
+        $user->update([
+            'password' => Hash::make($request->password),
+            'otp_code' => null,
+            'otp_expires_at' => null,
+            'otp_purpose' => null,
+        ]);
 
         return response()->json([
             'status' => 'success',
@@ -363,7 +385,7 @@ class AuthController extends Controller
             'otp_purpose' => $request->purpose,
         ]);
 
-        // TODO: kirim OTP via email + WhatsApp (Mail + Fonnte)
+        Mail::to($request->email)->send(new OtpMail($otp, $user?->name ?? 'Pengguna'));
 
         return response()->json([
             'status' => 'success',
@@ -418,15 +440,25 @@ class AuthController extends Controller
         ]);
 
         // Verify Google ID token via Google's token info endpoint
-        $tokenInfo = file_get_contents('https://oauth2.googleapis.com/tokeninfo?id_token='.$request->id_token);
-        if (! $tokenInfo) {
+        try {
+            $response = Http::timeout(10)->get('https://oauth2.googleapis.com/tokeninfo', [
+                'id_token' => $request->id_token,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Gagal memverifikasi token Google'),
+            ], 500);
+        }
+
+        if (! $response->successful()) {
             return response()->json([
                 'status' => 'error',
                 'message' => __('Token Google tidak valid'),
             ], 401);
         }
 
-        $payload = json_decode($tokenInfo, true);
+        $payload = $response->json();
         if (! isset($payload['email']) || ! isset($payload['sub'])) {
             return response()->json([
                 'status' => 'error',
@@ -465,6 +497,7 @@ class AuthController extends Controller
                     'token' => $token,
                     'user' => $user,
                     'needs_completion' => ! $user->identity_type || ! $user->whatsapp || ! $user->birth_date,
+                    'needs_otp' => is_null($user->email_verified_at),
                 ],
             ]);
         }

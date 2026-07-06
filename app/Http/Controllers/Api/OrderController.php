@@ -27,6 +27,7 @@ class OrderController extends Controller
     public function getOrders(Request $request)
     {
         try {
+            $locale = app()->getLocale();
             $query = Order::where('user_id', Auth::id())
                 ->with([
                     'package' => function ($q): void {
@@ -51,7 +52,7 @@ class OrderController extends Controller
             $orders = $query->latest()->paginate($request->get('per_page', 10));
             $products = $orders->items();
 
-            $data = collect($products)->map(function (Order $order) {
+            $data = collect($products)->map(function (Order $order) use ($locale) {
                 $pkg = $order->package;
                 $wfd = $pkg?->weddingFlowersDecorasi;
 
@@ -61,7 +62,7 @@ class OrderController extends Controller
                     'user_name' => $order->user?->full_name ?? '',
                     'package_id' => $order->package_id,
                     'product_id' => $order->product_id,
-                    'title' => $pkg?->name ?? $order->product?->name ?? __('Pesanan'),
+                    'title' => $pkg?->trans('name', $locale) ?? $order->product?->trans('name', $locale) ?? __('Pesanan'),
                     'order_number' => $order->order_number,
                     'total_price' => (float) $order->total_price,
                     'status' => $order->status,
@@ -72,7 +73,7 @@ class OrderController extends Controller
                     'resource_type' => $order->package_id ? 'package' : 'product',
                     'item' => $pkg ? [
                         'id' => $pkg->id,
-                        'name' => $pkg->name,
+                        'name' => $pkg->trans('name', $locale),
                         'price' => (float) $pkg->price,
                         'discount_price' => (float) ($pkg->discount_price ?? 0),
                         'wedding_flowers_decorasi_id' => $pkg->wedding_flowers_decorasi_id,
@@ -80,7 +81,7 @@ class OrderController extends Controller
                         'image_url' => $pkg->image_url ?? null,
                     ] : ($order->product ? [
                         'id' => $order->product->id,
-                        'name' => $order->product->name,
+                        'name' => $order->product->trans('name', $locale),
                         'price' => (float) $order->product->price,
                         'discount_price' => (float) ($order->product->discount_price ?? 0),
                         'category' => $order->product->category?->name,
@@ -88,14 +89,14 @@ class OrderController extends Controller
                     ] : null),
                     'package' => $pkg ? [
                         'id' => $pkg->id,
-                        'name' => $pkg->name,
+                        'name' => $pkg->trans('name', $locale),
                         'price' => (float) $pkg->price,
                         'wedding_flowers_decorasi_id' => $pkg->wedding_flowers_decorasi_id,
                         'wedding_flowers_decorasi' => $wfd ? ['id' => $wfd->id, 'name' => $wfd->name, 'rating' => $wfd->rating] : null,
                     ] : null,
                     'product' => $order->product ? [
                         'id' => $order->product->id,
-                        'name' => $order->product->name,
+                        'name' => $order->product->trans('name', $locale),
                         'price' => (float) $order->product->price,
                         'discount_price' => (float) ($order->product->discount_price ?? 0),
                         'category' => $order->product->category?->name,

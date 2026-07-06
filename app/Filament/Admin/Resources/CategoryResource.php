@@ -93,6 +93,15 @@ class CategoryResource extends Resource
                                     ->unique(ignorable: fn (?Category $record) => $record)
                                     ->maxLength(255)
                                     ->prefixIcon('heroicon-o-link'),
+                                Forms\Components\Select::make('type')
+                                    ->label(__('Tipe'))
+                                    ->required()
+                                    ->options([
+                                        'package' => __('Paket'),
+                                        'product' => __('Produk'),
+                                    ])
+                                    ->default('package')
+                                    ->prefixIcon('heroicon-o-tag'),
                                 Forms\Components\RichEditor::make('description')
                                     ->label(__('Deskripsi Kategori'))
                                     ->columnSpanFull()
@@ -131,6 +140,12 @@ class CategoryResource extends Resource
                     ->color('info')
                     ->copyable()
                     ->copyableState(fn ($state) => $state)
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('type')
+                    ->label(__('Tipe'))
+                    ->badge()
+                    ->color(fn (string $state): string => $state === 'package' ? 'info' : 'success')
+                    ->formatStateUsing(fn (string $state): string => $state === 'package' ? __('Paket') : __('Produk'))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('icon')
                     ->label(__('Ikon'))
@@ -175,6 +190,16 @@ class CategoryResource extends Resource
                     ->button()
                     ->color('danger')
                     ->size('lg')
+                    ->before(function ($record) {
+                        if ($record->categoryPackages()->count() > 0 || $record->categoryProducts()->count() > 0) {
+                            Notification::make()
+                                ->warning()
+                                ->title(__('Tidak dapat dihapus'))
+                                ->body(__('Kategori memiliki data terkait.'))
+                                ->send();
+                            $this->halt();
+                        }
+                    })
                     ->successNotification(
                         Notification::make()
                             ->success()

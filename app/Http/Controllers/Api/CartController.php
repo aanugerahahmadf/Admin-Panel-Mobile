@@ -11,10 +11,23 @@ class CartController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $locale = app()->getLocale();
         $items = Cart::where('user_id', $request->user()->id)
             ->with(['product', 'package'])
             ->latest()
             ->get();
+
+        $items->transform(function ($item) use ($locale) {
+            if ($item->product) {
+                $item->product->name = $item->product->trans('name', $locale);
+                $item->product->description = $item->product->trans('description', $locale);
+            }
+            if ($item->package) {
+                $item->package->name = $item->package->trans('name', $locale);
+                $item->package->description = $item->package->trans('description', $locale);
+            }
+            return $item;
+        });
 
         return response()->json([
             'status' => 'success',
@@ -42,20 +55,32 @@ class CartController extends Controller
                 }
             })->first();
 
+        $locale = app()->getLocale();
+
         if ($existing) {
             $existing->increment('quantity', $validated['quantity']);
-
-            return response()->json(['status' => 'success', 'data' => $existing->fresh()->load(['product', 'package'])]);
+            $item = $existing->fresh()->load(['product', 'package']);
+        } else {
+            $item = Cart::create($validated);
+            $item->load(['product', 'package']);
         }
 
-        $item = Cart::create($validated);
-        $item->load(['product', 'package']);
+        if ($item->product) {
+            $item->product->name = $item->product->trans('name', $locale);
+            $item->product->description = $item->product->trans('description', $locale);
+        }
+        if ($item->package) {
+            $item->package->name = $item->package->trans('name', $locale);
+            $item->package->description = $item->package->trans('description', $locale);
+        }
 
-        return response()->json(['status' => 'success', 'data' => $item], 201);
+        return response()->json(['status' => 'success', 'data' => $item], $existing ? 200 : 201);
     }
 
     public function update(Request $request, Cart $cart): JsonResponse
     {
+        $locale = app()->getLocale();
+
         if ($cart->user_id !== $request->user()->id) {
             return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 403);
         }
@@ -63,7 +88,18 @@ class CartController extends Controller
         $validated = $request->validate(['quantity' => 'required|integer|min:1']);
         $cart->update($validated);
 
-        return response()->json(['status' => 'success', 'data' => $cart->fresh()->load(['product', 'package'])]);
+        $item = $cart->fresh()->load(['product', 'package']);
+
+        if ($item->product) {
+            $item->product->name = $item->product->trans('name', $locale);
+            $item->product->description = $item->product->trans('description', $locale);
+        }
+        if ($item->package) {
+            $item->package->name = $item->package->trans('name', $locale);
+            $item->package->description = $item->package->trans('description', $locale);
+        }
+
+        return response()->json(['status' => 'success', 'data' => $item]);
     }
 
     public function destroy(Request $request, Cart $cart): JsonResponse

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Providers\NativeServiceProvider;
+use App\Traits\HasTranslations;
 use Filament\Facades\Filament;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -87,7 +88,9 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  */
 class Package extends Model implements HasMedia
 {
-    use HasFactory, InteractsWithMedia;
+    use HasFactory, HasTranslations, InteractsWithMedia;
+
+    protected array $translatable = ['name', 'description'];
 
     public function registerMediaCollections(): void
     {
@@ -110,6 +113,8 @@ class Package extends Model implements HasMedia
         'color',
         'min_capacity',
         'max_capacity',
+        'name_translations',
+        'description_translations',
     ];
 
     protected $casts = [
@@ -119,7 +124,19 @@ class Package extends Model implements HasMedia
         'is_active' => 'boolean',
         'is_featured' => 'boolean',
         'stock' => 'integer',
+        'name_translations' => 'json',
+        'description_translations' => 'json',
     ];
+
+    public function getNameAttribute($value): ?string
+    {
+        return $this->trans('name') ?? $value;
+    }
+
+    public function getDescriptionAttribute($value): ?string
+    {
+        return $this->trans('description') ?? $value;
+    }
 
     protected $appends = [
         'image_url',

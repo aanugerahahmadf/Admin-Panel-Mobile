@@ -12,6 +12,11 @@ use Illuminate\Http\JsonResponse;
 
 class LegalController extends Controller
 {
+    protected function locale(): string
+    {
+        return app()->getLocale();
+    }
+
     public function getTerms(): JsonResponse
     {
         $terms = TermsOfService::first();
@@ -19,7 +24,7 @@ class LegalController extends Controller
         if (! $terms) {
             return response()->json([
                 'success' => false,
-                'message' => 'Syarat & Ketentuan belum tersedia.',
+                'message' => 'Terms & Conditions not available.',
             ], 404);
         }
 
@@ -27,8 +32,8 @@ class LegalController extends Controller
             'success' => true,
             'data' => [
                 'id' => $terms->id,
-                'title' => $terms->title,
-                'content' => $terms->content,
+                'title' => $terms->trans('title', $this->locale()),
+                'content' => $terms->trans('content', $this->locale()),
             ],
         ]);
     }
@@ -40,7 +45,7 @@ class LegalController extends Controller
         if (! $privacy) {
             return response()->json([
                 'success' => false,
-                'message' => 'Kebijakan Privasi belum tersedia.',
+                'message' => 'Privacy Policy not available.',
             ], 404);
         }
 
@@ -48,8 +53,8 @@ class LegalController extends Controller
             'success' => true,
             'data' => [
                 'id' => $privacy->id,
-                'title' => $privacy->title,
-                'content' => $privacy->content,
+                'title' => $privacy->trans('title', $this->locale()),
+                'content' => $privacy->trans('content', $this->locale()),
                 'updated_at' => $privacy->updated_at->format('d M Y'),
             ],
         ]);
@@ -62,7 +67,7 @@ class LegalController extends Controller
         if (! $policy) {
             return response()->json([
                 'success' => false,
-                'message' => 'Kebijakan Wedding Flowers Decorasi belum tersedia.',
+                'message' => 'Wedding Decoration Policy not available.',
             ], 404);
         }
 
@@ -70,8 +75,8 @@ class LegalController extends Controller
             'success' => true,
             'data' => [
                 'id' => $policy->id,
-                'title' => $policy->title,
-                'content' => $policy->content,
+                'title' => $policy->trans('title', $this->locale()),
+                'content' => $policy->trans('content', $this->locale()),
                 'updated_at' => $policy->updated_at->format('d M Y'),
             ],
         ]);
@@ -79,7 +84,6 @@ class LegalController extends Controller
 
     public function getAbout(): JsonResponse
     {
-        // Assuming about info is stored in AppSettings or a LegalPage with slug 'about'
         $about = LegalPage::where('slug', 'about')->first();
 
         return response()->json([
@@ -100,10 +104,10 @@ class LegalController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'title' => $help->title ?? 'Pusat Bantuan',
-                'subtitle' => $help->subtitle ?? 'Tim kami siap membantu kebutuhan dekorasi pernikahan Anda.',
-                'faqs' => $help->faqs ?? [],
-                'contact_options' => $help->contact_options ?? null,
+                'title' => $help?->trans('title', $this->locale()) ?? 'Help Center',
+                'subtitle' => $help?->trans('subtitle', $this->locale()) ?? 'We are here to help you.',
+                'faqs' => $help?->trans('faqs', $this->locale()) ?? [],
+                'contact_options' => $help?->contact_options ?? null,
             ],
         ]);
     }

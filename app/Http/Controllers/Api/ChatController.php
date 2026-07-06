@@ -87,6 +87,13 @@ class ChatController extends Controller
             return response()->json(['success' => false, 'message' => __('Tidak terautentikasi')], 403);
         }
 
+        $adminUser = User::whereHas('roles', function ($q) {
+            $q->where('name', 'super_admin');
+        })->first(['*']);
+        $adminId = $adminUser?->id ?? 1;
+        $otherId = collect($userIds)->first(fn ($id) => (int) $id !== (int) $user->id);
+        $otherUser = $otherId ? User::find($otherId, ['*']) : null;
+
         $messages = Message::where('inbox_id', $inbox->id)
             ->with('sender')
             ->oldest()
@@ -111,6 +118,15 @@ class ChatController extends Controller
         return response()->json([
             'success' => true,
             'data' => $data,
+            'other_user' => $otherUser ? [
+                'id' => $otherUser->id,
+                'name' => $otherUser->full_name ?: $otherUser->username ?? __('Admin'),
+                'profile_photo' => $otherUser->avatar_url ?? null,
+            ] : [
+                'id' => $adminId,
+                'name' => __('Admin'),
+                'profile_photo' => null,
+            ],
         ]);
     }
 
@@ -303,10 +319,7 @@ class ChatController extends Controller
         if (! $user->hasRole('super_admin')) {
             return response()->json(['success' => false, 'message' => __('Tidak terautentikasi')], 403);
         }
-        $customers = User::whereHas('roles', function ($q) {
-            $q->where('name', 'customer');
-        })
-            ->where('id', '!=', $user->id)
+        $customers = User::where('id', '!=', $user->id)
             ->orderBy('full_name')
             ->get(['id', 'full_name', 'username', 'email']);
 

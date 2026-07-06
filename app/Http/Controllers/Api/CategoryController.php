@@ -15,20 +15,22 @@ class CategoryController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Category::withCount('packages');
+            $type = $request->type;
+            $query = Category::withCount($type === 'product' ? 'categoryProducts' : 'categoryPackages');
 
-            // Apply search filter if provided
+            if ($request->filled('type')) {
+                $query->where('type', $request->type);
+            }
+
             if ($request->filled('search')) {
                 $query->where('name', 'like', '%'.$request->search.'%')
                     ->orWhere('description', 'like', '%'.$request->search.'%');
             }
 
-            // Apply sorting
             $sortBy = $request->get('sort_by', 'name');
             $sortDirection = $request->get('sort_direction', 'asc');
 
-            // Validate sort parameters to prevent injection
-            $allowedSortFields = ['name', 'created_at', 'packages_count'];
+            $allowedSortFields = ['name', 'created_at', 'category_packages_count', 'category_products_count'];
             if (! in_array($sortBy, $allowedSortFields)) {
                 $sortBy = 'name';
             }
@@ -40,12 +42,19 @@ class CategoryController extends Controller
 
             $query->orderBy($sortBy, $sortDirection);
 
-            // Paginate results
             $categories = $query->paginate($request->get('per_page', 10), ['*']);
+
+            // Apply translations
+            $locale = app()->getLocale();
+            $data = collect($categories->items())->map(function ($cat) use ($locale) {
+                $cat->name = $cat->trans('name', $locale);
+                $cat->description = $cat->trans('description', $locale);
+                return $cat;
+            });
 
             return response()->json([
                 'status' => 'success',
-                'data' => $categories->items(),
+                'data' => $data,
                 'pagination' => [
                     'current_page' => $categories->currentPage(),
                     'last_page' => $categories->lastPage(),
@@ -63,15 +72,23 @@ class CategoryController extends Controller
         }
     }
 
-    /**
-     * Get a specific category by ID
-     */
     public function show($id)
     {
         try {
-            $category = Category::with(['packages' => function ($query): void {
-                $query->with(['weddingFlowersDecorasi', 'reviews'])->limit(10);
-            }])->withCount('packages')->findOrFail($id, ['*']);
+            $category = Category::findOrFail($id, ['*']);
+            if ($category->type === 'product') {
+                $category->load(['categoryProducts' => function ($query): void {
+                    $query->with(['weddingFlowersDecorasi', 'reviews'])->limit(10);
+                }])->loadCount('categoryProducts');
+            } else {
+                $category->load(['categoryPackages' => function ($query): void {
+                    $query->with(['weddingFlowersDecorasi', 'reviews'])->limit(10);
+                }])->loadCount('categoryPackages');
+            }
+
+            $locale = app()->getLocale();
+            $category->name = $category->trans('name', $locale);
+            $category->description = $category->trans('description', $locale);
 
             return response()->json([
                 'status' => 'success',
@@ -91,21 +108,25 @@ class CategoryController extends Controller
         }
     }
 
-    /**
-     * Get categories with their top packages
-     */
     public function withTopPackages(Request $request)
     {
         try {
-            $categories = Category::with(['packages' => function ($query) use ($request): void {
+            $categories = Category::with(['categoryPackages' => function ($query) use ($request): void {
                 $query->with(['weddingFlowersDecorasi', 'reviews'])
                     ->orderBy('price', 'asc')
                     ->limit($request->get('packages_per_category', 5));
-            }])->withCount('packages')->get(['*']);
+            }])->withCount('categoryPackages')->get(['*']);
+
+            $locale = app()->getLocale();
+            $data = $categories->map(function ($cat) use ($locale) {
+                $cat->name = $cat->trans('name', $locale);
+                $cat->description = $cat->trans('description', $locale);
+                return $cat;
+            });
 
             return response()->json([
                 'status' => 'success',
-                'data' => $categories,
+                'data' => $data,
             ]);
         } catch (\Exception $e) {
             return response()->json([

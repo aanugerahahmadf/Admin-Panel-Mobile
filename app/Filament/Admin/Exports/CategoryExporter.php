@@ -22,6 +22,8 @@ class CategoryExporter extends Exporter
                 ->label(__('Slug')),
             ExportColumn::make('icon')
                 ->label(__('Ikon')),
+            ExportColumn::make('type')
+                ->label(__('Tipe')),
             ExportColumn::make('description')
                 ->label(__('Deskripsi')),
             ExportColumn::make('created_at')

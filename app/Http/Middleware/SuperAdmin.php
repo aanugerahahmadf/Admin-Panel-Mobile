@@ -16,7 +16,7 @@ class SuperAdmin
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (! Auth::check() || ! Auth::user()->hasRole('super_admin')) {
+        if (! Auth::check() || ! Auth::user()->roles()->where('name', 'super_admin')->exists()) {
             abort(403);
         }
 

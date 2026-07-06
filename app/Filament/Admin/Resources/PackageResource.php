@@ -99,7 +99,7 @@ class PackageResource extends Resource
                                 Forms\Components\Select::make('category_id')
                                     ->searchable()
                                     ->label(__('Kategori Dekorasi'))
-                                    ->relationship('category', 'name')
+                                    ->relationship('category', 'name', fn ($query) => $query->forPackages())
                                     ->preload()
                                     ->prefixIcon('heroicon-o-tag')
                                     ->columnSpanFull()

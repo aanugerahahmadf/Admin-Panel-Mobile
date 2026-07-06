@@ -23,10 +23,15 @@ class DecorationDatasetSeeder extends Seeder
             'minimalist' => 'Minimalist',
         ];
 
-        $categoryModels = [];
+        $packageCatModels = [];
+        $productCatModels = [];
         foreach ($categories as $slug => $name) {
-            $categoryModels[$slug] = Category::firstOrCreate(
-                ['slug' => $slug],
+            $packageCatModels[$slug] = Category::firstOrCreate(
+                ['slug' => $slug, 'type' => 'package'],
+                ['name' => $name]
+            );
+            $productCatModels[$slug] = Category::firstOrCreate(
+                ['slug' => $slug, 'type' => 'product'],
                 ['name' => $name]
             );
         }
@@ -69,11 +74,11 @@ class DecorationDatasetSeeder extends Seeder
         foreach ($products as $data) {
             $slug = Str::slug($data['name']);
 
-            // Seed Product
+            // Seed Product (use product-type category)
             $product = Product::updateOrCreate(
                 ['slug' => $slug],
                 [
-                    'category_id' => $categoryModels[$data['category']]->id,
+                    'category_id' => $productCatModels[$data['category']]->id,
                     'name' => $data['name'],
                     'description' => $data['description'],
                     'price' => $data['price'],
@@ -81,11 +86,11 @@ class DecorationDatasetSeeder extends Seeder
                 ]
             );
 
-            // Seed Package
+            // Seed Package (use package-type category)
             $package = Package::updateOrCreate(
                 ['slug' => $slug.'-package'],
                 [
-                    'category_id' => $categoryModels[$data['category']]->id,
+                    'category_id' => $packageCatModels[$data['category']]->id,
                     'name' => $data['name'].' Package',
                     'description' => 'Full service package for '.$data['name'],
                     'price' => $data['price'] + 5000000,

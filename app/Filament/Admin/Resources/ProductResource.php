@@ -84,7 +84,7 @@ class ProductResource extends Resource
                             ->maxLength(255),
                         Forms\Components\Select::make('category_id')
                             ->label(__('Kategori'))
-                            ->relationship('category', 'name')
+                            ->relationship('category', 'name', fn ($query) => $query->forProducts())
                             ->searchable()
                             ->preload()
                             ->required(),

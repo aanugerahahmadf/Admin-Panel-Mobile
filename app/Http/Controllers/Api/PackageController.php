@@ -94,7 +94,7 @@ class PackageController extends Controller
         try {
             $package = Package::with([
                 'weddingFlowersDecorasi:id,name,address,rating,is_verified',
-                'category:id,name,description',
+                'category:id,name,description,name_translations,description_translations',
                 'reviews' => function ($query): void {
                     $query->with('user:id,full_name,avatar_url')->latest()->limit(5);
                 },

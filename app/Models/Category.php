@@ -2,51 +2,49 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Collection;
+use App\Traits\HasTranslations;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 
-/**
- * @property int $id
- * @property string $name
- * @property string $slug
- * @property string|null $icon
- * @property string|null $description
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
- * @property-read Collection<int, Package> $packages
- * @property-read int|null $packages_count
- *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category newModelQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category newQuery()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category whereCreatedAt($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category whereDescription($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category whereIcon($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category whereId($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Category whereName($value)
- * @method static \App\Models\Category|null find(mixed $id, array|string $columns = ['*'])
- * @method static \App\Models\Category findOrFail(mixed $id, array|string $columns = ['*'])
- * @method static \App\Models\Category|null first(array|string $columns = ['*'])
- * @method static \App\Models\Category firstOrFail(array|string $columns = ['*'])
- * @method static \Illuminate\Database\Eloquent\Collection<int, \App\Models\Category> get(array|string $columns = ['*'])
- *
- * @property Carbon|null $createdAt
- * @property Carbon|null $updatedAt
- * @property-read int|null $packagesCount
- * @property-read bool|null $packagesExists
- *
- * @method static \Illuminate\Database\Eloquent\Builder<static>|\App\Models\Category whereSlug($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|\App\Models\Category whereUpdatedAt($value)
- *
- * @mixin \Eloquent
- */
 class Category extends Model
 {
-    protected $fillable = ['name', 'slug', 'icon', 'color', 'description'];
+    use HasTranslations;
 
-    public function packages()
+    protected array $translatable = ['name', 'description'];
+
+    protected $fillable = ['name', 'slug', 'type', 'icon', 'color', 'description', 'name_translations', 'description_translations'];
+
+    protected $casts = [
+        'name_translations' => 'json',
+        'description_translations' => 'json',
+    ];
+
+    public function getNameAttribute($value): ?string
+    {
+        return $this->trans('name') ?? $value;
+    }
+
+    public function getDescriptionAttribute($value): ?string
+    {
+        return $this->trans('description') ?? $value;
+    }
+
+    public function categoryPackages()
     {
         return $this->hasMany(Package::class);
+    }
+
+    public function categoryProducts()
+    {
+        return $this->hasMany(Product::class);
+    }
+
+    public function scopeForPackages($query)
+    {
+        return $query->where('type', 'package');
+    }
+
+    public function scopeForProducts($query)
+    {
+        return $query->where('type', 'product');
     }
 }

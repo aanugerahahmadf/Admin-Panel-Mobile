@@ -268,6 +268,8 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
     protected $appends = [
         'ktp_photo_url',
         'selfie_photo_url',
+        'is_admin',
+        'role_names',
     ];
 
     /**
@@ -403,5 +405,15 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
     public function village(): BelongsTo
     {
         return $this->belongsTo(IndonesiaVillage::class, 'village_id');
+    }
+
+    public function getIsAdminAttribute(): bool
+    {
+        return $this->roles()->where('name', 'super_admin')->exists();
+    }
+
+    public function getRoleNamesAttribute(): array
+    {
+        return $this->roles()->pluck('name')->toArray();
     }
 }
