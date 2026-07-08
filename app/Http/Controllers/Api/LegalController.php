@@ -86,12 +86,27 @@ class LegalController extends Controller
     {
         $about = LegalPage::where('slug', 'about')->first();
 
+        if (! $about) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'title' => 'About WeddingApp',
+                    'content' => 'Wedding Flowers Organizer is your ultimate companion.',
+                    'mission' => null,
+                    'owner' => config('app.name'),
+                ],
+            ]);
+        }
+
+        $aboutTitle = $about->trans('title', $this->locale());
+        $aboutContent = $about->trans('content', $this->locale());
+
         return response()->json([
             'success' => true,
             'data' => [
-                'title' => $about->title ?? 'About WeddingApp',
-                'content' => $about->content['text'] ?? 'Wedding Flowers Organizer is your ultimate companion.',
-                'mission' => $about->content['mission'] ?? null,
+                'title' => $aboutTitle ?? 'About WeddingApp',
+                'content' => is_array($aboutContent) ? ($aboutContent['text'] ?? $aboutContent) : $aboutContent,
+                'mission' => is_array($aboutContent) ? ($aboutContent['mission'] ?? null) : null,
                 'owner' => config('app.name'),
             ],
         ]);

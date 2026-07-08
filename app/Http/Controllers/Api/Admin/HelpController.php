@@ -53,6 +53,9 @@ class HelpController extends Controller
                 'faqs.*.question' => 'required_with:faqs|string',
                 'faqs.*.answer' => 'required_with:faqs|string',
                 'contact_options' => 'nullable|array',
+                'title_translations' => 'nullable|json',
+                'subtitle_translations' => 'nullable|json',
+                'faqs_translations' => 'nullable|json',
             ]);
             $help = Help::create($validated);
             return response()->json(['status' => 'success', 'message' => __('Halaman bantuan berhasil dibuat'), 'data' => ['id' => $help->id]], 201);
@@ -74,6 +77,9 @@ class HelpController extends Controller
                 'faqs.*.question' => 'required_with:faqs|string',
                 'faqs.*.answer' => 'required_with:faqs|string',
                 'contact_options' => 'nullable|array',
+                'title_translations' => 'nullable|json',
+                'subtitle_translations' => 'nullable|json',
+                'faqs_translations' => 'nullable|json',
             ]);
             $help->update($validated);
             return response()->json(['status' => 'success', 'message' => __('Halaman bantuan berhasil diperbarui')]);
@@ -81,6 +87,27 @@ class HelpController extends Controller
             return response()->json(['status' => 'error', 'message' => $e->errors()], 422);
         } catch (\Exception $e) {
             return response()->json(['status' => 'error', 'message' => __('Gagal memperbarui halaman bantuan'), 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function show(int $id): JsonResponse
+    {
+        try {
+            $help = Help::findOrFail($id);
+            return response()->json(['status' => 'success', 'data' => [
+                'id' => $help->id,
+                'title' => $help->title,
+                'subtitle' => $help->subtitle,
+                'faqs' => $help->faqs,
+                'contact_options' => $help->contact_options,
+                'title_translations' => $help->getRawOriginal('title_translations'),
+                'subtitle_translations' => $help->getRawOriginal('subtitle_translations'),
+                'faqs_translations' => $help->getRawOriginal('faqs_translations'),
+                'created_at' => $help->created_at?->toISOString(),
+                'updated_at' => $help->updated_at?->toISOString(),
+            ]]);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => __('Halaman bantuan tidak ditemukan')], 404);
         }
     }
 

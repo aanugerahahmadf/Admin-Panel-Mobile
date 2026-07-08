@@ -48,6 +48,8 @@ class LegalPageController extends Controller
                 'slug' => 'required|string|max:100|unique:legal_pages,slug',
                 'title' => 'required|string|max:255',
                 'content' => 'nullable|array',
+                'title_translations' => 'nullable|json',
+                'content_translations' => 'nullable|json',
             ]);
             $validated['content'] = $validated['content'] ?? [];
             $page = LegalPage::create($validated);
@@ -67,6 +69,8 @@ class LegalPageController extends Controller
                 'slug' => 'sometimes|string|max:100|unique:legal_pages,slug,' . $page->id,
                 'title' => 'sometimes|string|max:255',
                 'content' => 'nullable|array',
+                'title_translations' => 'nullable|json',
+                'content_translations' => 'nullable|json',
             ]);
             $page->update($validated);
             return response()->json(['status' => 'success', 'message' => __('Halaman legal berhasil diperbarui')]);
@@ -113,6 +117,8 @@ class LegalPageController extends Controller
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
                 'content' => 'nullable|array',
+                'title_translations' => 'nullable|json',
+                'content_translations' => 'nullable|json',
             ]);
             $term = TermsOfService::create($validated);
             return response()->json(['status' => 'success', 'message' => __('Terms of service berhasil dibuat'), 'data' => ['id' => $term->id]], 201);
@@ -130,6 +136,8 @@ class LegalPageController extends Controller
             $validated = $request->validate([
                 'title' => 'sometimes|string|max:255',
                 'content' => 'nullable|array',
+                'title_translations' => 'nullable|json',
+                'content_translations' => 'nullable|json',
             ]);
             $term->update($validated);
             return response()->json(['status' => 'success', 'message' => __('Terms of service berhasil diperbarui')]);
@@ -176,6 +184,8 @@ class LegalPageController extends Controller
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
                 'content' => 'nullable|array',
+                'title_translations' => 'nullable|json',
+                'content_translations' => 'nullable|json',
             ]);
             $policy = PrivacyPolicy::create($validated);
             return response()->json(['status' => 'success', 'message' => __('Privacy policy berhasil dibuat'), 'data' => ['id' => $policy->id]], 201);
@@ -193,6 +203,8 @@ class LegalPageController extends Controller
             $validated = $request->validate([
                 'title' => 'sometimes|string|max:255',
                 'content' => 'nullable|array',
+                'title_translations' => 'nullable|json',
+                'content_translations' => 'nullable|json',
             ]);
             $policy->update($validated);
             return response()->json(['status' => 'success', 'message' => __('Privacy policy berhasil diperbarui')]);
@@ -239,6 +251,8 @@ class LegalPageController extends Controller
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
                 'content' => 'nullable|array',
+                'title_translations' => 'nullable|json',
+                'content_translations' => 'nullable|json',
             ]);
             $policy = WeddingDecorationPolicy::create($validated);
             return response()->json(['status' => 'success', 'message' => __('Wedding decoration policy berhasil dibuat'), 'data' => ['id' => $policy->id]], 201);
@@ -256,6 +270,8 @@ class LegalPageController extends Controller
             $validated = $request->validate([
                 'title' => 'sometimes|string|max:255',
                 'content' => 'nullable|array',
+                'title_translations' => 'nullable|json',
+                'content_translations' => 'nullable|json',
             ]);
             $policy->update($validated);
             return response()->json(['status' => 'success', 'message' => __('Wedding decoration policy berhasil diperbarui')]);

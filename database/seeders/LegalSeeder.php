@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\LegalPage;
 use App\Models\PrivacyPolicy;
 use App\Models\TermsOfService;
 use App\Models\WeddingDecorationPolicy;
@@ -101,6 +102,32 @@ class LegalSeeder extends Seeder
             ]
         );
         $this->command->line('  <info>✓</info> Wedding Decoration Policy seeded');
+
+        // ── About Page ──
+        $this->command->info('--- Seeding About Page ---');
+
+        $idAbout = [
+            'text' => 'Wedding Flowers Organizer adalah aplikasi pendamping pernikahan digital yang membantu Anda merencanakan, mengatur, dan mewujudkan dekorasi bunga pernikahan impian Anda. Kami menyediakan berbagai pilihan paket dekorasi, produk bunga, dan layanan konsultasi yang dapat disesuaikan dengan tema dan anggaran pernikahan Anda.',
+            'mission' => 'Misi kami adalah menjadi platform dekorasi bunga pernikahan terdepan di Indonesia yang menghubungkan pasangan dengan vendor dekorasi terpercaya, memberikan kemudahan dalam merencanakan dekorasi pernikahan, dan menciptakan pengalaman perencanaan pernikahan yang menyenangkan.',
+        ];
+
+        $enAbout = [
+            'text' => 'Wedding Flowers Organizer is a digital wedding companion app that helps you plan, organize, and realize your dream wedding flower decoration. We provide various decoration package options, flower products, and consultation services customizable to your wedding theme and budget.',
+            'mission' => 'Our mission is to become the leading wedding flower decoration platform in Indonesia that connects couples with trusted decoration vendors, provides convenience in planning wedding decorations, and creates an enjoyable wedding planning experience.',
+        ];
+
+        $aboutContentTranslations = $this->translateArrayToAllLocales($idAbout, $enAbout);
+
+        LegalPage::updateOrCreate(
+            ['slug' => 'about'],
+            [
+                'title' => 'Tentang WeddingApp',
+                'title_translations' => $this->translateToAllLocales('Tentang WeddingApp', 'About WeddingApp'),
+                'content' => $idAbout,
+                'content_translations' => $aboutContentTranslations,
+            ]
+        );
+        $this->command->line('  <info>✓</info> About Page seeded');
 
         $this->command->info('--- Terms & Privacy Seeding Complete ---');
     }

@@ -2,20 +2,37 @@
 
 namespace App\Models;
 
+use App\Traits\HasTranslations;
 use Illuminate\Database\Eloquent\Model;
 
 class LegalPage extends Model
 {
+    use HasTranslations;
+
+    protected array $translatable = ['title', 'content'];
+
     protected $fillable = [
         'slug',
         'title',
         'content',
+        'title_translations',
+        'content_translations',
     ];
 
-    /**
-     * Cast content to an array for easy structure access
-     */
     protected $casts = [
         'content' => 'array',
+        'title_translations' => 'json',
+        'content_translations' => 'json',
     ];
+
+    public function getTitleAttribute($value): ?string
+    {
+        return $this->trans('title') ?? $value;
+    }
+
+    public function getContentAttribute($value): mixed
+    {
+        $translated = $this->trans('content');
+        return $translated ?? $value;
+    }
 }
