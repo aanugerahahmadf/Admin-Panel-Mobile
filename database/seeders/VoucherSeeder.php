@@ -2,167 +2,133 @@
 
 namespace Database\Seeders;
 
+use App\Models\Discount;
 use App\Models\User;
 use App\Models\Voucher;
 use App\Traits\TranslatesContent;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class VoucherSeeder extends Seeder
 {
     use TranslatesContent;
 
+    private function randomCode(): string
+    {
+        return strtoupper(Str::random(16));
+    }
+
     public function run(): void
     {
-        // ── 1. VOUCHER PUBLIC (is_global = true) ──────────────────────────
+        // ── 0. CREATE TEMPLATE DISCOUNTS FOR VOUCHERS ────────────────
+        // Each voucher links to one of these discounts.
+        // Discount holds the actual rules (type, value, min_purchase).
 
-        $publicVouchers = [
-            [
-                'code' => 'WELCOME10',
-                'description' => 'Diskon 10% untuk semua pengguna baru',
-                'discount_amount' => 10,
-                'discount_type' => 'percentage',
-                'min_purchase' => 500_000,
-                'expires_at' => now()->addMonths(6),
-                'is_active' => true,
-                'is_global' => true,
-                'max_uses' => 500,
-                'uses_count' => 0,
-            ],
-            [
-                'code' => 'HEMAT50K',
-                'description' => 'Potongan Rp 50.000 untuk semua paket',
-                'discount_amount' => 50_000,
-                'discount_type' => 'fixed',
-                'min_purchase' => 1_000_000,
-                'expires_at' => now()->addMonths(3),
-                'is_active' => true,
-                'is_global' => true,
-                'max_uses' => 200,
-                'uses_count' => 0,
-            ],
-            [
-                'code' => 'PROMO2026',
-                'description' => 'Promo spesial tahun 2026 — diskon 15%',
-                'discount_amount' => 15,
-                'discount_type' => 'percentage',
-                'min_purchase' => 2_000_000,
-                'expires_at' => now()->endOfYear(),
-                'is_active' => true,
-                'is_global' => true,
-                'max_uses' => 100,
-                'uses_count' => 0,
-            ],
-            [
-                'code' => 'GRATIS100K',
-                'description' => 'Potongan Rp 100.000 tanpa minimum pembelian',
-                'discount_amount' => 100_000,
-                'discount_type' => 'fixed',
-                'min_purchase' => 0,
-                'expires_at' => now()->addMonth(),
-                'is_active' => true,
-                'is_global' => true,
-                'max_uses' => 50,
-                'uses_count' => 0,
-            ],
-            [
-                'code' => 'FLASHSALE',
-                'description' => 'Flash sale — diskon 20% (terbatas!)',
-                'discount_amount' => 20,
-                'discount_type' => 'percentage',
-                'min_purchase' => 1_500_000,
-                'expires_at' => now()->addWeeks(2),
-                'is_active' => true,
-                'is_global' => true,
-                'max_uses' => 30,
-                'uses_count' => 0,
-            ],
+        $voucherDiscounts = [
+            ['key' => 'pct_10',  'type' => 'percentage', 'value' => 10,  'min_purchase' => 500_000],
+            ['key' => 'fix_50k', 'type' => 'fixed',      'value' => 50_000,  'min_purchase' => 1_000_000],
+            ['key' => 'pct_15',  'type' => 'percentage', 'value' => 15,  'min_purchase' => 2_000_000],
+            ['key' => 'fix_100k','type' => 'fixed',      'value' => 100_000, 'min_purchase' => 0],
+            ['key' => 'pct_20',  'type' => 'percentage', 'value' => 20,  'min_purchase' => 1_500_000],
+            ['key' => 'pct_25',  'type' => 'percentage', 'value' => 25,  'min_purchase' => 3_000_000],
+            ['key' => 'fix_200k','type' => 'fixed',      'value' => 200_000, 'min_purchase' => 2_500_000],
+            ['key' => 'pct_30',  'type' => 'percentage', 'value' => 30,  'min_purchase' => 1_000_000],
+            ['key' => 'fix_75k', 'type' => 'fixed',      'value' => 75_000,  'min_purchase' => 500_000],
+            ['key' => 'pct_15e', 'type' => 'percentage', 'value' => 15, 'min_purchase' => 5_000_000],
         ];
 
-        foreach ($publicVouchers as $data) {
-            $descTranslations = $this->translateToAllLocales($data['description']);
+        $discountMap = [];
+        foreach ($voucherDiscounts as $d) {
+            $discount = Discount::updateOrCreate(
+                [
+                    'type' => $d['type'],
+                    'value' => $d['value'],
+                    'min_purchase' => $d['min_purchase'],
+                    'discountable_type' => null,
+                    'discountable_id' => null,
+                ],
+                [
+                    'is_active' => true,
+                ]
+            );
+            $discountMap[$d['key']] = $discount->id;
+        }
+
+        $this->command->info('✅ Diskon untuk voucher berhasil disiapkan.');
+
+        // ── 1. VOUCHER PUBLIC (is_global = true) ──────────────────────────
+        // Each voucher is just a 16-char random code + FK to discount.
+
+        $publicDiscounts = [
+            ['key' => 'pct_10',  'max_uses' => 500],
+            ['key' => 'fix_50k', 'max_uses' => 200],
+            ['key' => 'pct_15',  'max_uses' => 100],
+            ['key' => 'fix_100k','max_uses' => 50],
+            ['key' => 'pct_20',  'max_uses' => 30],
+        ];
+
+        $publicNames = [
+            'Welcome Discount',
+            'Hemat 50 Ribu',
+            'Promo 2026',
+            'Gratis 100 Ribu',
+            'Flash Sale',
+        ];
+
+        foreach ($publicDiscounts as $i => $data) {
+            $disc = Discount::find($discountMap[$data['key']]);
             Voucher::updateOrCreate(
-                ['code' => $data['code']],
-                array_merge($data, ['description_translations' => $descTranslations])
+                ['code' => $this->randomCode()],
+                [
+                    'name' => $publicNames[$i],
+                    'discount_id' => $discountMap[$data['key']],
+                    'description' => 'Voucher promosi publik',
+                    'is_active' => true,
+                    'is_global' => true,
+                    'max_uses' => $data['max_uses'],
+                    'uses_count' => 0,
+                ]
             );
         }
 
-        $this->command->info('✅ '.count($publicVouchers).' voucher PUBLIC berhasil dibuat.');
+        $this->command->info('✅ 5 voucher PUBLIC (16-karakter) berhasil dibuat.');
 
         // ── 2. VOUCHER PER-USER (is_global = false) ───────────────────────
 
-        $perUserVouchers = [
-            [
-                'code' => 'VIP-GOLD-25',
-                'description' => 'Voucher eksklusif member Gold — diskon 25%',
-                'discount_amount' => 25,
-                'discount_type' => 'percentage',
-                'min_purchase' => 3_000_000,
-                'expires_at' => now()->addMonths(12),
-                'is_active' => true,
-                'is_global' => false,
-                'max_uses' => null,
-                'uses_count' => 0,
-            ],
-            [
-                'code' => 'LOYAL-200K',
-                'description' => 'Hadiah loyalitas — potongan Rp 200.000',
-                'discount_amount' => 200_000,
-                'discount_type' => 'fixed',
-                'min_purchase' => 2_500_000,
-                'expires_at' => now()->addMonths(3),
-                'is_active' => true,
-                'is_global' => false,
-                'max_uses' => null,
-                'uses_count' => 0,
-            ],
-            [
-                'code' => 'BIRTHDAY-FREE',
-                'description' => 'Voucher ulang tahun — diskon 30%',
-                'discount_amount' => 30,
-                'discount_type' => 'percentage',
-                'min_purchase' => 1_000_000,
-                'expires_at' => now()->addMonths(1),
-                'is_active' => true,
-                'is_global' => false,
-                'max_uses' => null,
-                'uses_count' => 0,
-            ],
-            [
-                'code' => 'REFERRAL-75K',
-                'description' => 'Bonus referral — potongan Rp 75.000',
-                'discount_amount' => 75_000,
-                'discount_type' => 'fixed',
-                'min_purchase' => 500_000,
-                'expires_at' => now()->addMonths(2),
-                'is_active' => true,
-                'is_global' => false,
-                'max_uses' => null,
-                'uses_count' => 0,
-            ],
-            [
-                'code' => 'EARLY-BIRD-15',
-                'description' => 'Early bird booking — diskon 15%',
-                'discount_amount' => 15,
-                'discount_type' => 'percentage',
-                'min_purchase' => 5_000_000,
-                'expires_at' => now()->addMonths(4),
-                'is_active' => true,
-                'is_global' => false,
-                'max_uses' => null,
-                'uses_count' => 0,
-            ],
+        $perUserDiscounts = [
+            ['key' => 'pct_25',  'desc' => 'Voucher eksklusif member Gold'],
+            ['key' => 'fix_200k','desc' => 'Hadiah loyalitas pelanggan'],
+            ['key' => 'pct_30',  'desc' => 'Voucher spesial ulang tahun'],
+            ['key' => 'fix_75k', 'desc' => 'Bonus referral'],
+            ['key' => 'pct_15e', 'desc' => 'Early bird booking'],
+        ];
+
+        $perUserNames = [
+            'Gold Member',
+            'Loyalty Reward',
+            'Birthday Special',
+            'Referral Bonus',
+            'Early Bird',
         ];
 
         $createdPerUser = [];
-        foreach ($perUserVouchers as $data) {
-            $descTranslations = $this->translateToAllLocales($data['description']);
-            $createdPerUser[] = Voucher::updateOrCreate(
-                ['code' => $data['code']],
-                array_merge($data, ['description_translations' => $descTranslations])
+        foreach ($perUserDiscounts as $i => $data) {
+            $v = Voucher::updateOrCreate(
+                ['code' => $this->randomCode()],
+                [
+                    'name' => $perUserNames[$i],
+                    'discount_id' => $discountMap[$data['key']],
+                    'description' => $data['desc'],
+                    'is_active' => true,
+                    'is_global' => false,
+                    'max_uses' => null,
+                    'uses_count' => 0,
+                ]
             );
+            $createdPerUser[] = $v;
         }
 
-        $this->command->info('✅ '.count($perUserVouchers).' voucher PER-USER berhasil dibuat.');
+        $this->command->info('✅ 5 voucher PER-USER (16-karakter) berhasil dibuat.');
 
         // ── 3. ASSIGN VOUCHER PER-USER KE USER ────────────────────────────
 

@@ -6,7 +6,7 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
     font-family: DejaVu Sans, Arial, sans-serif;
-    font-size: 11px;
+    font-size: 12px;
     color: #333;
     background: #fff;
 }
@@ -15,13 +15,13 @@ body {
 /* ── Header ── */
 .header-table { width: 100%; margin-bottom: 28px; }
 .header-table td { vertical-align: top; }
-.company-name { font-size: 17px; font-weight: bold; color: #111; }
+.company-name { font-size: 16px; font-weight: 600; color: #111; }
 .company-sub  { font-size: 10px; color: #777; margin-top: 3px; }
-.invoice-label { font-size: 22px; font-weight: bold; color: #111; text-align: right; }
+.invoice-label { font-size: 24px; font-weight: 800; color: #111; text-align: right; }
 .invoice-meta  { font-size: 10px; color: #666; text-align: right; margin-top: 4px; line-height: 1.7; }
 
 /* ── Divider ── */
-hr { border: none; border-top: 1.5px solid #222; margin: 0 0 20px; }
+hr { border: none; border-top: 1.5px solid #ccc; margin: 0 0 20px; }
 hr.light { border-top: 1px solid #e0e0e0; margin: 16px 0; }
 
 /* ── Two-column info ── */
@@ -29,12 +29,12 @@ hr.light { border-top: 1px solid #e0e0e0; margin: 16px 0; }
 .info-table td { vertical-align: top; width: 50%; }
 .info-table td + td { padding-left: 24px; }
 .info-section-title { font-size: 9px; text-transform: uppercase; letter-spacing: 0.8px; color: #999; margin-bottom: 5px; }
-.info-row { margin-bottom: 3px; line-height: 1.5; }
+.info-row { margin-bottom: 3px; line-height: 1.6; }
 .info-key { color: #777; }
-.info-val { font-weight: bold; color: #111; }
+.info-val { font-weight: 600; color: #111; }
 
 /* ── Status badge ── */
-.badge { display: inline-block; padding: 2px 8px; border-radius: 2px; font-size: 10px; font-weight: bold; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 2px; font-size: 10px; font-weight: 600; }
 .badge-paid    { background: #e8f5e9; color: #2e7d32; }
 .badge-partial { background: #e3f2fd; color: #1565c0; }
 .badge-pending { background: #fff8e1; color: #e65100; }
@@ -48,25 +48,25 @@ table.items th { padding: 7px 8px; text-align: left; font-size: 10px; color: #55
 table.items th.right { text-align: right; }
 table.items td { padding: 10px 8px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
 table.items td.right { text-align: right; }
-table.items .item-name { font-weight: bold; color: #111; }
+table.items .item-name { font-weight: 600; color: #111; }
 table.items .item-sub  { font-size: 10px; color: #888; margin-top: 2px; }
 
 /* ── Totals ── */
 table.totals { width: 260px; margin-left: auto; border-collapse: collapse; margin-bottom: 20px; }
-table.totals td { padding: 5px 8px; font-size: 11px; }
-table.totals td.label { color: #666; }
-table.totals td.value { text-align: right; font-weight: bold; }
-table.totals tr.grand td { border-top: 1.5px solid #222; font-size: 13px; padding-top: 8px; }
+table.totals td { padding: 5px 8px; font-size: 12px; }
+table.totals td.label { color: #555; }
+table.totals td.value { text-align: right; font-weight: 600; }
+table.totals tr.grand td { border-top: 1.5px solid #222; font-size: 14px; padding-top: 8px; }
 
 /* ── Payment info ── */
 .payment-box { background: #f9f9f9; border: 1px solid #e8e8e8; border-radius: 3px; padding: 10px 12px; margin-bottom: 20px; }
 .payment-box table { width: 100%; border-collapse: collapse; }
-.payment-box td { padding: 3px 0; font-size: 11px; }
+.payment-box td { padding: 3px 0; font-size: 12px; }
 .payment-box td.key { color: #777; width: 45%; }
-.payment-box td.val { font-weight: bold; color: #111; }
+.payment-box td.val { font-weight: 600; color: #111; }
 
 /* ── Notes ── */
-.notes-box { background: #fafafa; border-left: 3px solid #ddd; padding: 8px 12px; font-size: 10px; color: #666; margin-bottom: 20px; line-height: 1.6; }
+.notes-box { background: #fafafa; border-left: 3px solid #ddd; padding: 8px 12px; font-size: 11px; color: #555; margin-bottom: 20px; line-height: 1.6; }
 
 /* ── Footer ── */
 .footer { border-top: 1px solid #e0e0e0; padding-top: 10px; font-size: 9px; color: #aaa; text-align: center; line-height: 1.7; }
@@ -108,7 +108,7 @@ $itemName = $item?->name ?? '-';
 $itemCat  = $item?->category?->name ?? '-';
 $weddingFlowersDecorasi = '-';
 
-// Transaction (metode pembayaran Midtrans)
+// Transaction
 $tx = $order->latestTransaction;
 $paymentGateway = $tx?->payment_gateway ?? '-';
 $paymentMethod  = $tx?->payment_method  ?? '-';

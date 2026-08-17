@@ -40,12 +40,33 @@
 {{-- ── UNIFIED: Custom dropdown untuk WEB, ANDROID, dan IOS ── --}}
 <div x-data="{
         isLanguageSwitcherOpen: false,
-        toggleDropdown() { this.isLanguageSwitcherOpen = !this.isLanguageSwitcherOpen },
+        toggleDropdown() {
+            this.isLanguageSwitcherOpen = !this.isLanguageSwitcherOpen;
+            if (this.isLanguageSwitcherOpen) {
+                this.$nextTick(() => this.positionDropdown());
+            }
+        },
         closeDropdown() { this.isLanguageSwitcherOpen = false },
-    }" class="relative inline-block text-left">
+        positionDropdown() {
+            const btn = this.$refs.langButton;
+            const panel = this.$refs.langPanel;
+            if (!btn || !panel) return;
+            const rect = btn.getBoundingClientRect();
+            const panelWidth = panel.offsetWidth || 220;
+            const panelHeight = panel.offsetHeight || 220;
+            let left = rect.right - panelWidth;
+            left = Math.max(8, Math.min(left, window.innerWidth - panelWidth - 8));
+            let top = rect.bottom + 8;
+            if (top + panelHeight > window.innerHeight - 8) {
+                top = Math.max(8, rect.top - panelHeight - 8);
+            }
+            panel.style.left = left + 'px';
+            panel.style.top = top + 'px';
+        },
+    }" class="relative inline-block text-left" x-on:click.outside="closeDropdown()">
 
     {{-- Trigger Button --}}
-    <button type="button" id="filament-language-switcher" x-on:click="toggleDropdown()"
+    <button type="button" id="filament-language-switcher" x-ref="langButton" x-on:click="toggleDropdown()"
         class="flex items-center justify-center gap-2 h-10 px-3 min-w-10 rounded-md ring-1 ring-gray-950/10 dark:ring-white/20 transition hover:bg-gray-50 dark:hover:bg-white/5"
         x-tooltip="{
                 content: '{{ __('Change Language') }}',
@@ -59,14 +80,16 @@
         </span>
     </button>
 
-    {{-- Dropdown Panel --}}
-    <div x-show="isLanguageSwitcherOpen" x-on:click.away="closeDropdown()"
-        x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95"
-        x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-75"
-        x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
-        class="lang-dd absolute right-0 top-full mt-2 divide-y rounded-lg shadow-2xl ring-1 bg-white divide-gray-100 ring-gray-950/10 dark:bg-gray-900 dark:divide-white/5 dark:ring-white/20"
-        style="z-index:2000; min-width:200px; max-height:220px; overflow-y:scroll; scrollbar-width:none; -ms-overflow-style:none;"
-        x-cloak>
+    {{-- Dropdown Panel — di-teleport ke <body> agar tidak terpotong oleh
+         overflow:hidden pada nav topbar serta bebas dari stacking-context halaman. --}}
+    <template x-teleport="body">
+        <div x-ref="langPanel" x-show="isLanguageSwitcherOpen"
+            x-transition:enter="transition ease-out duration-100" x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-75"
+            x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+            class="lang-dd fixed rounded-lg shadow-2xl divide-y ring-1 bg-white divide-gray-100 ring-gray-950/10 dark:bg-gray-900 dark:divide-white/5 dark:ring-white/20"
+            style="z-index:100000; min-width:220px; max-height:220px; overflow-y:scroll; scrollbar-width:none; -ms-overflow-style:none;"
+            x-cloak>
         <style>
             .lang-dd::-webkit-scrollbar {
                 display: none !important;
@@ -92,5 +115,6 @@
                 </a>
             @endforeach
         </div>
-    </div>
+        </div>
+    </template>
 </div>

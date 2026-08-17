@@ -15,7 +15,7 @@ class PackageController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Package::with(['weddingFlowersDecorasi', 'category', 'reviews', 'media']);
+            $query = Package::with(['vendor', 'category', 'reviews', 'media']);
 
             // Apply filters
             if ($request->filled('category_id')) {
@@ -43,7 +43,7 @@ class PackageController extends Controller
             }
 
             if ($request->filled('organizer_id')) {
-                $query->where('wedding_flowers_decorasi_id', $request->organizer_id);
+                $query->where('vendor_id', $request->organizer_id);
             }
 
             // Apply sorting
@@ -64,7 +64,18 @@ class PackageController extends Controller
             $query->orderBy($sortBy, $sortDirection);
 
             // Paginate results
-            $packages = $query->paginate($request->get('per_page', 10), ['*']);
+            $perPage = $request->get('per_page', 'all');
+
+            if ($perPage === 'all') {
+                $packages = $query->get();
+
+                return response()->json([
+                    'status' => 'success',
+                    'data' => $packages,
+                ]);
+            }
+
+            $packages = $query->paginate((int) $perPage, ['*']);
 
             return response()->json([
                 'status' => 'success',
@@ -93,7 +104,7 @@ class PackageController extends Controller
     {
         try {
             $package = Package::with([
-                'weddingFlowersDecorasi:id,name,address,rating,is_verified',
+                'vendor:id,store_name,logo,is_active',
                 'category:id,name,description,name_translations,description_translations',
                 'reviews' => function ($query): void {
                     $query->with('user:id,full_name,avatar_url')->latest()->limit(5);
@@ -125,7 +136,7 @@ class PackageController extends Controller
     public function featured(Request $request)
     {
         try {
-            $packages = Package::with(['weddingFlowersDecorasi', 'category', 'reviews', 'media'])
+            $packages = Package::with(['vendor', 'category', 'reviews', 'media'])
                 ->where('is_featured', true)
                 ->paginate($request->get('per_page', 10), ['*']);
 
@@ -155,7 +166,7 @@ class PackageController extends Controller
     public function onSale(Request $request)
     {
         try {
-            $packages = Package::with(['weddingFlowersDecorasi', 'category', 'reviews', 'media'])
+            $packages = Package::with(['vendor', 'category', 'reviews', 'media'])
                 ->whereNotNull('discount_price')
                 ->where('discount_price', '<', 'price')
                 ->paginate($request->get('per_page', 10), ['*']);

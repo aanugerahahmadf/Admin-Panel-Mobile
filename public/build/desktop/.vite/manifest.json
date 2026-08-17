@@ -4,7 +4,7 @@
     "name": "popper"
   },
   "resources/css/app.css": {
-    "file": "assets/app-do_T0GlG.css",
+    "file": "assets/app-DgzA-4N3.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -13,7 +13,7 @@
     ]
   },
   "resources/js/app-desktop.js": {
-    "file": "assets/app-desktop-DPTJKt1G.js",
+    "file": "assets/app-desktop-BX7qlqyp.js",
     "name": "app-desktop",
     "src": "resources/js/app-desktop.js",
     "isEntry": true,

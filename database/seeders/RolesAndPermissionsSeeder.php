@@ -28,6 +28,9 @@ class RolesAndPermissionsSeeder extends Seeder
         Role::firstOrCreate(['name' => 'customer']);
         $this->command->line('  <info>✓</info> Role: customer created');
 
+        Role::firstOrCreate(['name' => 'vendor']);
+        $this->command->line('  <info>✓</info> Role: vendor created');
+
         $this->command->info('--- Roles & Permissions Seeding Complete ---');
     }
 }

@@ -1,6 +1,20 @@
 <?php
 
 /**
+ * Router for `php artisan serve` (built-in PHP dev server).
+ * Static files are served directly instead of being parsed as PHP.
+ */
+if (php_sapi_name() === 'cli-server') {
+    $url = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '';
+    $file = __DIR__.'/public'.$url;
+    if ($url !== '/' && is_file($file)) {
+        return false;
+    }
+    require_once __DIR__.'/public/index.php';
+    return;
+}
+
+/**
  * Here is the serverless function entry
  * for deployment with Vercel.
  */

@@ -5,6 +5,7 @@ namespace App\Filament\User\Resources;
 use App\Filament\User\Resources\ReviewResource\Pages\ManageReviews;
 use App\Helpers\NativeNotificationHelper;
 use App\Models\Review;
+use App\Models\Order;
 use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -127,13 +128,74 @@ class ReviewResource extends Resource
                             ->native(false)
                             ->prefixIcon('heroicon-o-star')
                             ->extraAttributes(['class' => 'text-warning-600 font-bold']),
+                        Forms\Components\TextInput::make('title')
+                            ->label(__('Judul Ulasan'))
+                            ->maxLength(255)
+                            ->placeholder(__('Contoh: Sangat memuaskan dan rapi!'))
+                            ->columnSpanFull(),
                         Forms\Components\Textarea::make('comment')
                             ->label(__('Komentar Anda'))
                             ->required()
                             ->rows(5)
                             ->columnSpanFull(),
+                        Forms\Components\FileUpload::make('photo')
+                            ->label(__('Foto Ulasan'))
+                            ->image()
+                            ->directory('review-photos')
+                            ->disk('public')
+                            ->visibility('public')
+                            ->maxSize(5120)
+                            ->helperText(__('Opsional — unggah foto hasil dekorasi Anda.'))
+                            ->columnSpanFull(),
                     ]),
             ]);
+    }
+
+    /**
+     * Form fields untuk aksi "Tulis Ulasan" dari detail pesanan (paket/produk sudah terkunci).
+     */
+    public static function orderReviewFields(Order $order): array
+    {
+        return [
+            Forms\Components\Hidden::make('package_id')->default($order->package_id),
+            Forms\Components\Hidden::make('product_id')->default($order->product_id),
+            Forms\Components\Placeholder::make('item_name')
+                ->label(__('Layanan'))
+                ->content(fn () => $order->package?->name ?? $order->product?->name ?? '-'),
+            Forms\Components\Select::make('rating')
+                ->searchable()
+                ->label(__('Berikan Rating Bintang'))
+                ->options([
+                    5 => __('5 Bintang').' ('.__('Sangat Puas').')',
+                    4 => __('4 Bintang').' ('.__('Puas').')',
+                    3 => __('3 Bintang').' ('.__('Cukup').')',
+                    2 => __('2 Bintang').' ('.__('Kurang').')',
+                    1 => __('1 Bintang').' ('.__('Sangat Kurang').')',
+                ])
+                ->required()
+                ->native(false)
+                ->prefixIcon('heroicon-o-star')
+                ->extraAttributes(['class' => 'text-warning-600 font-bold'])
+                ->columnSpanFull(),
+            Forms\Components\TextInput::make('title')
+                ->label(__('Judul Ulasan'))
+                ->maxLength(255)
+                ->columnSpanFull(),
+            Forms\Components\Textarea::make('comment')
+                ->label(__('Komentar Anda'))
+                ->required()
+                ->rows(4)
+                ->columnSpanFull(),
+            Forms\Components\FileUpload::make('photo')
+                ->label(__('Foto Ulasan'))
+                ->image()
+                ->directory('review-photos')
+                ->disk('public')
+                ->visibility('public')
+                ->maxSize(5120)
+                ->helperText(__('Opsional — unggah foto hasil dekorasi Anda.'))
+                ->columnSpanFull(),
+        ];
     }
 
     public static function table(Table $table): Table
@@ -184,6 +246,13 @@ class ReviewResource extends Resource
 
                     // Middle Box (The Review Content)
                     Tables\Columns\Layout\Stack::make([
+                        Tables\Columns\ImageColumn::make('photo')
+                            ->label('')
+                            ->state(fn ($record) => $record->photo_url)
+                            ->height('100%')
+                            ->width('100%')
+                            ->square()
+                            ->visible(fn ($record) => ! empty($record->photo_url)),
                         Tables\Columns\TextColumn::make('comment')
                             ->formatStateUsing(fn ($state) => __($state))
                             ->size('sm'),

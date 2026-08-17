@@ -10,12 +10,13 @@ use App\Filament\User\Resources\ProductResource\Pages;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\PaymentMethod;
 use App\Models\Transaction;
 use App\Models\Voucher;
 use App\Models\Wishlist;
 use App\Providers\NativeServiceProvider;
 use App\Services\ChatService;
-use App\Services\MidtransService;
+
 use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Infolists;
@@ -426,9 +427,15 @@ class ProductResource extends Resource
         $totalBeforeVoucher = $product->final_price * (int) $data['quantity'];
         $finalPrice = max(0, $totalBeforeVoucher - $voucherDiscount);
 
+        // Payment method
+        $paymentMethodId = $data['payment_method_id'] ?? null;
+        $pm = $paymentMethodId ? PaymentMethod::find($paymentMethodId) : null;
+        $isCreditCard = $pm !== null && $pm->type === 'credit_card';
+        $adminFee = (float) ($pm?->fee ?? 0);
+
         // Default statuses
         $orderStatus = OrderStatus::PENDING;
-        $orderPaymentStatus = OrderPaymentStatus::PENDING;
+        $orderPaymentStatus = $isCreditCard ? OrderPaymentStatus::PAID : OrderPaymentStatus::PENDING;
 
         // Create Order
         $order = Order::create([
@@ -462,42 +469,29 @@ class ProductResource extends Resource
         // Process Transaction
         $reference = 'TRX-ITM-'.time().'-'.strtoupper(str()->random(4));
 
-        $transaction = Transaction::create([
+        Transaction::create([
             'user_id' => $user->id,
             'order_id' => $order->id,
             'type' => 'order',
             'reference_number' => $reference,
             'amount' => $finalPrice,
-            'admin_fee' => 0,
-            'total_amount' => $finalPrice,
-            'payment_gateway' => 'midtrans',
-            'status' => 'pending',
-            'notes' => null,
+            'admin_fee' => $adminFee,
+            'total_amount' => $finalPrice + $adminFee,
+            'payment_gateway' => $pm?->type ?? 'manual',
+            'payment_method' => $pm?->name,
+            'payment_method_id' => $pm?->id,
+            'status' => $isCreditCard ? 'success' : 'pending',
+            'paid_at' => $isCreditCard ? now() : null,
+            'notes' => $isCreditCard
+                ? __('Pembayaran kartu kredit / debit oleh pengguna.')
+                : __('Menunggu konfirmasi pembayaran manual.'),
         ]);
-
-        // Generate Midtrans Snap Token and open payment immediately
-        $snapToken = null;
-        try {
-            $snapToken = (new MidtransService)->createSnapToken($transaction->fresh(['order', 'user']));
-        } catch (\Throwable $e) {
-            Log::error('Failed to generate snap token: '.$e->getMessage());
-        }
-
-        if ($snapToken && $livewire) {
-            Notification::make()
-                ->title(__('Pesanan Berhasil Dibuat'))
-                ->body(__('Silakan selesaikan pembayaran Anda.'))
-                ->success()
-                ->send();
-
-            $livewire->dispatch('open-midtrans-snap', token: $snapToken);
-
-            return null;
-        }
 
         Notification::make()
             ->title(__('Pesanan Berhasil Dibuat'))
-            ->body(__('Silakan lakukan pembayaran di halaman "Pesanan Saya".'))
+            ->body($isCreditCard
+                ? __('Pembayaran Anda telah berhasil.')
+                : __('Silakan lakukan pembayaran di halaman "Pesanan Saya".'))
             ->success()
             ->send();
 
@@ -649,6 +643,28 @@ class ProductResource extends Resource
                                         '</div>'
                                     );
                                 }),
+                        ]),
+                ]),
+
+            Forms\Components\Wizard\Step::make(__('Metode Pembayaran'))
+                ->icon('heroicon-o-credit-card')
+                ->schema([
+                    Forms\Components\Section::make(__('Pilih Metode Pembayaran'))
+                        ->description(__('Pilih cara pembayaran yang Anda inginkan.'))
+                        ->icon('heroicon-o-credit-card')
+                        ->schema([
+                            Forms\Components\Radio::make('payment_method_id')
+                                ->label('')
+                                ->hiddenLabel()
+                                ->required()
+                                ->default(PaymentMethod::activeFirstId() ?: null)
+                                ->options(PaymentMethod::activeOptions())
+                                ->descriptions(PaymentMethod::activeDescriptions())
+                                ->columnSpanFull(),
+                            Forms\Components\Placeholder::make('payment_note')
+                                ->label('')
+                                ->hiddenLabel()
+                                ->content(__('Setelah pesanan dibuat, instruksi pembayaran akan tampil di halaman "Pesanan Saya".')),
                         ]),
                 ]),
 

@@ -10,6 +10,8 @@ class Bank extends Model
         'name',
         'code',
         'type',
+        'account_number',
+        'account_holder',
         'logo',
         'qris_payload',
         'qris_image',

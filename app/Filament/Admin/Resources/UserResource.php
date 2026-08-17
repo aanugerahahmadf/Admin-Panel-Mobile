@@ -14,7 +14,9 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\Rule;
 use Laravolt\Indonesia\Models\City as IndonesiaCity;
 use Laravolt\Indonesia\Models\District as IndonesiaDistrict;
 use Laravolt\Indonesia\Models\Province as IndonesiaProvince;
@@ -204,28 +206,40 @@ class UserResource extends Resource
                                         'npwp' => __('Nomor Pokok Wajib Pajak (NPWP)'),
                                     ])
                                     ->columnSpan(1),
-                                Forms\Components\TextInput::make('nik')
-                                    ->label(__('Nomer Induk Kependudukan (NIK)'))
+                                Forms\Components\TextInput::make('ktp_number')
+                                    ->label(__('Nomor KTP'))
                                     ->visible(fn (Get $get) => $get('identity_type') === 'ktp')
                                     ->maxLength(20)
+                                    ->rules(fn (Get $get, ?string $operation): array => $operation === 'edit'
+                                        ? ['nullable', 'string', 'size:16', Rule::unique('users')->ignore($get('id'))]
+                                        : ['nullable', 'string', 'size:16', Rule::unique('users')])
                                     ->prefixIcon('heroicon-o-identification')
                                     ->columnSpan(1),
                                 Forms\Components\TextInput::make('passport_number')
                                     ->label(__('Nomer Passport'))
                                     ->visible(fn (Get $get) => $get('identity_type') === 'passport')
                                     ->maxLength(20)
+                                    ->rules(fn (Get $get, ?string $operation): array => $operation === 'edit'
+                                        ? ['nullable', 'string', 'min:6', Rule::unique('users')->ignore($get('id'))]
+                                        : ['nullable', 'string', 'min:6', Rule::unique('users')])
                                     ->prefixIcon('heroicon-o-identification')
                                     ->columnSpan(1),
                                 Forms\Components\TextInput::make('sim_number')
                                     ->label(__('Nomor SIM'))
                                     ->visible(fn (Get $get) => $get('identity_type') === 'sim')
                                     ->maxLength(20)
+                                    ->rules(fn (Get $get, ?string $operation): array => $operation === 'edit'
+                                        ? ['nullable', 'string', 'min:6', 'max:20', Rule::unique('users')->ignore($get('id'))]
+                                        : ['nullable', 'string', 'min:6', 'max:20', Rule::unique('users')])
                                     ->prefixIcon('heroicon-o-identification')
                                     ->columnSpan(1),
                                 Forms\Components\TextInput::make('npwp_number')
                                     ->label(__('Nomor NPWP'))
                                     ->visible(fn (Get $get) => $get('identity_type') === 'npwp')
                                     ->maxLength(20)
+                                    ->rules(fn (Get $get, ?string $operation): array => $operation === 'edit'
+                                        ? ['nullable', 'string', 'min:15', 'max:20', Rule::unique('users')->ignore($get('id'))]
+                                        : ['nullable', 'string', 'min:15', 'max:20', Rule::unique('users')])
                                     ->prefixIcon('heroicon-o-identification')
                                     ->columnSpan(1),
                                 Forms\Components\TextInput::make('birth_place')
@@ -237,18 +251,6 @@ class UserResource extends Resource
                                     ->label(__('Tanggal Lahir'))
                                     ->native(false)
                                     ->prefixIcon('heroicon-o-calendar')
-                                    ->columnSpan(1),
-                                Forms\Components\FileUpload::make('ktp_photo')
-                                    ->label(fn (Get $get) => match ($get('identity_type')) {
-                                        'ktp' => __('Foto KTP'),
-                                        'passport' => __('Foto Passport'),
-                                        'sim' => __('Foto SIM'),
-                                        'npwp' => __('Foto NPWP'),
-                                        default => __('Foto Identitas'),
-                                    })
-                                    ->image()
-                                    ->maxSize(2048)
-                                    ->directory('ktp-photos')
                                     ->columnSpan(1),
                                 Forms\Components\TextInput::make('country')
                                     ->label(__('Negara'))
@@ -448,27 +450,87 @@ class UserResource extends Resource
                             ->collapsible()
                             ->collapsed(fn (?User $record) => blank($record?->social_id)),
 
-                        Forms\Components\Section::make(__('Verifikasi Wajah'))
-                            ->description(__('Verifikasi identitas via selfie.'))
+                        Forms\Components\Section::make(__('Verifikasi Wajah (KYC)'))
+                            ->description(__('Verifikasi identitas pengguna: KTP, selfie, dan face scan untuk keperluan KYC. Berbeda dari Kunci Aplikasi Wajah yang disimpan terpisah.'))
                             ->icon('heroicon-o-face-smile')
                             ->schema([
-                                Forms\Components\FileUpload::make('selfie_photo')
-                                    ->label(fn (Get $get) => match ($get('identity_type')) {
-                                        'ktp' => __('Foto Selfie + KTP'),
-                                        'passport' => __('Foto Selfie + Passport'),
-                                        'sim' => __('Foto Selfie + SIM'),
-                                        'npwp' => __('Foto Selfie + NPWP'),
-                                        default => __('Foto Selfie + Identitas'),
-                                    })
-                                    ->image()
-                                    ->maxSize(5120)
-                                    ->directory('selfies')
-                                    ->columnSpanFull(),
-                                Forms\Components\DateTimePicker::make('identity_verified_at')
-                                    ->label(__('Waktu Verifikasi Identitas'))
-                                    ->native(false)
-                                    ->disabled()
-                                    ->prefixIcon('heroicon-o-check-badge'),
+                                Forms\Components\Grid::make(3)
+                                    ->schema([
+                                        Forms\Components\FileUpload::make('ktp_photo')
+                                            ->label(fn (Get $get) => match ($get('identity_type')) {
+                                                'ktp' => __('Foto KTP'),
+                                                'passport' => __('Foto Passport'),
+                                                'sim' => __('Foto SIM'),
+                                                'npwp' => __('Foto NPWP'),
+                                                default => __('Foto Identitas'),
+                                            })
+                                            ->image()
+                                            ->maxSize(5120)
+                                            ->directory('ktp-photos'),
+                                        Forms\Components\FileUpload::make('selfie_photo')
+                                            ->label(__('Foto Selfie'))
+                                            ->image()
+                                            ->maxSize(5120)
+                                            ->directory('selfies'),
+                                        Forms\Components\FileUpload::make('face_scan_photo')
+                                            ->label(__('Foto Face Scan'))
+                                            ->image()
+                                            ->maxSize(5120)
+                                            ->directory('face-scans'),
+                                    ]),
+                                Forms\Components\Grid::make(2)
+                                    ->schema([
+                                        Forms\Components\TextInput::make('face_similarity')
+                                            ->label(__('Skor Kemiripan AI'))
+                                            ->disabled()
+                                            ->suffix('%')
+                                            ->placeholder('-')
+                                            ->helperText(__('Kombinasi cosine FaceNet + ORB (0-100).'))
+                                            ->prefixIcon('heroicon-o-chart-bar'),
+                                        Forms\Components\TextInput::make('face_reason')
+                                            ->label(__('Alasan Hasil AI'))
+                                            ->disabled()
+                                            ->placeholder('-')
+                                            ->prefixIcon('heroicon-o-document-text'),
+                                        Forms\Components\Toggle::make('liveness_completed')
+                                            ->label(__('Liveness di Perangkat Selesai'))
+                                            ->disabled()
+                                            ->helperText(__('Instruksi gerakan kepala & mata terbuka di aplikasi.')),
+                                        Forms\Components\Placeholder::make('face_liveness')
+                                            ->label(__('Detail Liveness Server'))
+                                            ->content(fn (?User $record) => self::formatLiveness($record?->face_liveness)),
+                                    ]),
+                                Forms\Components\Grid::make(2)
+                                    ->schema([
+                                        Forms\Components\Select::make('kyc_status')
+                                            ->label(__('Status Review KYC'))
+                                            ->options([
+                                                'verified' => __('Disetujui'),
+                                                'rejected' => __('Ditolak'),
+                                            ])
+                                            ->placeholder(__('Menunggu Review'))
+                                            ->helperText(__('Kosongkan untuk mengembalikan ke status menunggu review.'))
+                                            ->native(false)
+                                            ->prefixIcon('heroicon-o-shield-check'),
+                                        Forms\Components\Placeholder::make('kyc_reviewer')
+                                            ->label(__('Direview Oleh'))
+                                            ->content(fn (?User $record) => $record?->kycReviewer?->full_name ?? '-'),
+                                        Forms\Components\DateTimePicker::make('kyc_reviewed_at')
+                                            ->label(__('Waktu Review'))
+                                            ->disabled()
+                                            ->native(false)
+                                            ->prefixIcon('heroicon-o-clock'),
+                                        Forms\Components\DateTimePicker::make('identity_verified_at')
+                                            ->label(__('Waktu Verifikasi Identitas (AI)'))
+                                            ->disabled()
+                                            ->native(false)
+                                            ->prefixIcon('heroicon-o-check-badge'),
+                                        Forms\Components\Textarea::make('kyc_notes')
+                                            ->label(__('Catatan Admin'))
+                                            ->rows(3)
+                                            ->placeholder(__('Alasan approve/reject, tercatat untuk audit.'))
+                                            ->columnSpanFull(),
+                                    ]),
                             ])
                             ->collapsible()
                             ->collapsed(),
@@ -491,6 +553,52 @@ class UserResource extends Resource
                                     ->onIcon('heroicon-s-check')
                                     ->offIcon('heroicon-s-x-mark'),
                             ]),
+
+                        Forms\Components\Section::make(__('Kunci Aplikasi'))
+                            ->description(__('Pengaturan kunci aplikasi per pengguna: sidik jari perangkat, wajah terdaftar (AI Core), dan PIN lokal.'))
+                            ->icon('heroicon-o-lock-closed')
+                            ->schema([
+                                Forms\Components\Grid::make(3)
+                                    ->schema([
+                                        Forms\Components\Toggle::make('app_lock_fingerprint_enabled')
+                                            ->label(__('Sidik Jari (Perangkat)'))
+                                            ->disabled()
+                                            ->helperText(__('Aktif jika pengguna mengaktifkan kunci sidik jari di perangkatnya.')),
+                                        Forms\Components\Toggle::make('app_lock_face_enabled')
+                                            ->label(__('Wajah (AI Core — Kunci Aplikasi)'))
+                                            ->disabled()
+                                            ->helperText(__('Aktif jika pengguna mendaftarkan wajah untuk membuka kunci aplikasi.')),
+                                        Forms\Components\Toggle::make('app_lock_pin_enabled')
+                                            ->label(__('PIN Lokal'))
+                                            ->disabled()
+                                            ->helperText(__('Aktif jika pengguna mengatur PIN 6 digit untuk kunci aplikasi.')),
+                                    ]),
+                                Forms\Components\Grid::make(2)
+                                    ->schema([
+                                        Forms\Components\Toggle::make('app_lock_face_enrolled')
+                                            ->label(__('Wajah Terdaftar (Kunci Aplikasi)'))
+                                            ->disabled()
+                                            ->helperText(__('Wajah sudah didaftarkan dan diverifikasi. Berbeda dari Verifikasi Wajah KYC.')),
+                                        Forms\Components\Placeholder::make('app_lock_face_reference_display')
+                                            ->label(__('Foto Wajah Terdaftar (Kunci Aplikasi)'))
+                                            ->content(fn (?User $record) => $record?->app_lock_face_reference
+                                                ? '<img src="'.Storage::disk('public')->url($record->app_lock_face_reference).'" style="max-height:120px;border-radius:8px;" />'
+                                                : '-'),
+                                    ]),
+                                Forms\Components\Grid::make(3)
+                                    ->schema([
+                                        Forms\Components\TextInput::make('app_lock_face_enrolled_at')
+                                            ->label(__('Wajah Didaftarkan'))
+                                            ->disabled()
+                                            ->placeholder('-'),
+                                        Forms\Components\TextInput::make('app_lock_last_unlock_at')
+                                            ->label(__('Terakhir Dibuka'))
+                                            ->disabled()
+                                            ->placeholder('-'),
+                                    ]),
+                            ])
+                            ->collapsible()
+                            ->collapsed(),
                     ])->columnSpan(['lg' => 1]),
             ])->columns(3);
     }
@@ -588,8 +696,8 @@ class UserResource extends Resource
                     })
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                Tables\Columns\TextColumn::make('nik')
-                    ->label(__('Nomer Induk Kependudukan (NIK)'))
+                Tables\Columns\TextColumn::make('ktp_number')
+                    ->label(__('Nomor KTP'))
                     ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->placeholder('-'),
@@ -689,6 +797,52 @@ class UserResource extends Resource
                     ->formatStateUsing(fn (?string $state): string => $state ? __('Terverifikasi') : __('Belum'))
                     ->toggleable(isToggledHiddenByDefault: true),
 
+                Tables\Columns\ImageColumn::make('face_scan_photo')
+                    ->label(__('Face Scan'))
+                    ->circular()
+                    ->alignment('center')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->size(40),
+
+                Tables\Columns\TextColumn::make('kyc_status')
+                    ->label(__('Status KYC'))
+                    ->badge()
+                    ->alignment('center')
+                    ->color(fn (?string $state): string => match ($state) {
+                        'verified' => 'success',
+                        'rejected' => 'danger',
+                        default => 'warning',
+                    })
+                    ->formatStateUsing(fn (?string $state): string => match ($state) {
+                        'verified' => __('Disetujui'),
+                        'rejected' => __('Ditolak'),
+                        default => __('Menunggu Review'),
+                    })
+                    ->description(fn (User $record): string => match ($record->kyc_status) {
+                        'verified' => $record->kycReviewer?->full_name ?? __('AI'),
+                        'rejected' => $record->kyc_notes ?? '',
+                        default => $record->ktp_photo || $record->selfie_photo || $record->face_scan_photo
+                            ? __('Ada dokumen, belum direview')
+                            : __('Belum ada dokumen'),
+                    })
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('face_similarity')
+                    ->label(__('Kemiripan AI'))
+                    ->numeric(decimalPlaces: 1)
+                    ->suffix(' %')
+                    ->alignment('center')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->placeholder('-')
+                    ->color(fn ($state): string => $state !== null && (float) $state >= 55 ? 'success' : 'danger'),
+
+                Tables\Columns\IconColumn::make('liveness_completed')
+                    ->label(__('Liveness'))
+                    ->boolean()
+                    ->alignment('center')
+                    ->tooltip(__('Liveness di perangkat selesai'))
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\TextColumn::make('email_verified_at')
                     ->label(__('Diverifikasi Pada'))
                     ->dateTime()
@@ -719,6 +873,23 @@ class UserResource extends Resource
                         }
                     }),
 
+                Tables\Columns\TextColumn::make('app_lock')
+                    ->label(__('Kunci Aplikasi'))
+                    ->badge()
+                    ->placeholder('-')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->getStateUsing(function (?User $record): array {
+                        $badges = [];
+                        if ($record->app_lock_fingerprint_enabled) $badges[] = 'Fingerprint';
+                        if ($record->app_lock_face_enabled) $badges[] = 'Face ID';
+                        if ($record->app_lock_pin_enabled) $badges[] = 'PIN';
+                        return $badges;
+                    })
+                    ->color(fn (?User $record): string => match (true) {
+                        $record->app_lock_fingerprint_enabled || $record->app_lock_face_enabled || $record->app_lock_pin_enabled => 'success',
+                        default => 'gray',
+                    }),
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label(__('Terdaftar Pada'))
                     ->dateTime()
@@ -732,9 +903,115 @@ class UserResource extends Resource
                     ->alignment('center'),
             ])
             ->filters([
-                //
+                Tables\Filters\SelectFilter::make('kyc_status')
+                    ->label(__('Status KYC'))
+                    ->options([
+                        'pending' => __('Menunggu Review'),
+                        'verified' => __('Disetujui'),
+                        'rejected' => __('Ditolak'),
+                    ])
+                    ->native(false)
+                    ->query(function (Builder $query, array $data): void {
+                        $value = $data['value'] ?? null;
+                        if ($value === 'pending') {
+                            $query
+                                ->whereNull('kyc_status')
+                                ->where(fn (Builder $q) => $q
+                                    ->whereNotNull('ktp_photo')
+                                    ->orWhereNotNull('selfie_photo')
+                                    ->orWhereNotNull('face_scan_photo'));
+                        } elseif ($value === 'verified') {
+                            $query->where('kyc_status', 'verified');
+                        } elseif ($value === 'rejected') {
+                            $query->where('kyc_status', 'rejected');
+                        }
+                    }),
+                Tables\Filters\TernaryFilter::make('identity_verified_at')
+                    ->label(__('Terverifikasi AI'))
+                    ->queries(
+                        true: fn (Builder $query) => $query->whereNotNull('identity_verified_at'),
+                        false: fn (Builder $query) => $query->whereNull('identity_verified_at'),
+                        blank: fn (Builder $query) => $query,
+                    ),
             ])
             ->actions([
+                Tables\Actions\Action::make('approveKyc')
+                    ->label(__('Setujui KYC'))
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading(__('Setujui Verifikasi Identitas'))
+                    ->modalDescription(__('Setujui hasil verifikasi identitas pengguna ini. Status KYC akan menjadi "Disetujui".'))
+                    ->visible(fn (User $record): bool => $record->kyc_status !== 'verified' && ($record->ktp_photo || $record->selfie_photo || $record->face_scan_photo))
+                    ->action(function (User $record): void {
+                        $record->update([
+                            'kyc_status' => 'verified',
+                            'kyc_reviewed_by' => auth()->id(),
+                            'kyc_reviewed_at' => now(),
+                            'kyc_notes' => null,
+                            'identity_verified_at' => $record->identity_verified_at ?? now(),
+                        ]);
+                        Notification::make()
+                            ->success()
+                            ->title(__('KYC disetujui'))
+                            ->body(__('Verifikasi identitas pengguna ini telah disetujui.'))
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('rejectKyc')
+                    ->label(__('Tolak KYC'))
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading(__('Tolak Verifikasi Identitas'))
+                    ->modalDescription(__('Tolak verifikasi identitas pengguna ini. Status verifikasi akan dicabut.'))
+                    ->form([
+                        Forms\Components\Textarea::make('kyc_notes')
+                            ->label(__('Alasan Penolakan'))
+                            ->required()
+                            ->rows(3)
+                            ->placeholder(__('Contoh: foto tidak sesuai, wajah tidak terbaca, dokumen mencurigakan')),
+                    ])
+                    ->modalSubmitActionLabel(__('Tolak KYC'))
+                    ->visible(fn (User $record): bool => $record->kyc_status !== 'rejected' && ($record->ktp_photo || $record->selfie_photo || $record->face_scan_photo))
+                    ->action(function (User $record, array $data): void {
+                        $record->update([
+                            'kyc_status' => 'rejected',
+                            'kyc_reviewed_by' => auth()->id(),
+                            'kyc_reviewed_at' => now(),
+                            'kyc_notes' => $data['kyc_notes'] ?? null,
+                            'identity_verified_at' => null,
+                        ]);
+                        Notification::make()
+                            ->danger()
+                            ->title(__('KYC ditolak'))
+                            ->body(__('Verifikasi identitas pengguna ini ditolak.'))
+                            ->send();
+                    }),
+                Tables\Actions\Action::make('resetAppLock')
+                    ->label(__('Reset Kunci Aplikasi'))
+                    ->icon('heroicon-o-lock-open')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalHeading(__('Reset Kunci Aplikasi'))
+                    ->modalDescription(__('Nonaktifkan semua metode kunci aplikasi (sidik jari, Face ID, PIN) dan hapus data wajah terdaftar.'))
+                    ->visible(fn (User $record): bool => $record->app_lock_fingerprint_enabled || $record->app_lock_face_enabled || $record->app_lock_pin_enabled)
+                    ->action(function (User $record): void {
+                        $record->update([
+                            'app_lock_fingerprint_enabled' => false,
+                            'app_lock_face_enabled' => false,
+                            'app_lock_pin_enabled' => false,
+                            'app_lock_pin_hash' => null,
+                            'app_lock_face_enrolled' => false,
+                            'app_lock_face_reference' => null,
+                            'app_lock_face_enrolled_at' => null,
+                            'app_lock_last_unlock_at' => null,
+                        ]);
+                        Notification::make()
+                            ->success()
+                            ->title(__('Kunci Aplikasi direset'))
+                            ->body(__('Semua metode kunci aplikasi pengguna telah dinonaktifkan.'))
+                            ->send();
+                    }),
                 Tables\Actions\ViewAction::make()
                     ->slideOver()
                     ->button()
@@ -774,5 +1051,35 @@ class UserResource extends Resource
         return [
             'index' => Pages\ManageUsers::route('/'),
         ];
+    }
+
+    /**
+     * Format hasil liveness/anti-spoof dari AI Core untuk ditampilkan di panel.
+     */
+    protected static function formatLiveness(?array $liveness): string
+    {
+        if (empty($liveness)) {
+            return '-';
+        }
+
+        $labels = [
+            'blur_pass' => __('Bebas blur'),
+            'single_face' => __('Wajah tunggal'),
+            'face_size_ok' => __('Ukuran wajah cukup'),
+            'eyes_open' => __('Mata terbuka'),
+        ];
+
+        $rows = [];
+        foreach ($labels as $key => $label) {
+            if (array_key_exists($key, $liveness)) {
+                $rows[] = $label.': '.($liveness[$key] ? __('Ya') : __('Tidak'));
+            }
+        }
+
+        if (isset($liveness['mtcnn_confidence'])) {
+            $rows[] = __('Confidence MTCNN').': '.round((float) $liveness['mtcnn_confidence'] * 100, 1).'%';
+        }
+
+        return $rows ? implode(' | ', $rows) : '-';
     }
 }

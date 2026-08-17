@@ -10,6 +10,8 @@ use App\Filament\User\Resources\OrderResource\Pages\ManageOrders;
 use App\Filament\User\Resources\OrderResource\Pages\ViewOrder;
 use App\Helpers\NativeNotificationHelper;
 use App\Models\Order;
+use App\Models\PaymentMethod;
+use App\Models\Review;
 use App\Models\Transaction;
 use App\Models\Voucher;
 use App\Providers\NativeServiceProvider;
@@ -419,37 +421,29 @@ class OrderResource extends Resource
             ->actions([
                 Tables\Actions\ActionGroup::make([
 
-                    // Bayar
-                    Tables\Actions\Action::make('pay_midtrans')
+                    // Bayar (auto-confirm, no third-party gateway)
+                    Tables\Actions\Action::make('pay_now')
                         ->label(__('Bayar Sekarang'))
                         ->icon('heroicon-m-credit-card')
-                        ->color('primary')
+                        ->color('success')
                         ->visible(fn ($record) => in_array($record?->payment_status, [
                             OrderPaymentStatus::UNPAID,
                             OrderPaymentStatus::FAILED,
                             OrderPaymentStatus::PENDING,
                         ]))
-                        ->action(function (Order $record, Component $livewire) {
-                            try {
-                                $reference = 'PAY-'.strtoupper(str()->random(5)).'-'.$record->id;
-                                $transaction = Transaction::create([
-                                    'user_id' => $record->user_id,
-                                    'order_id' => $record->id,
-                                    'type' => 'order',
-                                    'reference_number' => $reference,
-                                    'amount' => $record->total_price,
-                                    'admin_fee' => 0,
-                                    'total_amount' => $record->total_price,
-                                    'payment_gateway' => 'midtrans',
-                                    'status' => 'pending',
-                                    'notes' => __('Pembayaran via Midtrans untuk Pesanan #').$record->order_number,
+                        ->requiresConfirmation()
+                        ->modalHeading(__('Konfirmasi Pembayaran'))
+                        ->modalDescription(fn (Order $record) => __('Tandai pesanan #:order sebagai LUNAS?', ['order' => $record->order_number]))
+                        ->action(function (Order $record) {
+                            $transaction = $record->latestTransaction;
+                            if ($transaction) {
+                                $transaction->update([
+                                    'status' => 'completed',
+                                    'paid_at' => now(),
                                 ]);
-                                $record->update(['payment_status' => OrderPaymentStatus::PENDING]);
-
-                                $livewire->dispatch('payment-created', token: '');
-                            } catch (\Exception $e) {
-                                Notification::make()->title(__('Gagal Memuat Pembayaran'))->body($e->getMessage())->danger()->send();
                             }
+                            $record->update(['payment_status' => OrderPaymentStatus::PAID]);
+                            Notification::make()->title(__('Pembayaran Berhasil'))->success()->send();
                         }),
 
                     // Detail
@@ -515,6 +509,39 @@ class OrderResource extends Resource
                         ])
                         ->modalWidth('4xl')
                         ->slideOver(false),
+
+                    // Tulis Ulasan (hanya order selesai)
+                    Tables\Actions\Action::make('write_review')
+                        ->label(__('Tulis Ulasan'))
+                        ->icon('heroicon-m-star')
+                        ->color('warning')
+                        ->visible(fn ($record) => $record->status === OrderStatus::COMPLETED)
+                        ->modalHeading(__('Tulis Ulasan'))
+                        ->form(fn (Order $record) => ReviewResource::orderReviewFields($record))
+                        ->action(function (Order $record, array $data) {
+                            if ($record->package_id && Review::where('user_id', $record->user_id)->where('package_id', $record->package_id)->exists()) {
+                                Notification::make()->title(__('Anda sudah menulis ulasan untuk layanan ini.'))->warning()->send();
+
+                                return;
+                            }
+                            if ($record->product_id && Review::where('user_id', $record->user_id)->where('product_id', $record->product_id)->exists()) {
+                                Notification::make()->title(__('Anda sudah menulis ulasan untuk layanan ini.'))->warning()->send();
+
+                                return;
+                            }
+
+                            Review::create([
+                                'user_id' => $record->user_id,
+                                'package_id' => $record->package_id,
+                                'product_id' => $record->product_id,
+                                'rating' => $data['rating'],
+                                'title' => $data['title'] ?? null,
+                                'comment' => $data['comment'] ?? null,
+                                'photo' => $data['photo'] ?? null,
+                            ]);
+
+                            NativeNotificationHelper::success(__('Terima kasih atas ulasan Anda!'));
+                        }),
 
                 ])
                     ->label(__('Klik Tombol Grup'))
@@ -685,6 +712,57 @@ class OrderResource extends Resource
                             ->hiddenLabel()
 
                             ->columnSpanFull(),
+                    ]),
+
+                // Metode Pembayaran & Countdown
+                Infolists\Components\Section::make(__('Metode Pembayaran & Batas Waktu'))
+                    ->icon('heroicon-o-credit-card')
+                    ->iconColor('success')
+                    ->compact()
+                    ->schema([
+                        Infolists\Components\ViewEntry::make('payment_info')
+                            ->hiddenLabel()
+                            ->view('filament.user.components.order-payment-info'),
+                        Infolists\Components\Actions::make([
+                            Infolists\Components\Actions\Action::make('upload_proof')
+                                ->label(__('Upload Bukti Pembayaran'))
+                                ->icon('heroicon-o-photo')
+                                ->button()
+                                ->color('success')
+                                ->visible(fn (Order $record) => in_array($record->payment_status, [
+                                    OrderPaymentStatus::UNPAID,
+                                    OrderPaymentStatus::PENDING,
+                                    OrderPaymentStatus::FAILED,
+                                ]) && $record->status !== OrderStatus::CANCELLED)
+                                ->modalHeading(__('Upload Bukti Pembayaran'))
+                                ->modalDescription(__('Unggah bukti transfer / pembayaran Anda. Pesanan akan ditandai LUNAS.'))
+                                ->form([
+                                    Forms\Components\FileUpload::make('proof')
+                                        ->label(__('Bukti Pembayaran'))
+                                        ->image()
+                                        ->directory('payment-proofs')
+                                        ->disk('public')
+                                        ->visibility('public')
+                                        ->maxSize(5120)
+                                        ->required(),
+                                ])
+                                ->action(function (Order $record, array $data) {
+                                    $transaction = $record->latestTransaction;
+                                    if ($transaction) {
+                                        $transaction->update([
+                                            'status' => 'success',
+                                            'paid_at' => now(),
+                                            'notes' => $data['proof'] ?? $transaction->notes,
+                                        ]);
+                                    }
+                                    $record->update(['payment_status' => OrderPaymentStatus::PAID]);
+                                    Notification::make()
+                                        ->title(__('Bukti pembayaran diterima.'))
+                                        ->body(__('Pesanan #:order telah ditandai LUNAS.', ['order' => $record->order_number]))
+                                        ->success()
+                                        ->send();
+                                })->columnSpanFull(),
+                        ])->columnSpanFull(),
                     ]),
             ]);
     }

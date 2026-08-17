@@ -44,8 +44,12 @@
     }
 
     /* Hide footer when sidebar is open on mobile (admin panel) */
+    /* Mobile: sembunyikan footer — user panel memakai bottom-nav (fixed, z-35)
+       yang menggantikan footer. Kalau dibiarkan, footer (fixed bottom:0, putih)
+       menumpuk di bawah bottom-nav dan menutup baris bawah konten/grid. */
     @media (max-width: 1023px) {
-        .fi-footer-sidebar-open {
+        .fi-footer-sidebar-open,
+        .fi-main-footer {
             display: none !important;
         }
     }
@@ -60,7 +64,7 @@
 
     /* User panel: comprehensive padding for ALL layouts to prevent footer overlap
        Desktop (width >= 1024px): footer only (3.5rem)
-       Mobile (width < 1024px): footer + bottom nav (3.5rem + 4rem) */
+       Mobile (< 1024px): footer disembunyikan — bottom-nav menangani padding */
     @media (min-width: 1024px) {
         /* Desktop: footer only, no bottom nav */
         body.fi-panel-user:not(:has(.fi-auth-footer)) .fi-layout,
@@ -74,18 +78,11 @@
             padding-bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px)) !important;
         }
     }
-
-    @media (max-width: 1023px) {
-        /* Mobile: footer + bottom nav (stacked) */
-        body.fi-panel-user:not(:has(.fi-auth-footer)) .fi-layout,
-        body.fi-panel-user:not(:has(.fi-auth-footer)) .fi-main,
-        body.fi-panel-user:not(:has(.fi-auth-footer)) .fi-main-ctn,
-        body.fi-panel-user:not(:has(.fi-auth-footer)) .fi-simple-layout,
-        body.fi-panel-user:not(:has(.fi-auth-footer)) .fi-simple-main-ctn,
-        body.fi-panel-user:not(:has(.fi-auth-footer)) .fi-simple-main,
-        body.fi-panel-user:not(:has(.fi-auth-footer)) .fi-page,
-        body.fi-panel-user:not(:has(.fi-auth-footer)) .fi-content {
-            padding-bottom: calc(7.5rem + env(safe-area-inset-bottom, 0px)) !important;
-        }
-    }
+    /*
+     * Mobile (< 1024px): footer disembunyikan & digantikan bottom-nav.
+     * Padding bawah untuk konten mobile sudah ditangani SATU sumber saja oleh
+     * .fi-main-ctn (scroll container) di mobile-bottom-nav.blade.php.
+     * Dulu ditambah 7.5rem di sini → double padding → pita latar kosong besar
+     * di bawah grid / baris bawah grid ikut tertutup.
+     */
 </style>

@@ -380,17 +380,6 @@ class AppServiceProvider extends ServiceProvider
             });
         }
 
-        // 🔐 CSP handled via App\Support\Csp\MidtransPreset and Spatie\Csp\AddCspHeaders middleware
-
-        // 💳 MIDTRANS SNAP MODAL — Enabled for both Web & Native Mobile for compatibility
-        FilamentView::registerRenderHook(
-            PanelsRenderHook::BODY_END,
-            fn (): string => Blade::render('
-                <div id="snap-container" style="display:none; width:100%; max-width:500px; margin:1rem auto; min-height:480px;"></div>
-                @include("filament.snap-script")
-            '),
-        );
-
         // 📱 MOBILE PAGINATION NAV
         FilamentView::registerRenderHook(
             PanelsRenderHook::BODY_END,

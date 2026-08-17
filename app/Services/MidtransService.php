@@ -2,73 +2,114 @@
 
 namespace App\Services;
 
-use App\Models\Order;
+use App\Enums\OrderPaymentStatus;
 use App\Models\Transaction;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Midtrans\Config;
-use Midtrans\Snap;
 
 class MidtransService
 {
-    public function __construct()
-    {
-        Config::$serverKey = config('midtrans.server_key');
-        Config::$clientKey = config('midtrans.client_key');
-        Config::$isProduction = (bool) config('midtrans.is_production');
-        Config::$isSanitized = (bool) config('midtrans.is_sanitized');
-        Config::$is3ds = (bool) config('midtrans.is_3ds');
+    private const PAYMENT_TYPES = [
+        'bank_transfer' => ['bca_va', 'bni_va', 'bri_va', 'permata_va'],
+        'e_wallet' => [],
+        'qris' => ['qris'],
+        'credit_card' => ['credit_card'],
+    ];
 
-        // Disable SSL verification on local/development to avoid Windows CA bundle issues.
-        // Never set this to false in production.
-        if (! config('midtrans.is_production') && app()->isLocal()) {
-            Config::$curlOptions = [
-                CURLOPT_SSL_VERIFYPEER => false,
-                CURLOPT_SSL_VERIFYHOST => false,
-            ];
-        }
+    public function isEnabled(): bool
+    {
+        return config('midtrans.enabled', false)
+            && config('midtrans.server_key') !== ''
+            && config('midtrans.server_key') !== null;
     }
 
     /**
-     * Create a Midtrans transaction and return the snap token.
-     * Also persists snap_token and payment_url on the given Transaction model.
+     * E-wallet / QRIS / Card -> Midtrans Snap enabled_payments.
      */
-    public function createSnapToken(Transaction $transaction): ?string
+    public function enabledPayments(string $pmType, ?string $pmCode = null): array
     {
+        if ($pmType === 'e_wallet') {
+            // Midtrans hanya mendukung 4 e-wallet ini; kode lain -> default GoPay.
+            $allowed = ['gopay', 'ovo', 'dana', 'shopeepay'];
+
+            return in_array($pmCode, $allowed, true) ? [$pmCode] : ['gopay'];
+        }
+
+        return self::PAYMENT_TYPES[$pmType] ?? ['credit_card'];
+    }
+
+    /**
+     * Create a Midtrans Snap token for the given transaction + payment method.
+     * Persists payment_url on the transaction.
+     *
+     * @return array{token: string, redirect_url: string}|null
+     */
+    public function createSnapToken(Transaction $transaction, string $pmType, ?string $pmCode = null): ?array
+    {
+        if (! $this->isEnabled()) {
+            return null;
+        }
+
         $order = $transaction->order;
         $user = $transaction->user;
-
         if (! $order || ! $user) {
-            Log::error('[Midtrans] Missing order or user for transaction #'.$transaction->id);
+            Log::error('[Midtrans] Missing order/user for transaction #'.$transaction->id);
 
             return null;
         }
 
+        $gross = (int) round($transaction->total_amount);
+        $enabled = $this->enabledPayments($pmType, $pmCode);
+
         $params = [
             'transaction_details' => [
                 'order_id' => $transaction->reference_number,
-                'gross_amount' => (int) round($transaction->total_amount),
+                'gross_amount' => $gross,
             ],
+            'item_details' => $this->buildItemDetails($order, $transaction),
             'customer_details' => [
                 'first_name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->whatsapp ?? $user->phone ?? '',
             ],
-            'item_details' => $this->buildItemDetails($order, $transaction),
+            'enabled_payments' => $enabled,
+            'credit_card' => [
+                'secure' => config('midtrans.is_3ds'),
+            ],
         ];
 
         try {
-            $snapToken = Snap::getSnapToken($params);
+            $response = Http::withBasicAuth(config('midtrans.server_key'), '')
+                ->acceptJson()
+                ->post(config('midtrans.snap_url'), $params);
 
-            $paymentUrl = config('midtrans.is_production')
-                ? 'https://app.midtrans.com/snap/v2/vtweb/'.$snapToken
-                : 'https://app.sandbox.midtrans.com/snap/v2/vtweb/'.$snapToken;
+            if (! $response->successful()) {
+                Log::error('[Midtrans] Snap API error ('.$response->status().'): '.$response->body());
+
+                return null;
+            }
+
+            $data = $response->json();
+            $token = $data['token'] ?? null;
+            if (! $token) {
+                Log::error('[Midtrans] Snap response tanpa token: '.$response->body());
+
+                return null;
+            }
+
+            $redirectUrl = config('midtrans.snap_web_url').$token;
 
             $transaction->update([
-                'snap_token' => $snapToken,
-                'payment_url' => $paymentUrl,
+                'payment_gateway' => 'midtrans',
+                'payment_url' => $redirectUrl,
+                'status' => 'pending',
+                'metadata' => array_merge($transaction->metadata ?? [], [
+                    'snap_token' => $token,
+                    'snap_enabled_payments' => $enabled,
+                ]),
             ]);
 
-            return $snapToken;
+            return ['token' => $token, 'redirect_url' => $redirectUrl];
         } catch (\Throwable $e) {
             Log::error('[Midtrans] Failed to get snap token: '.$e->getMessage(), [
                 'transaction_id' => $transaction->id,
@@ -79,21 +120,108 @@ class MidtransService
         }
     }
 
-    private function buildItemDetails(Order $order, Transaction $transaction): array
+    /**
+     * Handle a Midtrans webhook notification and reconcile the Transaction/Order.
+     */
+    public function handleNotification(array $payload): bool
     {
-        $items = [];
+        $reference = $payload['order_id'] ?? null;
+        if (! $reference) {
+            return false;
+        }
 
-        $name = $order->package?->name ?? $order->product?->name ?? 'Pesanan #'.$order->order_number;
-        $price = (int) round($transaction->total_amount / max(1, $order->quantity ?? 1));
-        $qty = $order->quantity ?? 1;
+        $transaction = Transaction::where('reference_number', $reference)->first();
+        if (! $transaction) {
+            return false;
+        }
 
-        $items[] = [
-            'id' => 'ORDER-'.$order->id,
-            'price' => $price,
-            'quantity' => $qty,
-            'name' => mb_substr($name, 0, 50),
+        $order = $transaction->order;
+        if (! $order) {
+            return false;
+        }
+
+        if (! $this->verifySignature($payload)) {
+            Log::warning('[Midtrans] Signature tidak valid untuk '.$reference);
+
+            return false;
+        }
+
+        $transactionStatus = $payload['transaction_status'] ?? null;
+        $fraudStatus = $payload['fraud_status'] ?? null;
+        $paymentType = $payload['payment_type'] ?? $transaction->payment_gateway;
+
+        // Sukses bila settlement/capture/success (dan fraud accept untuk kartu)
+        $isSuccess = in_array($transactionStatus, ['capture', 'settlement', 'success'])
+            && in_array($fraudStatus, [null, 'accept']);
+
+        if ($isSuccess) {
+            $transaction->update([
+                'status' => 'success',
+                'paid_at' => now(),
+                'payment_gateway' => 'midtrans',
+                'payment_method' => $paymentType ?? $transaction->payment_method,
+                'metadata' => array_merge($transaction->metadata ?? [], [
+                    'midtrans_payload' => $payload,
+                ]),
+            ]);
+
+            $order->update([
+                'payment_status' => OrderPaymentStatus::PAID,
+            ]);
+
+            return true;
+        }
+
+        if (in_array($transactionStatus, ['expire', 'cancel', 'deny'])) {
+            $transaction->update([
+                'status' => 'failed',
+                'metadata' => array_merge($transaction->metadata ?? [], [
+                    'midtrans_payload' => $payload,
+                ]),
+            ]);
+            $order->update([
+                'payment_status' => OrderPaymentStatus::FAILED,
+            ]);
+        } elseif ($transactionStatus === 'pending') {
+            $order->update(['payment_status' => OrderPaymentStatus::PENDING]);
+        }
+
+        return true;
+    }
+
+    private function verifySignature(array $data): bool
+    {
+        if (! config('midtrans.is_production')) {
+            // Sandbox: tetap verifikasi bila signature tersedia
+        }
+
+        $rawSignature = ($data['signature_key'] ?? null)
+            ?? ($data['original_signature_key'] ?? null);
+        if ($rawSignature) {
+            $string = (string) ($data['order_id'] ?? '')
+                .' '.(string) ($data['status_code'] ?? '')
+                .' '.(string) ($data['gross_amount'] ?? '').' '
+                .config('midtrans.server_key');
+
+            return hash_equals($rawSignature, base64_encode(hash('sha512', $string, true)));
+        }
+
+        return true;
+    }
+
+    private function buildItemDetails($order, Transaction $transaction): array
+    {
+        $name = $order->package?->name ?? $order->product?->name ?? ('Pesanan #'.$order->order_number);
+        $qty = max(1, (int) ($order->quantity ?? 1));
+        $price = (int) round($transaction->total_amount / $qty);
+
+        return [
+            [
+                'id' => 'ORDER-'.$order->id,
+                'price' => $price,
+                'quantity' => $qty,
+                'name' => mb_substr($name, 0, 50),
+            ],
         ];
-
-        return $items;
     }
 }

@@ -48,8 +48,8 @@ class PersonalInfoComponent extends Component implements HasForms
 
             $avatarValue = filter_var($rawAvatar, FILTER_VALIDATE_URL) ? null : $rawAvatar;
 
-            $nik = $user->nik;
-            $identityType = $user->identity_type ?? (($nik && preg_match('/^\d{16}$/', $nik)) ? 'ktp' : 'passport');
+            $ktpNumber = $user->ktp_number;
+            $identityType = $user->identity_type ?? (($ktpNumber && preg_match('/^\d{16}$/', $ktpNumber)) ? 'ktp' : 'passport');
 
             $this->form->fill([
                 'identity_type' => $identityType,
@@ -68,7 +68,7 @@ class PersonalInfoComponent extends Component implements HasForms
                 'income_range' => $user->income_range,
                 'source_of_funds' => $user->source_of_funds,
                 'address' => $user->address,
-                'nik' => $nik,
+                'ktp_number' => $ktpNumber,
                 'passport_number' => $user->passport_number,
                 'sim_number' => $user->sim_number,
                 'npwp_number' => $user->npwp_number,
@@ -238,8 +238,8 @@ class PersonalInfoComponent extends Component implements HasForms
                                 'npwp' => __('Nomor Pokok Wajib Pajak (NPWP)'),
                             ])
                             ->columnSpan(1),
-                        TextInput::make('nik')
-                            ->label(__('Nomer Induk Kependudukan (NIK)'))
+                        TextInput::make('ktp_number')
+                            ->label(__('Nomor KTP'))
                             ->disabled()
                             ->visible(fn (Get $get) => $get('identity_type') === 'ktp')
                             ->maxLength(20)

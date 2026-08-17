@@ -196,7 +196,8 @@ class CbirSearchPage extends Page implements HasForms
 
         $cameraFields = [
             Forms\Components\View::make('filament.user.components.cbir-camera-options')
-                ->visible(fn () => $this->mode === 'camera')
+                // Output only: input kamera/galeri dipindah ke global search.
+                ->visible(false)
                 ->viewData(fn () => [
                     'isNative' => $isNative,
                     'isProcessing' => $this->isProcessing,
@@ -208,7 +209,7 @@ class CbirSearchPage extends Page implements HasForms
             // Web browser: hidden TakePicture WebRTC — triggered via menu (cbir-open-webrtc-camera event)
             $cameraFields[] = TakePicture::make('camera_image')
                 ->hiddenLabel()
-                ->visible(fn () => $this->mode === 'camera')
+                ->visible(false)
                 ->live()
                 ->disk('public')
                 ->directory('cbir-camera')
@@ -264,30 +265,51 @@ class CbirSearchPage extends Page implements HasForms
 
         return $form
             ->schema([
-                Forms\Components\Section::make(__('Pencarian Visual AI'))
-                    ->description(__('Temukan dekorasi bunga pernikahan terbaik dengan foto'))
-                    ->icon('heroicon-o-sparkles')
-                    ->schema([
-                        ...$cameraFields,
-
-                        Forms\Components\View::make('filament.user.components.cbir-browse-options')
-                            ->visible(fn () => $this->mode === 'upload')
-                            ->viewData(fn () => [
-                                'isNative' => $isNative,
-                                'browseAccept' => self::CAMERA_ACCEPT,
-                            ]),
-
-                        Forms\Components\Placeholder::make('status_message')
-                            ->label('')
-                            ->content(fn (Forms\Get $get) => new HtmlString(
-                                '<div class="text-sm text-center">'.e($get('status_message') ?? $this->statusMessage ?? '').'</div>'
-                            ))
-                            ->visible(fn (Forms\Get $get) => (bool) ($get('status_message') ?? $this->statusMessage))
-                            ->extraAttributes(['class' => 'p-3 bg-gray-900/80 dark:bg-gray-800 rounded-xl text-white font-medium shadow-md']),
-
-                        Forms\Components\View::make('filament.user.components.cbir-results-preview')
-                            ->visible(fn () => ! empty(session('cbir_mixed_results'))),
+                Forms\Components\View::make('filament.user.components.cbir-browse-options')
+                    // Output only: input kamera/galeri dipindah ke global search.
+                    ->visible(false)
+                    ->viewData(fn () => [
+                        'isNative' => $isNative,
+                        'browseAccept' => self::CAMERA_ACCEPT,
                     ]),
+
+                Forms\Components\Placeholder::make('status_message')
+                    ->label('')
+                    ->content(fn (Forms\Get $get) => new HtmlString(
+                        '<div class="text-sm text-center">'.e($get('status_message') ?? $this->statusMessage ?? '').'</div>'
+                    ))
+                    ->visible(fn (Forms\Get $get) => (bool) ($get('status_message') ?? $this->statusMessage))
+                    ->extraAttributes(['class' => 'p-3 bg-gray-900/80 dark:bg-gray-800 rounded-xl text-white font-medium shadow-md']),
+
+                Forms\Components\View::make('filament.user.components.cbir-results-preview')
+                    ->visible(fn () => ! empty(session('cbir_mixed_results'))),
+
+                Forms\Components\Placeholder::make('cbir_no_match')
+                    ->label('')
+                    ->content(fn () => new HtmlString(
+                        '<div class="flex flex-col items-center gap-3 py-14 text-center">
+                            <svg class="h-10 w-10 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                            </svg>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">'.e(__('Tidak ada dekorasi yang cocok dengan pencarian Anda.')).'</p>
+                            <p class="max-w-sm text-xs text-gray-400 dark:text-gray-500">'.e(__('Coba dengan foto yang lebih jelas atau cari dekorasi lain.')).'</p>
+                        </div>'
+                    ))
+                    ->visible(fn () => (bool) session('cbir_no_match')),
+
+                Forms\Components\Placeholder::make('cbir_empty_state')
+                    ->label('')
+                    ->content(fn () => new HtmlString(
+                        '<div class="flex flex-col items-center gap-3 py-14 text-center">
+                            <svg class="h-10 w-10 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0M18.75 10.5h.008v.008h-.008V10.5Z" />
+                            </svg>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">'.e(__('Belum ada hasil pencarian visual.')).'</p>
+                            <p class="max-w-sm text-xs text-gray-400 dark:text-gray-500">'.e(__('Gunakan ikon kamera atau galeri di bilah pencarian global untuk mencari dekorasi berdasarkan foto. Hasil dari kamera dan galeri otomatis digabungkan di halaman ini.')).'</p>
+                        </div>'
+                    ))
+                    ->visible(fn (Forms\Get $get) => ! ($get('status_message') ?? $this->statusMessage) && empty(session('cbir_mixed_results')) && ! session('cbir_no_match')),
             ])
             ->statePath('data');
     }
@@ -417,7 +439,7 @@ class CbirSearchPage extends Page implements HasForms
             if (empty($mixedResults)) {
                 $this->statusMessage = __('Hasil ditemukan oleh AI, tapi tidak ada di database kita.');
                 Log::warning('CBIR Search: Results from AI Core did not match any database records.');
-                session()->forget(['cbir_mixed_results', 'cbir_package_results_ids', 'cbir_search_time', 'cbir_context']);
+session()->forget(['cbir_mixed_results', 'cbir_package_results_ids', 'cbir_search_time', 'cbir_context', 'cbir_no_match']);
 
                 return;
             }
@@ -496,8 +518,21 @@ class CbirSearchPage extends Page implements HasForms
         $this->statusMessage = null;
     }
 
+    public function searchFromCameraPhoto(?string $photoData = null): void
+    {
+        if (! $photoData) {
+            return;
+        }
+
+        $filePath = $this->resolveTakePicturePath($photoData);
+
+        if ($filePath && file_exists($filePath)) {
+            $this->runCbirSearch(new File($filePath), app(CBIRService::class));
+        }
+    }
+
     public function getTitle(): string
     {
-        return $this->mode === 'camera' ? __('Cari dengan Kamera') : __('Cari dengan Foto');
+        return __('Pencarian Visual');
     }
 }

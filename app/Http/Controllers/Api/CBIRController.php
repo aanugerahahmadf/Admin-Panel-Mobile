@@ -9,6 +9,7 @@ use App\Services\CBIRService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class CBIRController extends Controller
 {
@@ -20,12 +21,10 @@ class CBIRController extends Controller
     public function searchSimilar(Request $request, CBIRService $cbirService)
     {
         $request->validate([
-            'image' => 'required|image|max:10240', // Max 10MB
-            'top_k' => 'nullable|integer|min:1|max:50',
+            'image' => 'required|file|mimes:jpeg,png,jpg,bmp,webp,mp4,mov,m4v,webm,3gp|max:51200', // Foto 10MB / video 50MB
         ]);
 
-        $topK = $request->input('top_k', 20);
-        $apiResponse = $cbirService->searchByImage($request->file('image'), $topK);
+        $apiResponse = $cbirService->searchByImage($request->file('image'));
 
         if (isset($apiResponse['error']) || ! ($apiResponse['success'] ?? false)) {
             return response()->json([
@@ -74,9 +73,11 @@ class CBIRController extends Controller
                     'slug' => $model->slug,
                     'description' => strip_tags($model->trans('description', $locale)),
                     'price' => $model->price,
-                    'discount_price' => $model->discount_price ?? 0,
+                    'discount_price' => $model->discount_price > 0 ? $model->discount_price : null,
                     'image_url' => $model->image_url,
                     'category' => $model->category?->name,
+                    'vendor' => ['store_name' => $model->vendor?->store_name ?? ''],
+                    'vendor_id' => $model->vendor_id,
                 ],
             ];
         })->filter()->values();
@@ -220,7 +221,6 @@ class CBIRController extends Controller
             'image_1' => 'required|image|max:10240',
             'image_2' => 'required|image|max:10240',
             'operation' => 'required|string|in:add,average,subtract,multiply,divide',
-            'top_k' => 'nullable|integer|min:1|max:50',
             'weights' => 'nullable|array',
             'weights.*' => 'numeric|min:0|max:1',
         ]);
@@ -229,7 +229,6 @@ class CBIRController extends Controller
             $request->file('image_1'),
             $request->file('image_2'),
             $request->input('operation'),
-            $request->input('top_k', 20),
             $request->input('weights'),
         );
 
@@ -265,9 +264,11 @@ class CBIRController extends Controller
                     'slug' => $model->slug,
                     'description' => strip_tags($model->trans('description', $locale)),
                     'price' => $model->price,
-                    'discount_price' => $model->discount_price ?? 0,
+                    'discount_price' => $model->discount_price > 0 ? $model->discount_price : null,
                     'image_url' => $model->image_url,
                     'category' => $model->category?->name,
+                    'vendor' => ['store_name' => $model->vendor?->store_name ?? ''],
+                    'vendor_id' => $model->vendor_id,
                 ],
             ];
         })->filter()->values();
@@ -301,12 +302,66 @@ class CBIRController extends Controller
      */
     public function healthCheck()
     {
+        try {
+            $baseUrl = config('services.ai_core_url', 'http://127.0.0.1:5000');
+            $response = Http::timeout(5)->get("{$baseUrl}/health");
+
+            if ($response->successful()) {
+                $health = $response->json();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => __('AI Core lokal aktif dan sehat'),
+                    'data' => [
+                        'mode' => 'local',
+                        'server_status' => $health['status'] ?? 'healthy',
+                        'version' => $health['version'] ?? null,
+                        'method' => $health['method'] ?? null,
+                        'metric' => $health['metric'] ?? null,
+                        'capabilities' => $health['capabilities'] ?? [],
+                    ],
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::warning('AI Core health check error: '.$e->getMessage());
+        }
+
         return response()->json([
-            'success' => true,
-            'message' => __('CBIR lokal aktif dan sehat'),
+            'success' => false,
+            'message' => __('AI Core lokal tidak merespons'),
             'data' => [
                 'mode' => 'local',
+                'server_status' => 'offline',
             ],
         ]);
+    }
+
+    /**
+     * Evaluasi kualitatif CBIR — MAP, MRR, Precision@3, First Rank Accuracy
+     *
+     * @return JsonResponse
+     */
+    public function evaluate(CBIRService $cbirService)
+    {
+        try {
+            $baseUrl = config('services.ai_core_url', 'http://127.0.0.1:5000');
+            $response = Http::timeout(120)->get("{$baseUrl}/api/evaluate");
+
+            if ($response->successful()) {
+                return response()->json($response->json());
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => __('Evaluasi CBIR gagal: AI Core tidak merespon'),
+                'metrics' => [],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => __('Layanan AI Core sedang offline'),
+                'metrics' => [],
+            ]);
+        }
     }
 }

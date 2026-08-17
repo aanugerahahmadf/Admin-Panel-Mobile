@@ -4,6 +4,7 @@ namespace App\Filament\Admin\Resources;
 
 use App\Enums\DiscountType;
 use App\Filament\Admin\Resources\VoucherResource\Pages;
+use App\Models\Discount;
 use App\Models\Voucher;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -76,8 +77,11 @@ class VoucherResource extends Resource
         return $form
             ->schema([
                 Forms\Components\Section::make(__('Detail Voucher'))
-                    ->description(__('Informasi umum tentang voucher.'))
+                    ->description(__('Kode voucher dan diskon yang diberikan.'))
                     ->schema([
+                        Forms\Components\TextInput::make('name')
+                            ->label(__('Nama Voucher'))
+                            ->maxLength(255),
                         Forms\Components\TextInput::make('code')
                             ->label(__('Kode Voucher'))
                             ->required()
@@ -86,33 +90,14 @@ class VoucherResource extends Resource
                         Forms\Components\TextInput::make('description')
                             ->label(__('Deskripsi'))
                             ->maxLength(255),
+                        Forms\Components\Select::make('discount_id')
+                            ->label(__('Diskon'))
+                            ->relationship('discount', 'name')
+                            ->getOptionLabelFromRecordUsing(fn (Discount $d) => $d->name.' — '.($d->type === DiscountType::PERCENTAGE ? number_format((float) $d->value, 0).'%' : 'Rp '.number_format((float) $d->value, 0, ',', '.')))
+                            ->searchable()
+                            ->preload()
+                            ->helperText(__('Pilih diskon yang akan diberikan oleh voucher ini.')),
                     ])->columns(['sm' => 2]),
-
-                Forms\Components\Section::make(__('Konfigurasi Diskon'))
-                    ->description(__('Pengaturan nilai diskon.'))
-                    ->schema([
-                        Forms\Components\TextInput::make('discount_amount')
-                            ->label(__('Jumlah Diskon'))
-                            ->required()
-                            ->formatStateUsing(fn ($state) => $state ? number_format((float) $state, 2, ',', '.') : null)
-                            ->dehydrateStateUsing(fn ($state) => $state ? (float) str_replace(',', '.', str_replace(['Rp', '.', ' '], '', $state)) : null)
-                            ->prefix('Rp'),
-                        Forms\Components\ToggleButtons::make('discount_type')
-                            ->label(__('Tipe Diskon'))
-                            ->options(DiscountType::class)
-                            ->default(DiscountType::FIXED)
-                            ->required()
-                            ->inline()
-                            ->reactive(),
-                        Forms\Components\TextInput::make('min_purchase')
-                            ->label(__('Pembelian Minimum'))
-                            ->required()
-                            ->default(0)
-                            ->minValue(0)
-                            ->formatStateUsing(fn ($state) => $state ? number_format((float) $state, 2, ',', '.') : '0,00')
-                            ->dehydrateStateUsing(fn ($state) => $state ? (float) str_replace(',', '.', str_replace(['Rp', '.', ' '], '', $state)) : 0)
-                            ->prefix('Rp'),
-                    ])->columns(['sm' => 3]),
 
                 Forms\Components\Section::make(__('Pengaturan Ketersediaan'))
                     ->description(__('Kelola waktu berlaku voucher dan statusnya.'))
@@ -156,34 +141,43 @@ class VoucherResource extends Resource
         return $table
             ->paginated([5])
             ->columns([
+                Tables\Columns\TextColumn::make('name')
+                    ->searchable()
+                    ->sortable()
+                    ->label(__('Nama')),
                 Tables\Columns\TextColumn::make('code')
                     ->searchable()
                     ->sortable()
                     ->label(__('Kode')),
-                Tables\Columns\TextColumn::make('discount_amount')
+                Tables\Columns\TextColumn::make('discount.name')
                     ->label(__('Diskon'))
+                    ->searchable()
                     ->sortable()
                     ->formatStateUsing(function ($state, Voucher $record) {
-                        if ($record->discount_type === DiscountType::PERCENTAGE) {
-                            return number_format((float) $state, 0).'%';
+                        if (! $record->discount) {
+                            return '-';
                         }
-
-                        return 'Rp '.number_format((float) $state, 2, ',', '.');
+                        $d = $record->discount;
+                        if ($d->type === DiscountType::PERCENTAGE) {
+                            return number_format((float) $d->value, 0).'%';
+                        }
+                        return 'Rp '.number_format((float) $d->value, 0, ',', '.');
                     })
                     ->alignment('center'),
-                Tables\Columns\TextColumn::make('discount_type')
+                Tables\Columns\TextColumn::make('discount.type')
                     ->label(__('Tipe'))
                     ->badge()
-                    ->color(fn (DiscountType $state): string => match ($state) {
+                    ->color(fn (?DiscountType $state): string => match ($state) {
                         DiscountType::PERCENTAGE => 'success',
                         DiscountType::FIXED => 'info',
+                        null => 'gray',
                     })
-                    ->formatStateUsing(fn (DiscountType $state): string => match ($state) {
+                    ->formatStateUsing(fn (?DiscountType $state): string => match ($state) {
                         DiscountType::PERCENTAGE => __('Persentase (%)'),
                         DiscountType::FIXED => __('Nominal (Rp)'),
+                        null => '-',
                     })
-                    ->alignment('center')
-                    ->sortable(),
+                    ->alignment('center'),
                 Tables\Columns\TextColumn::make('expires_at')
                     ->label(__('Kadaluarsa Pada'))
                     ->dateTime()

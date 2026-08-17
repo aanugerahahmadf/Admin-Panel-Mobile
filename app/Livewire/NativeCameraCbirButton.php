@@ -4,8 +4,13 @@ namespace App\Livewire;
 
 use App\Models\Package;
 use App\Models\Product;
+use App\Filament\User\Pages\CbirSearchPage;
 use App\Providers\NativeServiceProvider;
 use App\Services\CBIRService;
+use emmanpbarrameda\FilamentTakePictureField\Forms\Components\TakePicture;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\On;
@@ -22,13 +27,18 @@ use Native\Mobile\Facades\Camera;
 use Native\Mobile\Facades\File as NativeFile;
 use Symfony\Component\HttpFoundation\File\File;
 
-class NativeCameraCbirButton extends Component
+class NativeCameraCbirButton extends Component implements HasForms
 {
+    use InteractsWithForms;
     use WithFileUploads;
 
     public bool $isLoading = false;
 
     public ?TemporaryUploadedFile $cameraUpload = null;
+
+    public ?TemporaryUploadedFile $browseUpload = null;
+
+    public ?array $data = [];
 
     public array $recentUploads = [];
 
@@ -39,6 +49,12 @@ class NativeCameraCbirButton extends Component
     private const VIDEO_EXTENSIONS = ['mp4', 'mov', 'avi', 'mkv'];
 
     private const CAMERA_ACCEPT = 'image/jpeg,image/png,image/webp,image/heic,image/heif,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,.jpg,.jpeg,.png,.webp,.heic,.mp4,.mov,.avi,.mkv';
+
+    public function clearVisualSearch(): void
+    {
+        session()->forget(['cbir_mixed_results', 'cbir_package_results_ids', 'cbir_search_time', 'cbir_context', 'cbir_no_match']);
+        $this->statusMessage = null;
+    }
 
     public function openCamera(string $mode = 'photo-back'): void
     {
@@ -70,6 +86,39 @@ class NativeCameraCbirButton extends Component
         $this->storeAndProcessUploadedFile($this->cameraUpload, 'cbir-camera');
         $this->cameraUpload = null;
         $this->isLoading = false;
+    }
+
+    public function updatedBrowseUpload(): void
+    {
+        if (! $this->browseUpload) {
+            return;
+        }
+
+        $this->isLoading = true;
+        $this->storeAndProcessUploadedFile($this->browseUpload, 'cbir-camera');
+        $this->browseUpload = null;
+        $this->isLoading = false;
+    }
+
+    /**
+     * Open native gallery / file picker (Android/iOS) via cbir-browse-modal.
+     *
+     * @param  'image'|'video'|'all'  $mediaType
+     */
+    public function openBrowseSource(string $mediaType = 'all', ?string $sourceId = null): void
+    {
+        if (! NativeServiceProvider::isNativeMobile()) {
+            return;
+        }
+
+        $this->isLoading = true;
+        $this->statusMessage = __('Membuka pemilih file...');
+
+        $mediaType = in_array($mediaType, ['image', 'video', 'all'], true) ? $mediaType : 'all';
+
+        Camera::pickImages($mediaType, false)
+            ->id('cbir-browse-'.($sourceId ?? $mediaType))
+            ->start();
     }
 
     #[On('native:'.PhotoTaken::class)]
@@ -189,6 +238,62 @@ class NativeCameraCbirButton extends Component
         }
     }
 
+    public function form(Form $form): Form
+    {
+        return $form->schema([
+            TakePicture::make('camera_image')
+                ->hiddenLabel()
+                ->live()
+                ->disk('public')
+                ->directory('cbir-camera')
+                ->afterStateUpdated(function ($state) {
+                    if (! $state) {
+                        return;
+                    }
+
+                    // Simpan foto sementara; search+redirect dijalankan saat tombol
+                    // "Gunakan Foto" diklik (Livewire action → redirect didukung).
+                    $filePath = $this->resolveTakePicturePath($state);
+
+                    if ($filePath && file_exists($filePath)) {
+                        session()->put('cbir_pending_photo', $filePath);
+                    }
+                })
+                ->extraAttributes(['class' => 'cbir-take-picture-hidden']),
+        ]);
+    }
+
+    public function searchFromCameraPhoto(?string $photoData = null): void
+    {
+        if (! $photoData) {
+            return;
+        }
+
+        $filePath = $this->resolveTakePicturePath($photoData);
+
+        if ($filePath && file_exists($filePath)) {
+            $this->runCbirSearch($filePath);
+        }
+    }
+
+    private function resolveTakePicturePath(string $state): ?string
+    {
+        if (str_starts_with($state, 'data:image/')) {
+            $base64Data = preg_replace('#^data:image/\w+;base64,#i', '', $state);
+            $filename = 'cbir-temp-'.time().'.jpg';
+            $dir = 'cbir-camera';
+            if (! is_dir(storage_path('app/public/'.$dir))) {
+                mkdir(storage_path('app/public/'.$dir), 0755, true);
+            }
+            $filePath = storage_path('app/public/'.$dir.'/'.$filename);
+            file_put_contents($filePath, base64_decode($base64Data));
+
+            return $filePath;
+        }
+
+        return storage_path('app/public/'.$state);
+    }
+
     private function runCbirSearch(string $absolutePath): void
     {
         if (! file_exists($absolutePath)) {
@@ -206,22 +311,18 @@ class NativeCameraCbirButton extends Component
         }
 
         $results = $response['results'] ?? [];
+        $mixedResults = $this->buildCbirMixedResults($results);
 
-        if (! empty($results)) {
-            $mixedResults = $this->buildCbirMixedResults($results);
+        session()->put('cbir_mixed_results', $mixedResults);
+        session()->put('cbir_package_results_ids', collect($mixedResults)->where('type', 'package')->pluck('data.id')->all());
+        session()->put('cbir_search_time', $response['query_time_seconds'] ?? 0);
+        session()->put('cbir_context', 'package');
 
-            if (! empty($mixedResults)) {
-                session()->put('cbir_mixed_results', $mixedResults);
-                session()->put('cbir_package_results_ids', collect($mixedResults)->where('type', 'package')->pluck('data.id')->all());
-                session()->put('cbir_search_time', $response['query_time_seconds'] ?? 0);
-                session()->put('cbir_context', 'package');
-                $this->statusMessage = __('Upload selesai. Hasil CBIR siap.');
+        // Jujur: kalau tidak ada gambar yang cocok di database, jangan dipaksakan.
+        session()->put('cbir_no_match', empty($mixedResults));
 
-                return;
-            }
-        }
-
-        $this->statusMessage = __('Upload selesai. Tidak ada hasil CBIR yang cocok.');
+        // Selalu buka halaman output CBIR, baik ada hasil maupun tidak.
+        $this->redirectRoute('filament.user.pages.cbir-search');
     }
 
     private function rememberUpload(string $path, ?string $mimeType): void
@@ -309,9 +410,51 @@ class NativeCameraCbirButton extends Component
 
     public function render()
     {
+        $isNative = NativeServiceProvider::isNativeMobile();
+        $platformSlug = \App\Support\PlatformContext::current()->value;
+
+        if ($isNative) {
+            $isAndroid = str_contains($platformSlug, 'android');
+            $isIos = str_contains($platformSlug, 'ios');
+
+            $sources = [
+                ['id' => 'internal', 'icon' => 'heroicon-o-folder', 'label' => $isAndroid ? __('Buka Files Android') : __('Buka Files iOS'), 'pick' => 'all'],
+                ['id' => 'photos', 'icon' => 'heroicon-o-photo', 'label' => __('Buka Album Foto'), 'pick' => 'image'],
+                ['id' => 'videos', 'icon' => 'heroicon-o-video-camera', 'label' => __('Buka Galeri Video'), 'pick' => 'video'],
+                ['id' => 'cloud', 'icon' => 'heroicon-o-cloud', 'label' => $isAndroid ? __('Buka Google Drive') : __('Buka iCloud Drive'), 'pick' => 'all'],
+            ];
+        } else {
+            $isWindows = str_contains($platformSlug, 'windows');
+            $isMac = str_contains($platformSlug, 'macos');
+            $isAndroid = str_contains($platformSlug, 'android');
+            $isIos = str_contains($platformSlug, 'ios');
+
+            $fileManagerLabel = match (true) {
+                $isWindows => __('Buka File Explorer Windows'),
+                $isMac     => __('Buka Finder macOS'),
+                $isAndroid => __('Buka Files Android'),
+                $isIos     => __('Buka Files iOS'),
+                default    => __('Pilih File'),
+            };
+
+            $cloudLabel = match (true) {
+                $isWindows, $isAndroid => __('Buka Google Drive'),
+                $isMac, $isIos         => __('Buka iCloud Drive'),
+                default                => __('Buka Google Drive / iCloud'),
+            };
+
+            $sources = [
+                ['id' => 'file-manager', 'icon' => 'heroicon-o-folder', 'label' => $fileManagerLabel, 'pick' => 'all'],
+                ['id' => 'photos', 'icon' => 'heroicon-o-photo', 'label' => __('Buka Album Foto'), 'pick' => 'image'],
+                ['id' => 'videos', 'icon' => 'heroicon-o-video-camera', 'label' => __('Buka Galeri Video'), 'pick' => 'video'],
+                ['id' => 'cloud', 'icon' => 'heroicon-o-cloud', 'label' => $cloudLabel, 'pick' => 'all'],
+            ];
+        }
+
         return view('livewire.native-camera-cbir-button', [
             'cameraAccept' => self::CAMERA_ACCEPT,
-            'isNative' => NativeServiceProvider::isNativeMobile(),
+            'isNative' => $isNative,
+            'sources' => $sources,
         ]);
     }
 }

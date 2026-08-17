@@ -54,7 +54,7 @@ class Login extends BaseLogin
     protected function getEmailFormComponent(): Component
     {
         return TextInput::make('login')
-            ->label(__('NIK / Passport / Username / Email'))
+            ->label(__('KTP / Passport / Username / Email'))
             ->required()
             ->autocomplete()
             ->autofocus()
@@ -93,12 +93,12 @@ class Login extends BaseLogin
 
         $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
-        $user = User::where($field, $login)->orWhere('nik', $login)->orWhere('passport_number', $login)->first();
+        $user = User::where($field, $login)->orWhere('ktp_number', $login)->orWhere('passport_number', $login)->first();
         if ($user) {
             if ($user->email === $login) {
                 $field = 'email';
-            } elseif ($user->nik === $login) {
-                $field = 'nik';
+            } elseif ($user->ktp_number === $login) {
+                $field = 'ktp_number';
             } elseif ($user->passport_number === $login) {
                 $field = 'passport_number';
             } else {

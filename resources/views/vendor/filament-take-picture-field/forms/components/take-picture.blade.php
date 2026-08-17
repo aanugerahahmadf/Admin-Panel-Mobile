@@ -446,10 +446,12 @@
 
                 this.stopCamera();
                 this.showingPreview = true;
-                this.$wire.clearVisualSearch();
             },
 
             confirmPhoto() {
+                if (this.photoData && typeof this.$wire.searchFromCameraPhoto === 'function') {
+                    this.$wire.searchFromCameraPhoto(this.photoData);
+                }
                 this.showingPreview = false;
                 this.closeModal();
             },
@@ -515,7 +517,6 @@
             clearPhoto() {
                 this.photoData = null;
                 this.photoSelected = false;
-                this.$wire.clearVisualSearch();
             },
 
             openModal() {
@@ -826,15 +827,46 @@
                             </p>
                         </div>
 
-                        <!-- CBIR: mode picker inside modal -->
-                        <div class="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4" x-show="!showingPreview && !showingVideoPreview">
-                            <button
-                                type="button"
-                                x-on:click="switchFacing('environment')"
-                                class="flex flex-col items-center gap-1 rounded-lg border px-2 py-2.5 text-center text-xs font-medium transition-colors"
-                                :class="captureMode === 'photo' && currentFacingMode === 'environment'
-                                    ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-500/10 dark:text-primary-400'
-                                    : 'border-gray-200 text-gray-700 hover:border-primary-400 dark:border-white/10 dark:text-gray-200'"
+                        <!-- CBIR: mode picker inside modal (drag/swipe to slide, centered) -->
+                        <div
+                            class="mb-4 overflow-x-auto pb-1 select-none cursor-grab active:cursor-grabbing"
+                            x-show="!showingPreview && !showingVideoPreview"
+                            x-cloak
+                            x-data="{
+                                dragging: false,
+                                moved: false,
+                                startX: 0,
+                                scrollLeft: 0,
+                                startDrag(e) {
+                                    this.dragging = true;
+                                    this.moved = false;
+                                    this.startX = e.pageX;
+                                    this.scrollLeft = e.currentTarget.scrollLeft;
+                                },
+                                moveDrag(e) {
+                                    if (! this.dragging) return;
+                                    const dx = e.pageX - this.startX;
+                                    if (Math.abs(dx) > 5) this.moved = true;
+                                    e.currentTarget.scrollLeft = this.scrollLeft - dx;
+                                },
+                                endDrag() {
+                                    this.dragging = false;
+                                }
+                            }"
+                            x-on:mousedown="startDrag($event)"
+                            x-on:mousemove="moveDrag($event)"
+                            x-on:mouseup="endDrag()"
+                            x-on:mouseleave="endDrag()"
+                            x-on:click.capture="if (moved) { $event.preventDefault(); $event.stopPropagation(); }"
+                        >
+                            <div class="flex w-max max-w-full gap-2 px-1 py-0.5 mx-auto snap-x">
+                                <button
+                                    type="button"
+                                    x-on:click="switchFacing('environment')"
+                                    class="flex shrink-0 snap-start flex-col items-center gap-1 rounded-lg border px-3 py-2.5 text-center text-xs font-medium transition-colors"
+                                    :class="captureMode === 'photo' && currentFacingMode === 'environment'
+                                        ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-500/10 dark:text-primary-400'
+                                        : 'border-gray-200 text-gray-700 hover:border-primary-400 dark:border-white/10 dark:text-gray-200'"
                             >
                                 <x-filament::icon icon="heroicon-o-camera" class="h-5 w-5" />
                                 <span>{{ __('Belakang') }}</span>
@@ -842,7 +874,7 @@
                             <button
                                 type="button"
                                 x-on:click="switchFacing('user')"
-                                class="flex flex-col items-center gap-1 rounded-lg border px-2 py-2.5 text-center text-xs font-medium transition-colors"
+                                class="flex shrink-0 snap-start flex-col items-center gap-1 rounded-lg border px-3 py-2.5 text-center text-xs font-medium transition-colors"
                                 :class="captureMode === 'photo' && currentFacingMode === 'user'
                                     ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-500/10 dark:text-primary-400'
                                     : 'border-gray-200 text-gray-700 hover:border-primary-400 dark:border-white/10 dark:text-gray-200'"
@@ -850,10 +882,11 @@
                                 <x-filament::icon icon="heroicon-o-user-circle" class="h-5 w-5" />
                                 <span>{{ __('Depan') }}</span>
                             </button>
+
                             <button
                                 type="button"
                                 x-on:click="switchCaptureMode('video')"
-                                class="flex flex-col items-center gap-1 rounded-lg border px-2 py-2.5 text-center text-xs font-medium transition-colors"
+                                class="flex shrink-0 snap-start flex-col items-center gap-1 rounded-lg border px-3 py-2.5 text-center text-xs font-medium transition-colors"
                                 :class="captureMode === 'video'
                                     ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-500/10 dark:text-primary-400'
                                     : 'border-gray-200 text-gray-700 hover:border-primary-400 dark:border-white/10 dark:text-gray-200'"
@@ -864,11 +897,31 @@
                             <button
                                 type="button"
                                 x-on:click="switchCaptureMode('gallery')"
-                                class="flex flex-col items-center gap-1 rounded-lg border border-gray-200 px-2 py-2.5 text-center text-xs font-medium text-gray-700 transition-colors hover:border-primary-400 dark:border-white/10 dark:text-gray-200"
+                                class="flex shrink-0 snap-start flex-col items-center gap-1 rounded-lg border px-3 py-2.5 text-center text-xs font-medium transition-colors"
+                                :class="captureMode === 'gallery'
+                                    ? 'border-primary-500 bg-primary-50 text-primary-700 dark:bg-primary-500/10 dark:text-primary-400'
+                                    : 'border-gray-200 text-gray-700 hover:border-primary-400 dark:border-white/10 dark:text-gray-200'"
                             >
                                 <x-filament::icon icon="heroicon-o-photo" class="h-5 w-5" />
                                 <span>{{ __('Galeri') }}</span>
                             </button>
+
+                            @php
+                                $slideSources = [
+                                    ['event' => 'cbir-pick-gallery', 'icon' => 'heroicon-o-folder', 'label' => __('File')],
+                                ];
+                            @endphp
+                            @foreach ($slideSources as $src)
+                                <button
+                                    type="button"
+                                    x-on:click="closeModal(); window.dispatchEvent(new CustomEvent('{{ $src['event'] }}'))"
+                                    class="flex shrink-0 snap-start flex-col items-center gap-1 rounded-lg border border-gray-200 px-3 py-2.5 text-center text-xs font-medium text-gray-700 transition-colors hover:border-primary-400 dark:border-white/10 dark:text-gray-200"
+                                >
+                                    <x-filament::icon :icon="$src['icon']" class="h-5 w-5" />
+                                    <span>{{ $src['label'] }}</span>
+                                </button>
+                            @endforeach
+                            </div>
                         </div>
 
                         <!-- Action buttons -->

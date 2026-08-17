@@ -48,8 +48,8 @@ class SyncAICoreCommand extends Command
             return 1;
         }
 
-        $products = Product::with('media', 'category')->get();
-        $packages = Package::with('media', 'category')->get();
+        $products = Product::with('media', 'category', 'vendor')->get();
+        $packages = Package::with('media', 'category', 'vendor')->get();
 
         $csvData = [];
         $csvHeader = ['ID', 'Type', 'Name', 'Category', 'Price', 'Discount_Price', 'Organizer', 'Image_Path', 'Description'];
@@ -70,7 +70,7 @@ class SyncAICoreCommand extends Command
                     $product->category?->name ?? 'unknown',
                     $product->price,
                     $product->discount_price ?? '',
-                    '',
+                    $product->vendor?->store_name ?? '',
                     $imagePath,
                     $product->description ?? '',
                 ];
@@ -92,7 +92,7 @@ class SyncAICoreCommand extends Command
                     $package->category?->name ?? 'unknown',
                     $package->price,
                     $package->discount_price ?? '',
-                    '',
+                    $package->vendor?->store_name ?? '',
                     $imagePath,
                     $package->description ?? '',
                 ];

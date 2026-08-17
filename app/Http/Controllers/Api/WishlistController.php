@@ -14,7 +14,7 @@ class WishlistController extends Controller
         try {
             $locale = app()->getLocale();
             $query = Wishlist::query()
-                ->with(['package.weddingFlowersDecorasi', 'package.category', 'package.reviews', 'product.category', 'product.reviews'])
+                ->with(['package.vendor', 'package.category', 'package.reviews', 'product.category', 'product.reviews'])
                 ->where('user_id', Auth::id());
 
             $wishlistItems = $query->latest()->paginate($request->get('per_page', 10));

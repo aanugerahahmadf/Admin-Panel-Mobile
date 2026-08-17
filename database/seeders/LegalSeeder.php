@@ -6,13 +6,10 @@ use App\Models\LegalPage;
 use App\Models\PrivacyPolicy;
 use App\Models\TermsOfService;
 use App\Models\WeddingDecorationPolicy;
-use App\Traits\TranslatesContent;
 use Illuminate\Database\Seeder;
 
 class LegalSeeder extends Seeder
 {
-    use TranslatesContent;
-
     public function run(): void
     {
         $this->command->info('--- Seeding Terms & Privacy ---');
@@ -33,15 +30,13 @@ class LegalSeeder extends Seeder
             ['heading' => 'COPYRIGHT & PORTFOLIO', 'body' => 'Flower decoration documentation is the intellectual property of Wedding Flower Decoration and may be used as an official portfolio. Commercial use of our digital assets without written permission is strictly prohibited by law.', 'is_italic' => false],
         ];
 
-        $termsContentTranslations = $this->translateArrayToAllLocales($idContent, $enContent);
-
         TermsOfService::updateOrCreate(
             ['id' => 1],
             [
-                'title' => 'Syarat & Ketentuan',
-                'title_translations' => $this->translateToAllLocales('Syarat & Ketentuan', 'Terms & Conditions'),
+                'title' => 'Ketentuan Layanan',
+                'title_translations' => ['id' => 'Ketentuan Layanan', 'en' => 'Terms of Service'],
                 'content' => $idContent,
-                'content_translations' => $termsContentTranslations,
+                'content_translations' => ['id' => $idContent, 'en' => $enContent],
             ]
         );
 
@@ -61,15 +56,13 @@ class LegalSeeder extends Seeder
             ['heading' => 'SYSTEM SECURITY', 'body' => 'Our platform uses high-level SSL encryption for all data transmission. Login session security is temporary to ensure real-time privacy protection when you access the Wedding Flower Decoration dashboard.', 'is_italic' => false],
         ];
 
-        $privacyContentTranslations = $this->translateArrayToAllLocales($idPrivacy, $enPrivacy);
-
         PrivacyPolicy::updateOrCreate(
             ['id' => 1],
             [
                 'title' => 'Kebijakan Privasi',
-                'title_translations' => $this->translateToAllLocales('Kebijakan Privasi', 'Privacy Policy'),
+                'title_translations' => ['id' => 'Kebijakan Privasi', 'en' => 'Privacy Policy'],
                 'content' => $idPrivacy,
-                'content_translations' => $privacyContentTranslations,
+                'content_translations' => ['id' => $idPrivacy, 'en' => $enPrivacy],
             ]
         );
         $this->command->line('  <info>✓</info> Privacy Policy seeded');
@@ -90,15 +83,13 @@ class LegalSeeder extends Seeder
             ['heading' => 'CANCELLATION POLICY', 'body' => 'Unilateral cancellation by the client is subject to fees according to the provisions stated in the cooperation agreement. Refunds only apply to cancellations made at least 30 days before the event day.', 'is_italic' => false],
         ];
 
-        $policyContentTranslations = $this->translateArrayToAllLocales($idPolicy, $enPolicy);
-
         WeddingDecorationPolicy::updateOrCreate(
             ['id' => 1],
             [
                 'title' => 'Kebijakan Aplikasi',
-                'title_translations' => $this->translateToAllLocales('Kebijakan Aplikasi', 'Application Policy'),
+                'title_translations' => ['id' => 'Kebijakan Aplikasi', 'en' => 'Application Policy'],
                 'content' => $idPolicy,
-                'content_translations' => $policyContentTranslations,
+                'content_translations' => ['id' => $idPolicy, 'en' => $enPolicy],
             ]
         );
         $this->command->line('  <info>✓</info> Wedding Decoration Policy seeded');
@@ -116,15 +107,13 @@ class LegalSeeder extends Seeder
             'mission' => 'Our mission is to become the leading wedding flower decoration platform in Indonesia that connects couples with trusted decoration vendors, provides convenience in planning wedding decorations, and creates an enjoyable wedding planning experience.',
         ];
 
-        $aboutContentTranslations = $this->translateArrayToAllLocales($idAbout, $enAbout);
-
         LegalPage::updateOrCreate(
             ['slug' => 'about'],
             [
                 'title' => 'Tentang WeddingApp',
-                'title_translations' => $this->translateToAllLocales('Tentang WeddingApp', 'About WeddingApp'),
+                'title_translations' => ['id' => 'Tentang WeddingApp', 'en' => 'About WeddingApp'],
                 'content' => $idAbout,
-                'content_translations' => $aboutContentTranslations,
+                'content_translations' => ['id' => $idAbout, 'en' => $enAbout],
             ]
         );
         $this->command->line('  <info>✓</info> About Page seeded');

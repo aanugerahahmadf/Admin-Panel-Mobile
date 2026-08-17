@@ -19,8 +19,8 @@ class TransactionObserver
     {
         $this->logToHistory($transaction);
 
-        if ($transaction->status === 'success' && $transaction->getOriginal('status') !== 'success') {
-            if ($transaction->type === 'topup') {
+        if ($transaction->status->value === 'success' && $transaction->getOriginal('status') !== 'success') {
+            if ($transaction->type->value === 'topup') {
                 $user = $transaction->user;
                 if ($user) {
                     $user->increment('balance', $transaction->amount);
@@ -55,14 +55,14 @@ class TransactionObserver
     protected function logToHistory(Transaction $transaction): void
     {
         History::updateOrCreate(
-            ['type' => $transaction->type, 'transaction_id' => $transaction->id],
+            ['type' => $transaction->type->value, 'transaction_id' => $transaction->id],
             [
                 'user_id' => $transaction->user_id,
                 'reference_number' => $transaction->reference_number,
-                'status' => $transaction->status,
+                'status' => $transaction->status->value,
                 'amount' => $transaction->total_amount,
                 'notes' => $transaction->notes,
-                'info' => $transaction->payment_method ?? ucfirst($transaction->type),
+                'info' => $transaction->payment_method ?? ucfirst($transaction->type->value),
                 'created_at' => $transaction->created_at,
             ]
         );

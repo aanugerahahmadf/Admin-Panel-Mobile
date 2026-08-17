@@ -10,6 +10,7 @@ use App\Filament\Admin\Resources\OrderResource\RelationManagers;
 use App\Models\Inbox;
 use App\Models\Message;
 use App\Models\Order;
+use App\Models\Transaction;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -273,19 +274,89 @@ class OrderResource extends Resource
                         ->successNotificationTitle(__('Pesanan Selesai'))
                         ->action(fn ($record) => $record->update(['status' => OrderStatus::COMPLETED])),
 
-                    Tables\Actions\Action::make('refresh_midtrans_status')
-                        ->label(__('Sinkronkan Pembayaran'))
-                        ->icon('heroicon-o-arrow-path')
-                        ->color('warning')
-                        ->visible(fn ($record) => $record?->payment_status === OrderPaymentStatus::PENDING)
+                    // ── Manual Payment Confirmation Actions ─────────────────
+                    Tables\Actions\Action::make('mark_paid')
+                        ->label(__('Tandai Dibayar'))
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->visible(fn ($record) => in_array($record?->payment_status?->value, ['unpaid', 'pending', 'failed']))
+                        ->requiresConfirmation()
+                        ->modalHeading(__('Konfirmasi Pembayaran'))
+                        ->modalDescription(fn (Order $record) => __(
+                            'Tandai pesanan #:order sebagai LUNAS? Pembayaran akan dikonfirmasi dan stok akan dikunci.',
+                            ['order' => $record->order_number]
+                        ))
+                        ->modalSubmitActionLabel(__('Ya, Tandai Dibayar'))
                         ->action(function (Order $record) {
                             $transaction = $record->latestTransaction;
-                            if (! $transaction) {
-                                Notification::make()->title(__('Transaksi Tidak Ditemukan'))->warning()->send();
-
-                                return;
+                            if ($transaction) {
+                                $transaction->markAsSuccess();
+                            } else {
+                                $record->update([
+                                    'status' => OrderStatus::CONFIRMED,
+                                    'payment_status' => OrderPaymentStatus::PAID,
+                                ]);
                             }
-                            Notification::make()->title(__('Status pembayaran tidak dapat diperiksa secara otomatis'))->info()->send();
+                            Notification::make()
+                                ->title(__('Pembayaran Dikonfirmasi'))
+                                ->body(__('Pesanan #:order telah ditandai LUNAS.', ['order' => $record->order_number]))
+                                ->success()
+                                ->send();
+                        }),
+
+                    Tables\Actions\Action::make('mark_failed')
+                        ->label(__('Tandai Gagal'))
+                        ->icon('heroicon-o-x-circle')
+                        ->color('danger')
+                        ->visible(fn ($record) => in_array($record?->payment_status?->value, ['unpaid', 'pending']))
+                        ->requiresConfirmation()
+                        ->modalHeading(__('Tandai Pembayaran Gagal'))
+                        ->modalDescription(fn (Order $record) => __(
+                            'Tandai pembayaran pesanan #:order sebagai GAGAL?',
+                            ['order' => $record->order_number]
+                        ))
+                        ->modalSubmitActionLabel(__('Ya, Tandai Gagal'))
+                        ->action(function (Order $record) {
+                            $transaction = $record->latestTransaction;
+                            if ($transaction) {
+                                $transaction->markAsFailed(__('Dibatalkan oleh admin'));
+                            } else {
+                                $record->update([
+                                    'payment_status' => OrderPaymentStatus::FAILED,
+                                ]);
+                            }
+                            Notification::make()
+                                ->title(__('Pembayaran Gagal'))
+                                ->body(__('Pembayaran pesanan #:order telah ditandai GAGAL.', ['order' => $record->order_number]))
+                                ->danger()
+                                ->send();
+                        }),
+
+                    Tables\Actions\Action::make('mark_pending')
+                        ->label(__('Tandai Pending'))
+                        ->icon('heroicon-o-clock')
+                        ->color('warning')
+                        ->visible(fn ($record) => $record?->payment_status?->value === 'failed')
+                        ->requiresConfirmation()
+                        ->modalHeading(__('Kembalikan ke Pending'))
+                        ->modalDescription(fn (Order $record) => __(
+                            'Kembalikan status pembayaran pesanan #:order menjadi MENUNGGU?',
+                            ['order' => $record->order_number]
+                        ))
+                        ->modalSubmitActionLabel(__('Ya, Kembalikan'))
+                        ->action(function (Order $record) {
+                            $record->update([
+                                'payment_status' => OrderPaymentStatus::PENDING,
+                            ]);
+                            $transaction = $record->latestTransaction;
+                            if ($transaction) {
+                                $transaction->update(['status' => 'pending']);
+                            }
+                            Notification::make()
+                                ->title(__('Status Dikembalikan'))
+                                ->body(__('Pembayaran pesanan #:order dikembalikan ke MENUNGGU.', ['order' => $record->order_number]))
+                                ->warning()
+                                ->send();
                         }),
 
                     // ── Kirim Notifikasi Pembayaran Manual ──────────────────

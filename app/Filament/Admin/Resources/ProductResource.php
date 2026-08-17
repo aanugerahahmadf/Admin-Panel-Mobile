@@ -105,6 +105,12 @@ class ProductResource extends Resource
                         Forms\Components\Toggle::make('is_active')
                             ->label(__('Aktif'))
                             ->default(true),
+                        Forms\Components\Select::make('vendor_id')
+                            ->label(__('Vendor'))
+                            ->relationship('vendor', 'store_name')
+                            ->searchable()
+                            ->preload()
+                            ->prefixIcon('heroicon-o-user'),
                         Forms\Components\RichEditor::make('description')
                             ->label(__('Deskripsi'))
                             ->columnSpanFull(),
@@ -112,6 +118,7 @@ class ProductResource extends Resource
                             ->label(__('Foto Product'))
                             ->collection('product_image')
                             ->image()
+                            ->multiple()
                             ->imageEditor()
                             ->formatStateUsing(fn (mixed $state): mixed => static::sanitizeSpatieUploadState($state))
                             ->afterStateHydrated(
@@ -153,6 +160,13 @@ class ProductResource extends Resource
                     ->badge()
                     ->color('info')
                     ->sortable(),
+                Tables\Columns\TextColumn::make('vendor.store_name')
+                    ->label(__('Vendor'))
+                    ->searchable()
+                    ->sortable()
+                    ->badge()
+                    ->color('success')
+                    ->icon('heroicon-o-user'),
                 Tables\Columns\TextColumn::make('price')
                     ->label(__('Harga'))
                     ->money('IDR')

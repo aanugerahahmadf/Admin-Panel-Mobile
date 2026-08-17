@@ -15,7 +15,7 @@ use App\Filament\User\Pages\ProfilePage;
 use App\Filament\User\Resources\CartResource;
 use App\Filament\User\Resources\OrderResource;
 use App\Http\Middleware\ClerkFilamentAuth;
-use App\Http\Middleware\MidtransCspMiddleware;
+
 use App\Http\Middleware\SetLocale;
 use App\Providers\NativeServiceProvider;
 use Filament\Enums\ThemeMode;
@@ -106,7 +106,6 @@ class UserPanelProvider extends PanelProvider
             ])
             ->middleware([
                 ClerkFilamentAuth::class,
-                MidtransCspMiddleware::class,
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,

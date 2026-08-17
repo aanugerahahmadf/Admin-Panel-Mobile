@@ -45,6 +45,26 @@ class CartController extends Controller
 
         $validated['user_id'] = $request->user()->id;
 
+        // ── Stock validation ──
+        if (isset($validated['product_id'])) {
+            $product = \App\Models\Product::find($validated['product_id']);
+            if ($product && $product->stock < $validated['quantity']) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Stok produk tidak mencukupi. Stok tersedia: ' . $product->stock,
+                ], 422);
+            }
+        }
+        if (isset($validated['package_id'])) {
+            $package = \App\Models\Package::find($validated['package_id']);
+            if ($package && $package->stock < $validated['quantity']) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Stok paket tidak mencukupi. Stok tersedia: ' . $package->stock,
+                ], 422);
+            }
+        }
+
         $existing = Cart::where('user_id', $request->user()->id)
             ->where(function ($q) use ($validated) {
                 if (isset($validated['product_id'])) {
@@ -86,6 +106,16 @@ class CartController extends Controller
         }
 
         $validated = $request->validate(['quantity' => 'required|integer|min:1']);
+
+        // ── Stock validation ──
+        $item = $cart->product ?? $cart->package;
+        if ($item && $item->stock < $validated['quantity']) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Stok tidak mencukupi. Stok tersedia: ' . $item->stock,
+            ], 422);
+        }
+
         $cart->update($validated);
 
         $item = $cart->fresh()->load(['product', 'package']);

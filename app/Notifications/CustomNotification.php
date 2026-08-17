@@ -17,7 +17,20 @@ class CustomNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', FcmChannel::class];
+    }
+
+    public function toFcm(object $notifiable): array
+    {
+        return [
+            'title' => $this->title,
+            'body' => $this->body,
+            'data' => [
+                'type' => $this->type,
+                'route' => $this->resolveRoute(),
+                'id' => $notifiable->id ?? null,
+            ],
+        ];
     }
 
     public function toArray(object $notifiable): array
@@ -27,5 +40,16 @@ class CustomNotification extends Notification
             'body' => $this->body,
             'type' => $this->type,
         ];
+    }
+
+    protected function resolveRoute(): string
+    {
+        return match ($this->type) {
+            'order', 'payment' => '/orders',
+            'message', 'chat' => '/chat',
+            'review' => '/my-reviews',
+            'promo', 'voucher' => '/vouchers',
+            default => '/notifications',
+        };
     }
 }

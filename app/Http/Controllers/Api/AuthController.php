@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Mail\OtpMail;
 use App\Models\User;
+use App\Models\WhatsappOtp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
@@ -26,15 +27,17 @@ class AuthController extends Controller
             'username' => 'required|string|max:255|unique:users|alpha_dash',
             'email' => 'required|string|email|max:255|unique:users',
             'whatsapp' => 'nullable|string|max:255',
-            'nik' => 'nullable|string|max:20',
-            'passport_number' => 'nullable|string|max:20',
-            'sim_number' => 'nullable|string|max:20',
-            'npwp_number' => 'nullable|string|max:20',
+            'ktp_number' => 'nullable|string|max:20|unique:users,ktp_number',
+            'passport_number' => 'nullable|string|max:20|unique:users,passport_number',
+            'sim_number' => 'nullable|string|max:20|unique:users,sim_number',
+            'npwp_number' => 'nullable|string|max:20|unique:users,npwp_number',
             'identity_type' => 'nullable|string|in:ktp,passport,sim,npwp|max:20',
             'birth_place' => 'nullable|string|max:255',
             'birth_date' => 'nullable|date',
             'ktp_photo' => 'nullable|image|max:2048',
             'selfie_photo' => 'nullable|image|max:5120',
+            'face_scan_photo' => 'nullable|image|max:5120',
+            'liveness_completed' => 'nullable|boolean',
             'country' => 'nullable|string|max:255',
             'province_id' => 'nullable|exists:indonesia_provinces,id',
             'city_id' => 'nullable|exists:indonesia_cities,id',
@@ -56,21 +59,26 @@ class AuthController extends Controller
             'password' => 'required|string|min:12|confirmed',
             'profile_photo' => 'nullable|image|max:10240',
             'avatar_url' => 'nullable|string|max:500',
+        ], [
+            'ktp_number.unique' => 'Nomor KTP sudah terdaftar oleh pengguna lain.',
+            'passport_number.unique' => 'Nomor Passport sudah terdaftar oleh pengguna lain.',
+            'sim_number.unique' => 'Nomor SIM sudah terdaftar oleh pengguna lain.',
+            'npwp_number.unique' => 'Nomor NPWP sudah terdaftar oleh pengguna lain.',
         ]);
 
-        $validator->sometimes('nik', 'required|size:16', function ($input) {
+        $validator->sometimes('ktp_number', 'required|size:16|unique:users,ktp_number', function ($input) {
             return ($input->identity_type ?? '') === 'ktp';
         });
 
-        $validator->sometimes('passport_number', 'required|min:6', function ($input) {
+        $validator->sometimes('passport_number', 'required|min:6|unique:users,passport_number', function ($input) {
             return ($input->identity_type ?? '') === 'passport';
         });
 
-        $validator->sometimes('sim_number', 'required|min:6|max:20', function ($input) {
+        $validator->sometimes('sim_number', 'required|min:6|max:20|unique:users,sim_number', function ($input) {
             return ($input->identity_type ?? '') === 'sim';
         });
 
-        $validator->sometimes('npwp_number', 'required|min:15|max:20', function ($input) {
+        $validator->sometimes('npwp_number', 'required|min:15|max:20|unique:users,npwp_number', function ($input) {
             return ($input->identity_type ?? '') === 'npwp';
         });
 
@@ -82,6 +90,13 @@ class AuthController extends Controller
             ], 422);
         }
 
+        if (filled($request->whatsapp) && ! $this->isWhatsappVerified($request->whatsapp)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Nomor WhatsApp belum diverifikasi. Silakan verifikasi kode OTP terlebih dahulu.'),
+            ], 422);
+        }
+
         $userData = [
             'full_name' => $request->full_name,
             'first_name' => $request->first_name,
@@ -90,7 +105,8 @@ class AuthController extends Controller
             'username' => $request->username,
             'email' => $request->email,
             'whatsapp' => $request->whatsapp,
-            'nik' => $request->nik,
+            'whatsapp_verified_at' => filled($request->whatsapp) ? now() : null,
+            'ktp_number' => $request->ktp_number,
             'passport_number' => $request->passport_number,
             'sim_number' => $request->sim_number,
             'npwp_number' => $request->npwp_number,
@@ -128,6 +144,12 @@ class AuthController extends Controller
             $userData['identity_verified_at'] = now();
         }
 
+        if ($request->hasFile('face_scan_photo')) {
+            $userData['face_scan_photo'] = $request->file('face_scan_photo')->store('face-scans', 'public');
+        }
+
+        $userData['liveness_completed'] = $request->boolean('liveness_completed');
+
         if ($request->hasFile('profile_photo')) {
             $path = $request->file('profile_photo')->store('avatars', 'public');
             $userData['avatar_url'] = $path;
@@ -161,7 +183,7 @@ class AuthController extends Controller
         $login = $request->login;
         $fieldType = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
-        $user = User::where($fieldType, $login)->orWhere('nik', $login)->orWhere('passport_number', $login)->orWhere('sim_number', $login)->orWhere('npwp_number', $login)->first();
+        $user = User::where($fieldType, $login)->orWhere('ktp_number', $login)->orWhere('passport_number', $login)->orWhere('sim_number', $login)->orWhere('npwp_number', $login)->first();
 
         if (! $user || ! Hash::check($request->password, $user->password)) {
             return response()->json([
@@ -351,9 +373,46 @@ class AuthController extends Controller
     public function sendOtp(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
-            'purpose' => 'required|string|in:google_register,forgot_password,verify_email',
+            'email' => 'required_without:whatsapp|email',
+            'whatsapp' => 'required_without:email|string',
+            'purpose' => 'required|string|in:google_register,forgot_password,verify_email,reset_app_lock,verify_whatsapp',
         ]);
+
+        // WhatsApp OTP (verify_whatsapp)
+        if ($request->filled('whatsapp')) {
+            if ($request->purpose !== 'verify_whatsapp') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => __('Tujuan OTP tidak valid'),
+                ], 422);
+            }
+
+            $phone = $this->normalizeWhatsapp($request->whatsapp);
+            if (strlen($phone) < 10) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => __('Format nomor WhatsApp tidak valid'),
+                ], 422);
+            }
+
+            $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+
+            WhatsappOtp::updateOrCreate(
+                ['whatsapp' => $phone],
+                [
+                    'otp_code' => $otp,
+                    'expires_at' => now()->addMinutes(5),
+                    'verified_at' => null,
+                ]
+            );
+
+            $this->sendWhatsappOtp($phone, $otp);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => __('Kode OTP berhasil dikirim ke WhatsApp'),
+            ]);
+        }
 
         $user = User::where('email', $request->email)->first();
 
@@ -370,11 +429,18 @@ class AuthController extends Controller
                     'message' => __('Email tidak terdaftar via Google'),
                 ], 422);
             }
-        } elseif ($request->purpose !== 'forgot_password' && $request->purpose !== 'verify_email') {
+        } elseif (! in_array($request->purpose, ['forgot_password', 'verify_email', 'reset_app_lock'])) {
             return response()->json([
                 'status' => 'error',
                 'message' => __('Tujuan OTP tidak valid'),
             ], 422);
+        }
+
+        if ($request->purpose === 'reset_app_lock' && ! $user) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('User tidak ditemukan'),
+            ], 404);
         }
 
         $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
@@ -396,10 +462,53 @@ class AuthController extends Controller
     public function verifyOtp(Request $request)
     {
         $request->validate([
-            'email' => 'required|email',
+            'email' => 'required_without:whatsapp|email',
+            'whatsapp' => 'required_without:email|string',
             'otp' => 'required|string|size:6',
-            'purpose' => 'required|string|in:google_register,forgot_password,verify_email',
+            'purpose' => 'required|string|in:google_register,forgot_password,verify_email,reset_app_lock,verify_whatsapp',
         ]);
+
+        // WhatsApp OTP (verify_whatsapp)
+        if ($request->filled('whatsapp')) {
+            if ($request->purpose !== 'verify_whatsapp') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => __('Tujuan OTP tidak valid'),
+                ], 422);
+            }
+
+            $phone = $this->normalizeWhatsapp($request->whatsapp);
+
+            $record = WhatsappOtp::where('whatsapp', $phone)
+                ->where('otp_code', $request->otp)
+                ->where('expires_at', '>', now())
+                ->whereNull('verified_at')
+                ->first();
+
+            if (! $record) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => __('Kode OTP tidak valid atau sudah kedaluwarsa'),
+                ], 422);
+            }
+
+            $record->update(['verified_at' => now()]);
+
+            $user = User::where('whatsapp', $phone)
+                ->orWhere('whatsapp', $request->whatsapp)
+                ->first();
+            if ($user) {
+                $user->update(['whatsapp_verified_at' => now()]);
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => __('OTP berhasil diverifikasi'),
+                'data' => [
+                    'verified' => true,
+                ],
+            ]);
+        }
 
         $user = User::where('email', $request->email)
             ->where('otp_code', $request->otp)
@@ -497,28 +606,34 @@ class AuthController extends Controller
                     'token' => $token,
                     'user' => $user,
                     'needs_completion' => ! $user->identity_type || ! $user->whatsapp || ! $user->birth_date,
-                    'needs_otp' => is_null($user->email_verified_at),
+                    // User sudah terdaftar di aplikasi/admin panel -> langsung ke home.
+                    'needs_otp' => false,
                 ],
             ]);
         }
 
         // User doesn't exist — register with Google data
-        $username = 'user_'.Str::random(8);
-        while (User::where('username', $username)->exists()) {
-            $username = 'user_'.Str::random(8);
+        try {
+            $user = User::create([
+                'social_id' => $googleId,
+                'social_type' => 'google',
+                'full_name' => $name,
+                'first_name' => explode(' ', $name)[0],
+                'last_name' => Str::after($name, ' ') ?: '',
+                'email' => $email,
+                'avatar_url' => $avatarUrl,
+                'active_status' => true,
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->errorInfo[1] == 1062) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => __('Akun Google kamu sudah terdaftar. Silakan masuk dengan email dan password.'),
+                    'error_code' => 'google_account_already_registered',
+                ], 422);
+            }
+            throw $e;
         }
-
-        $user = User::create([
-            'social_id' => $googleId,
-            'social_type' => 'google',
-            'full_name' => $name,
-            'first_name' => explode(' ', $name)[0],
-            'last_name' => Str::after($name, ' ') ?: '',
-            'email' => $email,
-            'avatar_url' => $avatarUrl,
-            'username' => $username,
-            'active_status' => true,
-        ]);
 
         $userRole = Role::where('name', 'user')->first();
         if ($userRole) {
@@ -527,9 +642,201 @@ class AuthController extends Controller
 
         $token = $user->createToken('google-auth')->plainTextToken;
 
+            return response()->json([
+                'status' => 'success',
+                'message' => __('Login berhasil'),
+                'data' => [
+                    'token' => $token,
+                    'user' => $user,
+                    'needs_completion' => true,
+                    // User baru (belum pernah terdaftar) -> wajib verifikasi email via OTP
+                    // sebelum melengkapi profil.
+                    'needs_otp' => true,
+                ],
+            ]);
+    }
+
+    public function facebookLogin(Request $request)
+    {
+        $request->validate([
+            'access_token' => 'required|string',
+        ]);
+
+        // Verify Facebook access token via Graph API
+        try {
+            $response = Http::timeout(10)->get('https://graph.facebook.com/me', [
+                'access_token' => $request->access_token,
+                'fields' => 'id,name,email,picture',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Gagal memverifikasi token Facebook'),
+            ], 500);
+        }
+
+        if (! $response->successful() || ! isset($response['id'])) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Token Facebook tidak valid'),
+            ], 401);
+        }
+
+        $payload = $response->json();
+        $facebookId = $payload['id'];
+        $email = $payload['email'] ?? 'fb_' . $facebookId . '@facebook.com';
+        $name = $payload['name'] ?? explode('@', $email)[0];
+        $avatarUrl = $payload['picture']['data']['url'] ?? null;
+
+        $user = User::where('social_id', $facebookId)
+            ->orWhere('email', $email)
+            ->first();
+
+        if ($user) {
+            if (! $user->social_id) {
+                $user->update([
+                    'social_id' => $facebookId,
+                    'social_type' => 'facebook',
+                    'avatar_url' => $avatarUrl ?: $user->avatar_url,
+                ]);
+            }
+
+            if ($user->active_status === false) {
+                $user->update(['active_status' => true]);
+            }
+
+            $token = $user->createToken('facebook-auth')->plainTextToken;
+
+            return response()->json([
+                'status' => 'success',
+                'message' => __('Login berhasil'),
+                'data' => [
+                    'token' => $token,
+                    'user' => $user,
+                    'needs_completion' => ! $user->identity_type || ! $user->whatsapp || ! $user->birth_date,
+                    'needs_otp' => is_null($user->email_verified_at),
+                ],
+            ]);
+        }
+
+        // Register with Facebook data
+        try {
+            $user = User::create([
+                'social_id' => $facebookId,
+                'social_type' => 'facebook',
+                'full_name' => $name,
+                'first_name' => explode(' ', $name)[0],
+                'last_name' => Str::after($name, ' ') ?: '',
+                'email' => $email,
+                'avatar_url' => $avatarUrl,
+                'active_status' => true,
+            ]);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->errorInfo[1] == 1062) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => __('Akun Facebook kamu sudah terdaftar. Silakan masuk dengan email dan password.'),
+                    'error_code' => 'facebook_account_already_registered',
+                ], 422);
+            }
+            throw $e;
+        }
+
+        $userRole = Role::where('name', 'user')->first();
+        if ($userRole) {
+            $user->assignRole($userRole);
+        }
+
+        $token = $user->createToken('facebook-auth')->plainTextToken;
+
         return response()->json([
             'status' => 'success',
-            'message' => __('Registrasi Google berhasil, lengkapi profil Anda'),
+            'message' => __('Registrasi Facebook berhasil, lengkapi profil Anda'),
+            'data' => [
+                'token' => $token,
+                'user' => $user,
+                'needs_completion' => true,
+                'needs_otp' => true,
+            ],
+        ]);
+    }
+
+    public function appleLogin(Request $request)
+    {
+        $request->validate([
+            'identity_token' => 'required|string',
+        ]);
+
+        // Decode Apple's identity token (JWT) to get user info
+        // Apple's JWT is signed with their public keys, verified via their JWKS endpoint
+        $tokenParts = explode('.', $request->identity_token);
+        if (count($tokenParts) !== 3) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Token Apple tidak valid'),
+            ], 401);
+        }
+
+        $payload = json_decode(base64_decode($tokenParts[1]), true);
+        if (! $payload || ! isset($payload['sub'])) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Token Apple tidak valid'),
+            ], 401);
+        }
+
+        $appleId = $payload['sub'];
+        $email = $payload['email'] ?? 'apple_' . $appleId . '@apple.com';
+
+        $user = User::where('social_id', $appleId)
+            ->orWhere('email', $email)
+            ->first();
+
+        if ($user) {
+            if (! $user->social_id) {
+                $user->update([
+                    'social_id' => $appleId,
+                    'social_type' => 'apple',
+                ]);
+            }
+
+            if ($user->active_status === false) {
+                $user->update(['active_status' => true]);
+            }
+
+            $token = $user->createToken('apple-auth')->plainTextToken;
+
+            return response()->json([
+                'status' => 'success',
+                'message' => __('Login berhasil'),
+                'data' => [
+                    'token' => $token,
+                    'user' => $user,
+                    'needs_completion' => ! $user->identity_type || ! $user->whatsapp || ! $user->birth_date,
+                    'needs_otp' => is_null($user->email_verified_at),
+                ],
+            ]);
+        }
+
+        // Register with Apple data
+        $user = User::create([
+            'social_id' => $appleId,
+            'social_type' => 'apple',
+            'full_name' => $email,
+            'email' => $email,
+            'active_status' => true,
+        ]);
+
+        $userRole = Role::where('name', 'user')->first();
+        if ($userRole) {
+            $user->assignRole($userRole);
+        }
+
+        $token = $user->createToken('apple-auth')->plainTextToken;
+
+        return response()->json([
+            'status' => 'success',
+            'message' => __('Registrasi Apple berhasil, lengkapi profil Anda'),
             'data' => [
                 'token' => $token,
                 'user' => $user,
@@ -544,7 +851,7 @@ class AuthController extends Controller
         /** @var User $user */
         $user = Auth::user();
 
-        $data = $request->validate([
+        $validator = Validator::make($request->all(), [
             'full_name' => 'nullable|string|max:255',
             'first_name' => 'nullable|string|max:255',
             'mid_name' => 'nullable|string|max:255',
@@ -552,6 +859,11 @@ class AuthController extends Controller
             'username' => 'nullable|string|max:255|unique:users,username,'.$user->id,
             'email' => 'nullable|email|max:255|unique:users,email,'.$user->id,
             'whatsapp' => 'nullable|string|max:20',
+            'identity_type' => 'nullable|string|in:ktp,passport,sim,npwp|max:20',
+            'ktp_number' => 'nullable|string|max:20|unique:users,ktp_number,'.$user->id,
+            'passport_number' => 'nullable|string|max:20|unique:users,passport_number,'.$user->id,
+            'sim_number' => 'nullable|string|max:20|unique:users,sim_number,'.$user->id,
+            'npwp_number' => 'nullable|string|max:20|unique:users,npwp_number,'.$user->id,
             'gender' => 'nullable|string|max:20',
             'religion' => 'nullable|string|max:50',
             'marital_status' => 'nullable|string|max:50',
@@ -566,7 +878,30 @@ class AuthController extends Controller
             'color_preference' => 'nullable|string',
             'event_concept' => 'nullable|string',
             'dream_venue' => 'nullable|string',
+        ], [
+            'ktp_number.unique' => 'Nomor KTP sudah terdaftar oleh pengguna lain.',
+            'passport_number.unique' => 'Nomor Passport sudah terdaftar oleh pengguna lain.',
+            'sim_number.unique' => 'Nomor SIM sudah terdaftar oleh pengguna lain.',
+            'npwp_number.unique' => 'Nomor NPWP sudah terdaftar oleh pengguna lain.',
         ]);
+
+        $validator->sometimes('ktp_number', 'required|size:16|unique:users,ktp_number,'.$user->id, function ($input) {
+            return ($input->identity_type ?? '') === 'ktp';
+        });
+
+        $validator->sometimes('passport_number', 'required|min:6|max:20|unique:users,passport_number,'.$user->id, function ($input) {
+            return ($input->identity_type ?? '') === 'passport';
+        });
+
+        $validator->sometimes('sim_number', 'required|min:6|max:20|unique:users,sim_number,'.$user->id, function ($input) {
+            return ($input->identity_type ?? '') === 'sim';
+        });
+
+        $validator->sometimes('npwp_number', 'required|min:15|max:20|unique:users,npwp_number,'.$user->id, function ($input) {
+            return ($input->identity_type ?? '') === 'npwp';
+        });
+
+        $data = $validator->validated();
 
         if ($request->hasFile('profile_photo')) {
             $path = $request->file('profile_photo')->store('profile-photos', 'public');
@@ -577,7 +912,9 @@ class AuthController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => $user,
+            'data' => array_merge($user->toArray(), [
+                'needs_completion' => ! $user->identity_type || ! $user->whatsapp || ! $user->birth_date,
+            ]),
         ]);
     }
 
@@ -596,5 +933,63 @@ class AuthController extends Controller
             'status' => 'success',
             'message' => __('Akun berhasil dihapus'),
         ]);
+    }
+
+    /**
+     * Normalize phone to international format (628xxx).
+     */
+    private function normalizeWhatsapp(string $phone): string
+    {
+        $phone = preg_replace('/\D/', '', $phone);
+        if (empty($phone)) {
+            return '';
+        }
+        if (str_starts_with($phone, '0')) {
+            $phone = '62'.substr($phone, 1);
+        }
+
+        return $phone;
+    }
+
+    /**
+     * Check whether the given whatsapp number has been OTP-verified recently.
+     */
+    private function isWhatsappVerified(string $whatsapp): bool
+    {
+        $phone = $this->normalizeWhatsapp($whatsapp);
+        if (empty($phone)) {
+            return false;
+        }
+
+        return WhatsappOtp::where('whatsapp', $phone)
+            ->whereNotNull('verified_at')
+            ->where('verified_at', '>', now()->subMinutes(10))
+            ->exists();
+    }
+
+    /**
+     * Send OTP via WhatsApp (Fonnte).
+     */
+    private function sendWhatsappOtp(string $phone, string $otp): void
+    {
+        try {
+            $token = config('services.fonnte_token', env('FONNTE_TOKEN', ''));
+            if (empty($token)) {
+                \Illuminate\Support\Facades\Log::warning('[Auth] WhatsApp OTP skipped — FONNTE_TOKEN not set');
+
+                return;
+            }
+
+            $message = __('whatsapp.otp_message', ['otp' => $otp]);
+
+            Http::withHeaders(['Authorization' => $token])
+                ->timeout(10)
+                ->post('https://api.fonnte.com/send', [
+                    'target' => $phone,
+                    'message' => $message,
+                ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('[Auth] WhatsApp OTP exception: '.$e->getMessage());
+        }
     }
 }

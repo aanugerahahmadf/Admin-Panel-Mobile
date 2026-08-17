@@ -34,6 +34,7 @@ class LegalController extends Controller
                 'id' => $terms->id,
                 'title' => $terms->trans('title', $this->locale()),
                 'content' => $terms->trans('content', $this->locale()),
+                'updated_at' => $terms->updated_at?->format('d M Y'),
             ],
         ]);
     }

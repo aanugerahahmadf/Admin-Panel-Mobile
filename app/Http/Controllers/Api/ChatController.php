@@ -95,7 +95,7 @@ class ChatController extends Controller
         $otherUser = $otherId ? User::find($otherId, ['*']) : null;
 
         $messages = Message::where('inbox_id', $inbox->id)
-            ->with('sender')
+            ->with(['sender', 'attachments'])
             ->oldest()
             ->get(['*']);
 
@@ -109,7 +109,14 @@ class ChatController extends Controller
                 'sender_name' => $sender?->full_name ?? $sender?->username ?? __('Tidak dikenal'),
                 'is_me' => $message->user_id === $user->id,
                 'read_by' => [],
-                'attachments' => [],
+                'attachments' => $message->attachments->map(fn (Media $m) => [
+                    'id' => $m->id,
+                    'url' => str_replace('/storage/', '/media/', $m->getFullUrl()),
+                    'original_url' => str_replace('/storage/', '/media/', $m->getFullUrl()),
+                    'name' => $m->name,
+                    'size' => $m->size,
+                    'mime_type' => $m->mime_type,
+                ])->values(),
                 'meta' => $message->meta,
                 'created_at' => $message->created_at->toIso8601String(),
             ];
@@ -135,7 +142,7 @@ class ChatController extends Controller
         $request->validate([
             'inbox_id' => 'required',
             'message' => 'required_without_all:attachment,type,order_id|nullable|string',
-            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp|max:10240',
+            'attachment' => 'nullable|file|mimes:jpg,jpeg,png,gif,webp,mp4,mov,m4v,webm,3gp|max:51200',
             'type' => 'nullable|string',
             'item_id' => 'nullable|integer',
             'item_name' => 'nullable|string',

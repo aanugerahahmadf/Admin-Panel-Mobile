@@ -15,21 +15,29 @@ class CategorySeeder extends Seeder
         $this->command->info('--- Seeding Categories ---');
 
         $productData = [
-            'traditional' => 'Produk Tradisional',
-            'modern'      => 'Produk Modern',
-            'rustic'      => 'Produk Rustic',
-            'minimalist'  => 'Produk Minimalis',
-            'garden'      => 'Produk Taman',
-            'royal'       => 'Produk Royal',
+            'buket-bunga'       => 'Buket Bunga',
+            'dekorasi-meja'     => 'Dekorasi Meja',
+            'ornamen-dinding'   => 'Ornamen Dinding',
+            'backdrop-pelaminan'=> 'Backdrop Pelaminan',
+            'hiasan-gaun'       => 'Hiasan Gaun',
+            'seserahan'         => 'Seserahan',
+            'kain-dekorasi'     => 'Kain Dekorasi',
+            'lighting'          => 'Lighting & Lampu',
+            'aksesoris'         => 'Aksesoris Pernikahan',
+            'tanaman-hias'      => 'Tanaman Hias',
         ];
 
         $packageData = [
-            'traditional' => 'Paket Tradisional',
-            'modern'      => 'Paket Modern',
-            'rustic'      => 'Paket Rustic',
-            'minimalist'  => 'Paket Minimalis',
-            'garden'      => 'Paket Taman',
-            'royal'       => 'Paket Royal',
+            'hemat'             => 'Paket Hemat',
+            'standar'           => 'Paket Standar',
+            'premium'           => 'Paket Premium',
+            'mewah'             => 'Paket Mewah',
+            'eksekutif'         => 'Paket Eksekutif',
+            'deluxe'            => 'Paket Deluxe',
+            'royal'             => 'Paket Royal',
+            'vip'               => 'Paket VIP',
+            'complete'          => 'Paket Lengkap',
+            'custom'            => 'Paket Custom',
         ];
 
         foreach ($productData as $slug => $idName) {

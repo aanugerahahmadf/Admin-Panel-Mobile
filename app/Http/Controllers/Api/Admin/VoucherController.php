@@ -54,11 +54,10 @@ class VoucherController extends Controller
     {
         try {
             $validated = $request->validate([
+                'name' => 'nullable|string|max:255',
                 'code' => 'required|string|max:50|unique:vouchers,code',
                 'description' => 'nullable|string',
-                'discount_amount' => 'required|numeric|min:0',
-                'discount_type' => 'required|string|in:fixed,percentage',
-                'min_purchase' => 'numeric|min:0',
+                'discount_id' => 'required|integer|exists:discounts,id',
                 'expires_at' => 'nullable|date',
                 'is_active' => 'boolean',
                 'is_global' => 'boolean',
@@ -91,11 +90,10 @@ class VoucherController extends Controller
             $voucher = Voucher::findOrFail($id);
 
             $validated = $request->validate([
+                'name' => 'nullable|string|max:255',
                 'code' => 'sometimes|string|max:50|unique:vouchers,code,' . $voucher->id,
                 'description' => 'nullable|string',
-                'discount_amount' => 'sometimes|numeric|min:0',
-                'discount_type' => 'sometimes|string|in:fixed,percentage',
-                'min_purchase' => 'numeric|min:0',
+                'discount_id' => 'sometimes|integer|exists:discounts,id',
                 'expires_at' => 'nullable|date',
                 'is_active' => 'boolean',
                 'is_global' => 'boolean',

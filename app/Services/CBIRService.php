@@ -21,17 +21,15 @@ class CBIRService
         $this->timeoutSeconds = (int) config('services.ai_core_timeout', 15);
     }
 
-    public function searchByImage($imageFile, $topK = 10): array
+    public function searchByImage($imageFile): array
     {
         try {
             $fileHash = md5_file($imageFile->getRealPath());
-            $safeTopK = max(1, min((int) $topK, 50));
-            $cacheVersion = (int) Cache::get('cbir_cache_version', 1);
-            $cacheKey = "cbir_search_v{$cacheVersion}_{$fileHash}_{$safeTopK}";
+            $cacheKey = "cbir_search_v{$fileHash}";
 
             Log::info("CBIR Search initiated for file hash: {$fileHash}");
 
-            return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($imageFile, $safeTopK) {
+            return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($imageFile) {
                 Log::info('CBIR Cache miss - calling AI Core API');
                 /** @var Response $response */
                 $response = Http::timeout($this->timeoutSeconds)
@@ -40,9 +38,7 @@ class CBIRService
                         'file', // Flask app.py expects 'file'
                         file_get_contents($imageFile->getRealPath()),
                         method_exists($imageFile, 'getClientOriginalName') ? $imageFile->getClientOriginalName() : $imageFile->getFilename()
-                    )->post("{$this->baseUrl}/api/search", [
-                        'top_k' => $safeTopK,
-                    ]);
+                    )->post("{$this->baseUrl}/api/search");
 
                 if ($response->successful()) {
                     $data = $response->json();
@@ -64,6 +60,7 @@ class CBIRService
                                 'score' => $score,
                                 'similarity' => $similarity,
                                 'image_url' => $row['image_url'] ?? null,
+                                'vendor' => $row['vendor'] ?? null,
                             ];
                         })
                         ->values()
@@ -98,6 +95,17 @@ class CBIRService
                 default => 'wo_gallery',
             };
 
+            // Capai model terkait (product/package) untuk mengambil vendor
+            $vendorName = '';
+            $itemName = '';
+            try {
+                $model = $media->model_type::with('vendor')->find($media->model_id);
+                $vendorName = $model?->vendor?->store_name ?? '';
+                $itemName = (string) ($model?->name ?? '');
+            } catch (\Throwable $e) {
+                // abaikan bila relasi vendor tidak tersedia
+            }
+
             $response = Http::timeout($this->timeoutSeconds)
                 ->retry(2, 300, throw: false)
                 ->post("{$this->baseUrl}/api/index/add", [
@@ -107,6 +115,8 @@ class CBIRService
                         'type' => $type,
                         'owner_id' => $media->model_id,
                         'image_url' => $media->getUrl(),
+                        'vendor' => $vendorName,
+                        'name' => $itemName,
                     ],
                 ]);
 
@@ -141,11 +151,9 @@ class CBIRService
         }
     }
 
-    public function arithmeticSearch($image1, $image2, string $operation, int $topK = 20, ?array $weights = null): array
+    public function arithmeticSearch($image1, $image2, string $operation, ?array $weights = null): array
     {
         try {
-            $safeTopK = max(1, min($topK, 50));
-
             Log::info("CBIR Arithmetic search: operation={$operation}");
 
             $request = Http::timeout($this->timeoutSeconds)
@@ -165,7 +173,6 @@ class CBIRService
 
             $payload = [
                 'operation' => $operation,
-                'top_k' => $safeTopK,
                 'method' => 'combined',
                 'metric' => 'euclidean',
             ];

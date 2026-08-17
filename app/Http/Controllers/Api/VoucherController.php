@@ -4,21 +4,41 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Voucher;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class VoucherController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $locale = app()->getLocale();
-        $vouchers = Voucher::where('is_active', true)
+        $user = $request->user();
+        $query = Voucher::with('discount')
+            ->where('is_active', true)
             ->where(function ($q): void {
                 $q->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());
-            })->get();
+            });
 
-        $vouchers->transform(function ($voucher) use ($locale) {
+        if ($request->filled('code')) {
+            $query->where('code', $request->code);
+        }
+
+        if ($request->filled('min_purchase')) {
+            $query->whereHas('discount', function ($q) use ($request): void {
+                $q->where('min_purchase', '<=', $request->min_purchase);
+            });
+        }
+
+        $vouchers = $query->get();
+
+        $vouchers->transform(function ($voucher) use ($locale, $user) {
             $voucher->description = $voucher->trans('description', $locale);
+            $isClaimed = $voucher->users()->where('users.id', $user->id)->exists();
+            $voucher->setAttribute('is_claimed', $isClaimed);
+            if (! $isClaimed) {
+                $voucher->setAttribute('code', null);
+            }
             return $voucher;
         });
 
@@ -67,25 +87,19 @@ class VoucherController extends Controller
             'amount' => 'required|numeric',
         ]);
 
-        $voucher = Voucher::where('code', $request->code)
+        $voucher = Voucher::with('discount')
+            ->where('code', $request->code)
             ->where('is_active', true)
             ->where(function ($q): void {
                 $q->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());
             })->first(['*']);
 
-        if (! $voucher) {
+        if (! $voucher || ! $voucher->isValidFor((float) $request->amount)) {
             return response()->json([
                 'status' => 'error',
                 'message' => __('Voucher tidak valid atau sudah kadaluarsa'),
             ], 404);
-        }
-
-        if ($request->amount < $voucher->min_purchase) {
-            return response()->json([
-                'status' => 'error',
-                'message' => __('Minimum pembelian untuk voucher ini adalah Rp').' '.number_format($voucher->min_purchase, 0, ',', '.'),
-            ], 400);
         }
 
         $voucher->description = $voucher->trans('description', $locale);

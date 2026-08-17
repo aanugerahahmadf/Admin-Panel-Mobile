@@ -9,6 +9,8 @@ use Kreait\Firebase\Auth;
 use Kreait\Firebase\Database;
 use Kreait\Firebase\Exception\DatabaseException;
 use Kreait\Firebase\Factory;
+use Kreait\Firebase\Messaging\CloudMessage;
+use Kreait\Firebase\Messaging\Messaging;
 use Kreait\Firebase\Storage;
 
 class FirebaseService
@@ -21,7 +23,11 @@ class FirebaseService
 
     protected ?Storage $storage = null;
 
+    protected ?Messaging $messaging = null;
+
     protected string $databaseUrl;
+
+    protected bool $initialized = false;
 
     public function __construct()
     {
@@ -34,10 +40,16 @@ class FirebaseService
 
             $this->factory = (new Factory)->withServiceAccount($credentialsPath);
             $this->databaseUrl = config('firebase.database_url');
+            $this->initialized = true;
         } catch (Exception $e) {
             Log::error('Firebase initialization failed', ['error' => $e->getMessage()]);
-            throw $e;
+            $this->initialized = false;
         }
+    }
+
+    public function isInitialized(): bool
+    {
+        return $this->initialized;
     }
 
     /**
@@ -74,6 +86,45 @@ class FirebaseService
         }
 
         return $this->storage;
+    }
+
+    /**
+     * Get Firebase Cloud Messaging instance
+     */
+    public function getMessaging(): ?Messaging
+    {
+        if (! $this->initialized) {
+            return null;
+        }
+        if (! $this->messaging) {
+            $this->messaging = $this->factory->createMessaging();
+        }
+        return $this->messaging;
+    }
+
+    /**
+     * Send a push notification via FCM
+     */
+    public function sendPushNotification(string $token, string $title, string $body, array $data = []): bool
+    {
+        $messaging = $this->getMessaging();
+        if (! $messaging) {
+            Log::warning('FCM not available (Firebase not initialized)');
+            return false;
+        }
+        try {
+            $message = CloudMessage::withTarget('token', $token)
+                ->withNotification([
+                    'title' => $title,
+                    'body' => $body,
+                ])
+                ->withData($data);
+            $messaging->send($message);
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('FCM send failed', ['error' => $e->getMessage(), 'token' => substr($token, 0, 20).'...']);
+            return false;
+        }
     }
 
     /**

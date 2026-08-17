@@ -34,15 +34,6 @@ class HelpController extends Controller
         }
     }
 
-    public function show(int $id): JsonResponse
-    {
-        try {
-            return response()->json(['status' => 'success', 'data' => Help::findOrFail($id)]);
-        } catch (\Exception $e) {
-            return response()->json(['status' => 'error', 'message' => __('Halaman bantuan tidak ditemukan')], 404);
-        }
-    }
-
     public function store(Request $request): JsonResponse
     {
         try {

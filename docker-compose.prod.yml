@@ -1,0 +1,83 @@
+# Production compose for VPS deployment.
+# Pulls the pre-built GHCR image (works with .github/workflows/deploy-vps.yml).
+# Uses the 8000:80 port mapping (container serves nginx on port 80). Adjust APP_PORT if needed.
+
+services:
+    app:
+        image: ${IMAGE_NAME}
+        container_name: admin-panel-app
+        restart: unless-stopped
+        ports:
+            - '${APP_PORT:-8000}:80'
+        environment:
+            APP_NAME: ${APP_NAME:-Wedding Flowers Decorasi}
+            APP_ENV: production
+            APP_DEBUG: ${APP_DEBUG:-false}
+            APP_URL: ${APP_URL}
+            APP_KEY: ${APP_KEY}
+            DB_CONNECTION: mysql
+            DB_HOST: ${DB_HOST:-mysql}
+            DB_PORT: ${DB_PORT:-3306}
+            DB_DATABASE: ${DB_DATABASE}
+            DB_USERNAME: ${DB_USERNAME}
+            DB_PASSWORD: ${DB_PASSWORD}
+            SESSION_DRIVER: database
+            CACHE_STORE: database
+            QUEUE_CONNECTION: database
+            BROADCAST_CONNECTION: reverb
+            REVERB_APP_ID: ${REVERB_APP_ID:-local_reverb}
+            REVERB_APP_KEY: ${REVERB_APP_KEY:-local_key}
+            REVERB_APP_SECRET: ${REVERB_APP_SECRET:-local_secret}
+            REVERB_HOST: ${REVERB_HOST:-localhost}
+            REVERB_PORT: ${REVERB_PORT:-8080}
+            REVERB_SCHEME: ${REVERB_SCHEME:-http}
+            MIDTRANS_SERVER_KEY: ${MIDTRANS_SERVER_KEY:-}
+            MIDTRANS_CLIENT_KEY: ${MIDTRANS_CLIENT_KEY:-}
+            MIDTRANS_IS_PRODUCTION: ${MIDTRANS_IS_PRODUCTION:-false}
+            MIDTRANS_IS_SANITIZED: ${MIDTRANS_IS_SANITIZED:-true}
+            MIDTRANS_IS_3DS: ${MIDTRANS_IS_3DS:-true}
+        networks:
+            - weeding-network
+        depends_on:
+            mysql:
+                condition: service_healthy
+    mysql:
+        image: 'mysql:8.0'
+        container_name: admin-panel-mysql
+        restart: unless-stopped
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE}
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+            MYSQL_USER: ${DB_USERNAME}
+            MYSQL_PASSWORD: ${DB_PASSWORD}
+        ports:
+            - '3307:3306'
+        volumes:
+            - mysql-db-data:/var/lib/mysql
+        networks:
+            - weeding-network
+        healthcheck:
+            test: ['CMD', 'mysqladmin', 'ping', '-p${DB_PASSWORD}']
+            retries: 5
+            timeout: 5s
+    phpmyadmin:
+        image: 'phpmyadmin:latest'
+        container_name: admin-panel-pma
+        restart: unless-stopped
+        ports:
+            - '8081:80'
+        environment:
+            PMA_ARBITRARY: '1'
+            PMA_HOST: mysql
+            PMA_USER: root
+            PMA_PASSWORD: ${DB_PASSWORD}
+        networks:
+            - weeding-network
+        depends_on:
+            - mysql
+networks:
+    weeding-network:
+        driver: bridge
+volumes:
+    mysql-db-data:
+        driver: local

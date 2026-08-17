@@ -229,10 +229,13 @@ html, body {
 }
 
 /* Konten utama: padding bawah agar tidak tertutup bottom-nav.
-   HANYA user panel yang punya bottom-nav — admin panel tidak perlu. */
+   HANYA user panel yang punya bottom-nav — admin panel tidak perlu.
+   Mobile: padding-bottom TIADA di sini — di-scroll oleh .fi-main-ctn yang jadi
+   scroll container (mobile-bottom-nav). Menerapkan di dua tempat akan membuat
+   double padding → pita kosong besar di bawah grid. */
 @media (max-width: 1023px) {
     .fi-panel-user .fi-main {
-        padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px)) !important;
+        padding-bottom: 0 !important;
         /* Pastikan area konten utama bisa di-scroll di mobile */
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch !important;

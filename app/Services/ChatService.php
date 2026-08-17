@@ -100,7 +100,7 @@ class ChatService
                 'name' => $item->name,
                 'price' => $order->total_price,
                 'image' => $item->image_url,
-                'url' => $order->package_id ? PackageResource::getUrl() : ProductResource::getUrl(),
+                'url' => $order->package_id ? self::resourceUrl(PackageResource::class) : self::resourceUrl(ProductResource::class),
                 'is_order' => true,
                 'order_id' => $order->id,
                 'order_number' => $order->order_number,
@@ -110,5 +110,17 @@ class ChatService
         ]);
 
         return $message;
+    }
+
+    /**
+     * Resolve a Filament resource URL even when no panel is current (e.g. API context).
+     */
+    private static function resourceUrl(string $resource): ?string
+    {
+        try {
+            return $resource::getUrl(panel: 'user');
+        } catch (\Throwable $e) {
+            return null;
+        }
     }
 }

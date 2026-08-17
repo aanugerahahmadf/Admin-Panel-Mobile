@@ -33,7 +33,32 @@ class SetLocale
             }
         }
 
-        // 3. Cek autentikasi user di semua guards untuk mendapatkan preferensi bahasa dari database
+        // 3. Cek header Accept-Language dari client (sangat penting untuk API client mobile)
+        //    Diprioritaskan di atas preferensi DB user agar Flutter bisa mengirim bahasa yang dipilih
+        $acceptLanguage = $request->header('Accept-Language');
+        if (! $locale && $acceptLanguage) {
+            $langs = explode(',', $acceptLanguage);
+            $firstLang = trim($langs[0]);
+            $cleanLang = str_replace('-', '_', $firstLang);
+
+            $localsConfig = config('filament-language-switcher.locals', ['id' => [], 'en' => []]);
+            $supported = array_keys($localsConfig);
+
+            if (in_array($cleanLang, $supported)) {
+                $locale = $cleanLang;
+            } else {
+                $shortLang = explode('_', $cleanLang)[0];
+                foreach ($supported as $sup) {
+                    if ($sup === $shortLang || explode('_', $sup)[0] === $shortLang) {
+                        $locale = $sup;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // 4. Cek autentikasi user di semua guards untuk mendapatkan preferensi bahasa dari database
+        //    Hanya digunakan jika locale belum ditentukan dari param/session/header
         $user = null;
         $guards = ['web', 'filament', 'admin', 'mobile', 'nativephp', 'api', 'sanctum'];
         foreach ($guards as $guard) {
@@ -52,7 +77,6 @@ class SetLocale
             $isMobile = NativeServiceProvider::isNativeMobile();
             $dbLocale = null;
 
-            // Jika diakses dari NativePHP mobile yang menggunakan DB proxy lokal, batasi penulisan DB
             if (! $isMobile) {
                 try {
                     $dbLocale = $user->lang;
@@ -62,7 +86,6 @@ class SetLocale
             }
 
             if ($locale && $locale !== $dbLocale && ! $isMobile) {
-                // Sinkronisasi: Simpan pilihan bahasa terbaru ke Database jika berbeda
                 try {
                     UserLanguage::updateOrCreate(
                         ['model_id' => (string) $user->id, 'model_type' => get_class($user)],
@@ -72,40 +95,9 @@ class SetLocale
                         $user->setRawAttributes(['lang' => $locale], true);
                     }
                 } catch (\Exception $e) {
-                    // Abaikan jika DB tidak dapat diakses
                 }
             } elseif ($dbLocale && ! $locale) {
-                // Sinkronisasi: Ambil pilihan bahasa dari Database jika session/request kosong
                 $locale = (string) $dbLocale;
-            }
-        }
-
-        // 4. Cek header Accept-Language dari client (sangat penting untuk API client mobile Android/iOS)
-        if (! $locale) {
-            $acceptLanguage = $request->header('Accept-Language');
-            if ($acceptLanguage) {
-                // Contoh: "en-US,en;q=0.9,id;q=0.8" -> ambil bagian pertama
-                $langs = explode(',', $acceptLanguage);
-                $firstLang = trim($langs[0]);
-
-                // Normalisasi penulisan "en-US" menjadi "en_US"
-                $cleanLang = str_replace('-', '_', $firstLang);
-
-                $localsConfig = config('filament-language-switcher.locals', ['id' => [], 'en' => []]);
-                $supported = array_keys($localsConfig);
-
-                if (in_array($cleanLang, $supported)) {
-                    $locale = $cleanLang;
-                } else {
-                    // Cek versi bahasa pendek, misal "en" dari "en_US"
-                    $shortLang = explode('_', $cleanLang)[0];
-                    foreach ($supported as $sup) {
-                        if ($sup === $shortLang || explode('_', $sup)[0] === $shortLang) {
-                            $locale = $sup;
-                            break;
-                        }
-                    }
-                }
             }
         }
 

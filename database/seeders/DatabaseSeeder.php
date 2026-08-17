@@ -17,12 +17,17 @@ class DatabaseSeeder extends Seeder
             SuperAdminSeeder::class,
             CustomerSeeder::class,
             CategorySeeder::class,
+            VendorSeeder::class,
             ProductSeeder::class,
             PackageSeeder::class,
             LegalSeeder::class,
             VoucherSeeder::class,
+            DiscountSeeder::class,
             ReviewSeeder::class,
             HelpSeeder::class,
+            ReferenceOptionSeeder::class,
+            BankSeeder::class,
+            PaymentMethodSeeder::class,
         ]);
 
         if (File::exists('D:/Weeding-Organizer-CBIR/ai_core/data/dataset/decorations/')) {

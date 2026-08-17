@@ -27,9 +27,8 @@ return new class extends Migration
             $table->decimal('amount', 15, 2);
             $table->decimal('admin_fee', 15, 2)->default(0);
             $table->decimal('total_amount', 15, 2);
-            $table->string('payment_gateway')->default('midtrans');
+            $table->string('payment_gateway')->default('manual');
             $table->string('payment_method')->nullable();
-            $table->string('snap_token')->nullable();
             $table->string('payment_url')->nullable();
             $table->string('status')->default('pending'); // pending, success, failed, expired
             $table->dateTime('paid_at')->nullable();

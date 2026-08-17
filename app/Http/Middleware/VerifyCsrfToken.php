@@ -15,7 +15,7 @@ class VerifyCsrfToken extends Middleware
         'admin/*',
         'livewire/*',
         'api/db-proxy',
-        'api/webhooks/midtrans',
+
         'api/v1.0/payment/notify',
         'api/webhooks/fonnte',
         'api/webhooks/fonnte/connect',

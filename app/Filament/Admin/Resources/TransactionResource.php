@@ -98,7 +98,7 @@ class TransactionResource extends Resource
                     ->label(__('Gateway Pembayaran'))
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'midtrans' => 'primary',
+                        'manual' => 'success',
                         'stripe' => 'warning',
                         default => 'gray',
                     })

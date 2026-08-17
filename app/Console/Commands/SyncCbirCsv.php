@@ -53,7 +53,7 @@ class SyncCbirCsv extends Command
         $skipped = 0;
 
         // ── Products ──────────────────────────────────────────────────────────
-        $products = Product::with(['category'])->get();
+        $products = Product::with(['category', 'vendor'])->get();
         foreach ($products as $product) {
             $media = $product->getFirstMedia('product_image');
             if (! $media) {
@@ -77,7 +77,7 @@ class SyncCbirCsv extends Command
                 $product->category?->name ?? 'unknown',
                 $product->price,
                 $product->discount_price ?? '',
-                '',
+                $product->vendor?->store_name ?? '',
                 $imagePath,
                 $product->description ?? '',
             ]);
@@ -85,7 +85,7 @@ class SyncCbirCsv extends Command
         }
 
         // ── Packages ──────────────────────────────────────────────────────────
-        $packages = Package::with(['category'])->get();
+        $packages = Package::with(['category', 'vendor'])->get();
         foreach ($packages as $package) {
             $media = $package->getFirstMedia('package_image');
             if (! $media) {
@@ -109,7 +109,7 @@ class SyncCbirCsv extends Command
                 $package->category?->name ?? 'unknown',
                 $package->price,
                 $package->discount_price ?? '',
-                '',
+                $package->vendor?->store_name ?? '',
                 $imagePath,
                 $package->description ?? '',
             ]);

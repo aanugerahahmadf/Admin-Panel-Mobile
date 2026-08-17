@@ -105,7 +105,10 @@
                 
                 <a href="{{ $url }}" wire:navigate class="cbir-card">
                     <div class="cbir-img">
-                        <span class="cbir-similarity-badge">{{ $pct_match }}% Match</span>
+                        @php
+                            $matchColor = $score >= 80 ? '#10b981' : ($score >= 60 ? '#eab308' : '#ef4444');
+                        @endphp
+                        <span class="cbir-similarity-badge" style="background:{{ $matchColor }};">{{ __('Match') }}</span>
                         <img src="{{ $img }}" alt="{{ $data['name'] ?? '' }}" loading="lazy"
                              onerror="this.src='{{ asset('images/placeholders/image-placeholder.svg') }}'">
                         @if($pct)<span class="cbir-badge-discount" style="position:absolute;top:3px;right:3px;background:#eab308;color:#000;font-size:9px;font-weight:900;padding:1px 4px;border-radius:3px;line-height:1.4;">-{{ $pct }}%</span>@endif

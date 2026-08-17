@@ -138,6 +138,15 @@ class SearchController extends Controller
             ->limit(10)
             ->get();
 
+        $vendors = \App\Models\Vendor::where('is_active', true)
+            ->where(function ($q) use ($query) {
+                $q->where('store_name', 'like', "%{$query}%")
+                    ->orWhere('store_description', 'like', "%{$query}%");
+            })
+            ->where(fn ($q) => $q->has('packages')->orHas('products'))
+            ->withCount(['packages', 'products'])
+            ->get();
+
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -152,6 +161,7 @@ class SearchController extends Controller
                 'helps' => $helps,
                 'wedding_policy' => $weddingPolicy,
                 'histories' => $histories,
+                'vendors' => $vendors,
             ],
         ]);
     }
@@ -311,6 +321,15 @@ class SearchController extends Controller
                 'user' => $t->user ? ['id' => $t->user->id, 'name' => $t->user->name, 'email' => $t->user->email] : null,
             ]);
 
+        $vendors = \App\Models\Vendor::where('is_active', true)
+            ->where(function ($q) use ($query) {
+                $q->where('store_name', 'like', "%{$query}%")
+                    ->orWhere('store_description', 'like', "%{$query}%");
+            })
+            ->where(fn ($q) => $q->has('packages')->orHas('products'))
+            ->withCount(['packages', 'products'])
+            ->get();
+
         return response()->json([
             'status' => 'success',
             'data' => [
@@ -327,6 +346,7 @@ class SearchController extends Controller
                 'histories' => $histories,
                 'users' => $users,
                 'transactions' => $transactions,
+                'vendors' => $vendors,
             ],
         ]);
     }
@@ -334,11 +354,10 @@ class SearchController extends Controller
     public function byImage(Request $request, CBIRService $cbirService)
     {
         $request->validate([
-            'image' => 'required|image|max:10240',
+            'image' => 'required|file|mimes:jpeg,png,jpg,bmp,webp,mp4,mov,m4v,webm,3gp|max:51200',
         ]);
 
-        $targetCount = (int) $request->input('top_k', 20);
-        $apiResponse = $cbirService->searchByImage($request->file('image'), $targetCount);
+        $apiResponse = $cbirService->searchByImage($request->file('image'));
 
         if (isset($apiResponse['error']) || ! ($apiResponse['success'] ?? false)) {
             return response()->json([
@@ -389,16 +408,8 @@ class SearchController extends Controller
 
         usort($mixedResults, fn ($a, $b) => ($b['similarity'] ?? 0) <=> ($a['similarity'] ?? 0));
 
-        $total = count($mixedResults);
-        if ($total > 1) {
-            $step = 100 / ($total - 1);
-            foreach ($mixedResults as $idx => &$r) {
-                $r['similarity'] = $idx === 0 ? 100.0 : max(0, round(100 - ($idx * $step), 1));
-            }
-            unset($r);
-        } elseif ($total === 1) {
-            $mixedResults[0]['similarity'] = 100.0;
-        }
+        $minSimilarity = (float) config('services.cbir_min_similarity', 30.0);
+        $mixedResults = array_values(array_filter($mixedResults, fn ($r) => ($r['similarity'] ?? 0) >= $minSimilarity));
 
         return response()->json([
             'status' => 'success',

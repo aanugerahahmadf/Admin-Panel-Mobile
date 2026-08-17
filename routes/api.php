@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\AppLockController;
 use App\Http\Controllers\Api\AppSettingsController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CartController;
@@ -8,6 +9,8 @@ use App\Http\Controllers\Api\CBIRController;
 use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\FirebaseController;
 use App\Http\Controllers\Api\FonnteWebhookController;
+use App\Http\Controllers\Api\BriVaWebhookController;
+use App\Http\Controllers\Api\PaymentWebhookController;
 use App\Http\Controllers\Api\GeoController;
 use App\Http\Controllers\Api\HistoryController;
 use App\Http\Controllers\Api\HomeController;
@@ -21,6 +24,7 @@ use App\Http\Controllers\Api\RegionController;
 use App\Http\Controllers\Api\ReviewController;
 use App\Http\Controllers\Api\SearchController;
 use App\Http\Controllers\Api\UserLanguageController;
+use App\Http\Controllers\Api\VendorController;
 use App\Http\Controllers\Api\VoucherController;
 use App\Http\Controllers\Api\WalletController;
 use App\Http\Controllers\Api\WishlistController;
@@ -83,6 +87,11 @@ Route::post('/auth/send-otp', [AuthController::class, 'sendOtp']);
 Route::post('/auth/verify-otp', [AuthController::class, 'verifyOtp']);
 Route::post('/auth/clerk-sync', [AuthController::class, 'clerkSync']);
 Route::post('/auth/google', [AuthController::class, 'googleLogin']);
+Route::post('/auth/facebook', [AuthController::class, 'facebookLogin']);
+Route::post('/auth/apple', [AuthController::class, 'appleLogin']);
+
+// Public: dropdown options for KYC/profile fields (from database, not templates)
+Route::get('/dropdown-options', [\App\Http\Controllers\Api\DropdownOptionController::class, 'index']);
 
 // Public endpoints
 Route::get('/packages/public', [PackageController::class, 'index']);
@@ -97,10 +106,15 @@ Route::get('/legal/help', [LegalController::class, 'getHelp']);
 Route::post('/webhooks/fonnte', [FonnteWebhookController::class, 'handleIncomingMessage']);
 Route::post('/webhooks/fonnte/connect', [FonnteWebhookController::class, 'handleConnectionStatus']);
 Route::post('/webhooks/fonnte/status', [FonnteWebhookController::class, 'handleMessageStatus']);
+// Midtrans Payment Notification (No auth — verified by signature inside handler)
+Route::post('/midtrans/notification', [PaymentWebhookController::class, 'notification']);
+// BRI Virtual Account (BRIVA) Payment Notification (No auth — verified via X-SIGNATURE)
+Route::post('/webhooks/bri/va', [BriVaWebhookController::class, 'notification']);
 // CBIR - AI Visual Search Public Probing
 
 Route::get('/cbir/stats', [CBIRController::class, 'getStats']);
 Route::get('/cbir/health', [CBIRController::class, 'healthCheck']);
+Route::get('/cbir/evaluate', [CBIRController::class, 'evaluate']);
 Route::get('/cbir/arithmetic/ops', [CBIRController::class, 'arithmeticOps']);
 
 // Regions (public — for cascading selects)
@@ -122,16 +136,18 @@ Route::get('/geo/postal-codes', [GeoController::class, 'postalCodes']);
 // Firebase Status (public)
 Route::get('/firebase/status', [FirebaseController::class, 'status']);
 
-// Midtrans Payment Webhook (public — no auth, Midtrans sends POST directly)
-Route::post('/webhooks/midtrans', [App\Http\Controllers\Api\PaymentWebhookController::class, 'notificationHandler']);
+
 
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::delete('/user/account', [AuthController::class, 'deleteAccount']);
     Route::get('/user', function (Request $request) {
+        $user = $request->user();
         return response()->json([
             'status' => 'success',
-            'data' => $request->user(),
+            'data' => array_merge($user->toArray(), [
+                'needs_completion' => ! $user->identity_type || ! $user->whatsapp || ! $user->birth_date,
+            ]),
         ]);
     });
 
@@ -143,11 +159,19 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar']);
     Route::post('/profile/change-password', [ProfileController::class, 'changePassword']);
     Route::get('/profile/dashboard', [ProfileController::class, 'dashboard']);
-    Route::put('/profile/nik', [ProfileController::class, 'updateNik']);
+    Route::put('/profile/ktp', [ProfileController::class, 'updateKtp']);
     Route::post('/profile/ktp-photo', [ProfileController::class, 'uploadKtp']);
     Route::post('/profile/selfie', [ProfileController::class, 'uploadSelfie']);
     Route::post('/profile/face-scan', [ProfileController::class, 'uploadFaceScan']);
     Route::get('/profile/completion', [ProfileController::class, 'completion']);
+
+    // App Lock
+    Route::get('/profile/app-lock', [AppLockController::class, 'show']);
+    Route::put('/profile/app-lock', [AppLockController::class, 'update']);
+    Route::post('/profile/app-lock/pin', [AppLockController::class, 'setPin']);
+    Route::post('/profile/app-lock/pin/verify', [AppLockController::class, 'verifyPin']);
+    Route::post('/profile/app-lock/face-enroll', [AppLockController::class, 'faceEnroll']);
+    Route::post('/profile/app-lock/face-verify', [AppLockController::class, 'faceVerify']);
 
     // Cart
     Route::get('/cart', [CartController::class, 'index']);
@@ -168,6 +192,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
     // Vouchers
     Route::get('/vouchers', [VoucherController::class, 'index']);
+    Route::post('/vouchers/validate', [VoucherController::class, 'validateVoucher']);
     Route::post('/vouchers/{voucher}/claim', [VoucherController::class, 'claim']);
 
     // Packages
@@ -202,6 +227,9 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::put('/user/language', [UserLanguageController::class, 'update']);
 
     // Search
+    Route::get('/vendors', [\App\Http\Controllers\Api\VendorController::class, 'index']);
+    Route::get('/vendors/{id}', [\App\Http\Controllers\Api\VendorController::class, 'show']);
+
     Route::get('/search', [SearchController::class, 'byText']);
     Route::post('/search/image', [SearchController::class, 'byImage']);
 
@@ -216,23 +244,41 @@ Route::middleware('auth:sanctum')->group(function (): void {
     // Bookings / Orders
     Route::get('/bookings', [OrderController::class, 'getOrders']);
     Route::post('/bookings', [OrderController::class, 'createOrder']);
-    Route::post('/bookings/{id}/pay', [OrderController::class, 'processPayment']);
+    Route::get('/bookings/{id}/payment-info', [OrderController::class, 'getPaymentInfo']);
+    Route::post('/bookings/{id}/confirm-payment', [OrderController::class, 'confirmPayment']);
+    Route::post('/bookings/{id}/virtual-account', [OrderController::class, 'createVirtualAccount']);
+    Route::post('/bookings/{id}/qris', [OrderController::class, 'createQris']);
+    Route::post('/bookings/{id}/pay', [OrderController::class, 'initiatePayment']);
+    Route::post('/bookings/{id}/upload-proof', [OrderController::class, 'uploadProof']);
     Route::get('/bookings/track/{orderNumber}', [OrderController::class, 'trackOrder']);
     Route::get('/bookings/{id}', [OrderController::class, 'show']);
     Route::post('/bookings/{id}/cancel', [OrderController::class, 'cancelOrder']);
+    Route::get('/bookings/{id}/invoice', [OrderController::class, 'downloadInvoice']);
+    Route::post('/bookings/{id}/invoice/email', [OrderController::class, 'sendInvoiceEmail']);
 
     Route::get('/orders', [OrderController::class, 'getOrders']);
     Route::post('/orders', [OrderController::class, 'createOrder']);
-    Route::post('/orders/{id}/pay', [OrderController::class, 'processPayment']);
+    Route::get('/orders/{id}/payment-info', [OrderController::class, 'getPaymentInfo']);
+    Route::post('/orders/{id}/confirm-payment', [OrderController::class, 'confirmPayment']);
+    Route::post('/orders/{id}/virtual-account', [OrderController::class, 'createVirtualAccount']);
+    Route::post('/orders/{id}/qris', [OrderController::class, 'createQris']);
+    Route::post('/orders/{id}/upload-proof', [OrderController::class, 'uploadProof']);
+    Route::post('/orders/{id}/pay', [OrderController::class, 'initiatePayment']);
     Route::get('/orders/{id}', [OrderController::class, 'show']);
     Route::post('/orders/{id}/cancel', [OrderController::class, 'cancelOrder']);
+    Route::get('/orders/{id}/invoice', [OrderController::class, 'downloadInvoice']);
+    Route::post('/orders/{id}/invoice/email', [OrderController::class, 'sendInvoiceEmail']);
 
     // Reviews
     Route::post('/reviews', [ReviewController::class, 'store']);
     Route::put('/reviews/{id}', [ReviewController::class, 'update']);
     Route::delete('/reviews/{id}', [ReviewController::class, 'destroy']);
+    Route::get('/reviews/user/{userId}', [ReviewController::class, 'getUserPublicReviews']);
     Route::get('/reviews/user', [ReviewController::class, 'getUserReviews']);
-    Route::get('/reviews/package/{packageId}', [ReviewController::class, 'getPackageReviews']);
+    Route::get('/reviews/package/{packageId}', 
+[ReviewController::class, 'getPackageReviews']);
+    Route::get('/reviews/product/{productId}', 
+[ReviewController::class, 'getProductReviews']);
     Route::get('/reviews/organizer/{id}', [ReviewController::class, 'getOrganizerReviews']);
 
     // Wallet
@@ -246,6 +292,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/cbir/index/product', [CBIRController::class, 'indexItem']);
     Route::post('/cbir/index/build', [CBIRController::class, 'buildIndex']);
     Route::get('/cbir/stats', [CBIRController::class, 'getStats']);
+    Route::get('/cbir/evaluate', [CBIRController::class, 'evaluate']);
     Route::get('/cbir/health', [CBIRController::class, 'healthCheck']);
 
     // Firebase - Realtime Database Operations
@@ -278,12 +325,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
 
         // Users
         Route::get('/users', [\App\Http\Controllers\Api\Admin\UserController::class, 'index']);
+        Route::get('/vendors', [\App\Http\Controllers\Api\Admin\UserController::class, 'vendors']);
         Route::get('/users/roles', [\App\Http\Controllers\Api\Admin\UserController::class, 'roles']);
         Route::get('/users/{id}', [\App\Http\Controllers\Api\Admin\UserController::class, 'show']);
         Route::post('/users', [\App\Http\Controllers\Api\Admin\UserController::class, 'store']);
         Route::put('/users/{id}', [\App\Http\Controllers\Api\Admin\UserController::class, 'update']);
         Route::delete('/users/{id}', [\App\Http\Controllers\Api\Admin\UserController::class, 'destroy']);
         Route::post('/users/{id}/toggle-active', [\App\Http\Controllers\Api\Admin\UserController::class, 'toggleActive']);
+        Route::post('/users/{id}/app-lock/reset', [\App\Http\Controllers\Api\AppLockController::class, 'adminReset']);
 
         // Packages
         Route::get('/packages', [\App\Http\Controllers\Api\Admin\PackageController::class, 'index']);
@@ -313,6 +362,13 @@ Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('/orders/{id}', [\App\Http\Controllers\Api\Admin\OrderController::class, 'show']);
         Route::put('/orders/{id}/status', [\App\Http\Controllers\Api\Admin\OrderController::class, 'updateStatus']);
         Route::get('/orders/statuses/list', [\App\Http\Controllers\Api\Admin\OrderController::class, 'statuses']);
+
+        // Discounts
+        Route::get('/discounts', [\App\Http\Controllers\Api\Admin\DiscountController::class, 'index']);
+        Route::get('/discounts/{id}', [\App\Http\Controllers\Api\Admin\DiscountController::class, 'show']);
+        Route::post('/discounts', [\App\Http\Controllers\Api\Admin\DiscountController::class, 'store']);
+        Route::put('/discounts/{id}', [\App\Http\Controllers\Api\Admin\DiscountController::class, 'update']);
+        Route::delete('/discounts/{id}', [\App\Http\Controllers\Api\Admin\DiscountController::class, 'destroy']);
 
         // Vouchers
         Route::get('/vouchers', [\App\Http\Controllers\Api\Admin\VoucherController::class, 'index']);

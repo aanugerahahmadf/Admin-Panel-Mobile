@@ -154,9 +154,10 @@ class PackageResource extends Resource
                             ->icon('heroicon-o-photo')
                             ->schema([
                                 Forms\Components\SpatieMediaLibraryFileUpload::make('image')
-                                    ->label(__('Foto Utama Paket'))
+                                    ->label(__('Foto Paket (boleh lebih dari satu)'))
                                     ->collection('package_image')
                                     ->image()
+                                    ->multiple()
                                     ->imageEditor()
                                     ->formatStateUsing(fn (mixed $state): mixed => static::sanitizeSpatieUploadState($state))
                                     ->afterStateHydrated(
@@ -202,7 +203,12 @@ class PackageResource extends Resource
                                 Forms\Components\ColorPicker::make('color')
                                     ->label(__('Warna Aksen')),
                             ]),
-                        Forms\Components\Hidden::make('wedding_flowers_decorasi_id'),
+                        Forms\Components\Select::make('vendor_id')
+                            ->label(__('Vendor'))
+                            ->relationship('vendor', 'store_name')
+                            ->searchable()
+                            ->preload()
+                            ->prefixIcon('heroicon-o-user'),
                     ])->columnSpan(['lg' => 1]),
             ])->columns(3);
     }
@@ -235,6 +241,13 @@ class PackageResource extends Resource
                     ->label(__('Nama Paket'))
                     ->sortable()
                     ->icon('heroicon-o-gift'),
+                Tables\Columns\TextColumn::make('vendor.store_name')
+                    ->label(__('Vendor'))
+                    ->searchable()
+                    ->sortable()
+                    ->badge()
+                    ->color('success')
+                    ->icon('heroicon-o-user'),
                 Tables\Columns\TextColumn::make('price')
                     ->label(__('Harga Dasar'))
                     ->money('IDR')

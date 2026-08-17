@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\WhatsappOtp;
+use App\Services\FaceService;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -110,6 +113,23 @@ class ProfileController extends Controller
                     'max:255',
                     Rule::unique('users')->ignore($user->id),
                 ],
+                'identity_type' => 'nullable|string|in:ktp,passport,sim,npwp|max:20',
+                'ktp_number' => [
+                    'nullable', 'string', 'max:20',
+                    Rule::unique('users')->ignore($user->id),
+                ],
+                'passport_number' => [
+                    'nullable', 'string', 'max:20',
+                    Rule::unique('users')->ignore($user->id),
+                ],
+                'sim_number' => [
+                    'nullable', 'string', 'max:20',
+                    Rule::unique('users')->ignore($user->id),
+                ],
+                'npwp_number' => [
+                    'nullable', 'string', 'max:20',
+                    Rule::unique('users')->ignore($user->id),
+                ],
             ];
 
             if ($request->has('password') && filled($request->password)) {
@@ -117,6 +137,32 @@ class ProfileController extends Controller
             }
 
             $validatedData = $request->validate($rules);
+
+            // Enforce WhatsApp OTP verification before saving/updating whatsapp
+            if (isset($validatedData['whatsapp']) && filled($validatedData['whatsapp'])) {
+                $phone = $this->normalizeWhatsapp($validatedData['whatsapp']);
+                $existingPhone = $user->whatsapp ? $this->normalizeWhatsapp($user->whatsapp) : null;
+
+                // Only require OTP when the number actually changes
+                if ($existingPhone !== null && $existingPhone === $phone) {
+                    $validatedData['whatsapp_verified_at'] = $user->whatsapp_verified_at ?: now();
+                } else {
+                    $verified = WhatsappOtp::where('whatsapp', $phone)
+                        ->whereNotNull('verified_at')
+                        ->where('verified_at', '>', now()->subMinutes(10))
+                        ->first();
+
+                    if (! $verified) {
+                        return response()->json([
+                            'status' => 'error',
+                            'message' => __('Nomor WhatsApp belum diverifikasi. Silakan verifikasi kode OTP terlebih dahulu.'),
+                        ], 422);
+                    }
+
+                    $verified->delete();
+                    $validatedData['whatsapp_verified_at'] = now();
+                }
+            }
 
             if (isset($validatedData['password'])) {
                 $validatedData['password'] = Hash::make($validatedData['password']);
@@ -282,13 +328,13 @@ class ProfileController extends Controller
                     'unread_notifications' => $user->unreadNotifications()->count(),
                     'total_spent' => $user->orders()->sum('total_price'),
                 ],
-                'upcoming_events' => $user->orders()->with(['package.weddingFlowersDecorasi'])
+                'upcoming_events' => $user->orders()->with(['package.vendor'])
                     ->where('booking_date', '>=', now())
                     ->whereNotIn('status', ['cancelled', 'completed'])
                     ->orderBy('booking_date')
                     ->limit(5)
                     ->get(['*']),
-                'recent_orders' => $user->orders()->with(['package.weddingFlowersDecorasi'])
+                'recent_orders' => $user->orders()->with(['package.vendor'])
                     ->latest()
                     ->limit(5)
                     ->get(['*']),
@@ -381,22 +427,25 @@ class ProfileController extends Controller
     }
 
     /**
-     * Update NIK (Nomor Induk Kependudukan)
+     * Update KTP (Nomor KTP)
      */
-    public function updateNik(Request $request)
+    public function updateKtp(Request $request)
     {
         try {
             $request->validate([
-                'nik' => 'required|string|size:16',
+                'ktp_number' => [
+                    'required', 'string', 'size:16',
+                    Rule::unique('users')->ignore($user->id),
+                ],
             ]);
 
             /** @var User $user */
             $user = Auth::user();
-            $user->update(['nik' => $request->nik]);
+            $user->update(['ktp_number' => $request->ktp_number]);
 
             return response()->json([
                 'status' => 'success',
-                'message' => __('NIK berhasil diperbarui'),
+                'message' => __('Nomor KTP berhasil diperbarui'),
                 'data' => $user->fresh(),
             ]);
         } catch (ValidationException $e) {
@@ -408,40 +457,52 @@ class ProfileController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
-                'message' => __('Gagal memperbarui NIK'),
+                'message' => __('Gagal memperbarui Nomor KTP'),
                 'error' => $e->getMessage(),
             ], 500);
         }
     }
 
     /**
-     * Upload KTP photo
+     * Upload KTP photo (foto atau video; frame video diekstrak server-side)
      */
-    public function uploadKtp(Request $request)
+    public function uploadKtp(Request $request, FaceService $faceService)
     {
         try {
             /** @var User $user */
             $user = Auth::user();
 
             $request->validate([
-                'ktp_photo' => 'required|image|mimes:jpeg,png,jpg|max:5120', // 5MB max
+                'ktp_photo' => 'required|file|mimes:jpeg,png,jpg,mp4,mov,m4v,webm,3gp|max:51200', // foto 5MB / video 50MB
             ]);
 
             if ($user->ktp_photo) {
                 Storage::disk('public')->delete($user->ktp_photo);
             }
 
-            $fileName = 'ktp_'.$user->id.'_'.time().'.'.$request->file('ktp_photo')->getClientOriginalExtension();
-            $path = $request->file('ktp_photo')->storeAs('ktp-photos', $fileName, 'public');
+            [$path, $ai] = $this->storeKycUpload(
+                $request->file('ktp_photo'),
+                'ktp-photos',
+                'ktp_'.$user->id.'_'.time(),
+                $faceService,
+                fn (string $realPath) => $faceService->verifyKtp($realPath)
+            );
 
             $user->update(['ktp_photo' => $path]);
 
+            $ktpVerified = ($ai['success'] ?? false) && ($ai['verified'] ?? false);
+
             return response()->json([
                 'status' => 'success',
-                'message' => __('Foto KTP berhasil diunggah'),
+                'message' => $ktpVerified
+                    ? __('Foto KTP tervalidasi komputer visi')
+                    : __('Foto KTP berhasil diunggah'),
                 'data' => [
                     'ktp_photo' => $user->ktp_photo,
                     'ktp_photo_url' => $user->ktp_photo_url,
+                    'ktp_ai_verified' => (bool) $ktpVerified,
+                    'ktp_ai_score' => $ai['score'] ?? null,
+                    'ktp_ai_reason' => $ai['reason'] ?? ($ai['message'] ?? 'AI_UNAVAILABLE'),
                 ],
             ]);
         } catch (ValidationException $e) {
@@ -462,35 +523,58 @@ class ProfileController extends Controller
     /**
      * Upload selfie photo for face verification
      */
-    public function uploadSelfie(Request $request)
+    public function uploadSelfie(Request $request, FaceService $faceService)
     {
         try {
             /** @var User $user */
             $user = Auth::user();
 
             $request->validate([
-                'selfie_photo' => 'required|image|mimes:jpeg,png,jpg|max:5120',
+                'selfie_photo' => 'required|file|mimes:jpeg,png,jpg,mp4,mov,m4v,webm,3gp|max:51200',
+                'liveness_completed' => 'sometimes|boolean',
             ]);
 
             if ($user->selfie_photo) {
                 Storage::disk('public')->delete($user->selfie_photo);
             }
 
-            $fileName = 'selfie_'.$user->id.'_'.time().'.'.$request->file('selfie_photo')->getClientOriginalExtension();
-            $path = $request->file('selfie_photo')->storeAs('selfies', $fileName, 'public');
+            // Computer Vision: bandingkan selfie dengan KTP milik user (jika ada)
+            $reference = null;
+            if ($user->ktp_photo) {
+                $absolute = Storage::disk('public')->path($user->ktp_photo);
+                if (file_exists($absolute)) {
+                    $reference = $absolute;
+                }
+            }
 
-            $user->update([
-                'selfie_photo' => $path,
-                'identity_verified_at' => now(),
-            ]);
+            [$path, $ai] = $this->storeKycUpload(
+                $request->file('selfie_photo'),
+                'selfies',
+                'selfie_'.$user->id.'_'.time(),
+                $faceService,
+                fn (string $realPath) => $faceService->verifyFace($realPath, $reference)
+            );
+
+            $verified = ($ai['success'] ?? false) && ($ai['verified'] ?? false);
+
+            $updateData = array_merge(
+                ['selfie_photo' => $path],
+                $this->faceVerificationUpdate($user, $ai, (bool) $request->boolean('liveness_completed'))
+            );
+            $user->update($updateData);
 
             return response()->json([
                 'status' => 'success',
-                'message' => __('Foto selfie berhasil diunggah, identitas terverifikasi'),
+                'message' => $verified
+                    ? __('Foto selfie terverifikasi komputer visi')
+                    : __('Foto selfie berhasil diunggah'),
                 'data' => [
                     'selfie_photo' => $user->selfie_photo,
                     'selfie_photo_url' => $user->selfie_photo_url,
                     'identity_verified_at' => $user->identity_verified_at,
+                    'face_verified' => (bool) $verified,
+                    'similarity' => $ai['similarity'] ?? null,
+                    'face_reason' => $ai['reason'] ?? ($ai['message'] ?? 'AI_UNAVAILABLE'),
                 ],
             ]);
         } catch (ValidationException $e) {
@@ -511,35 +595,59 @@ class ProfileController extends Controller
     /**
      * Upload face scan photo for identity verification
      */
-    public function uploadFaceScan(Request $request)
+    public function uploadFaceScan(Request $request, FaceService $faceService)
     {
         try {
             /** @var User $user */
             $user = Auth::user();
 
             $request->validate([
-                'face_scan_photo' => 'required|image|mimes:jpeg,png,jpg|max:5120',
+                'face_scan_photo' => 'required|file|mimes:jpeg,png,jpg,mp4,mov,m4v,webm,3gp|max:51200',
+                'liveness_completed' => 'sometimes|boolean',
             ]);
 
-            if ($user->selfie_photo) {
-                Storage::disk('public')->delete($user->selfie_photo);
+            if (! $user->ktp_photo) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => __('Unggah foto KTP terlebih dahulu untuk verifikasi wajah'),
+                ], 422);
             }
 
-            $fileName = 'face_scan_'.$user->id.'_'.time().'.'.$request->file('face_scan_photo')->getClientOriginalExtension();
-            $path = $request->file('face_scan_photo')->storeAs('selfies', $fileName, 'public');
+            if ($user->face_scan_photo) {
+                Storage::disk('public')->delete($user->face_scan_photo);
+            }
 
-            $user->update([
-                'selfie_photo' => $path,
-                'identity_verified_at' => now(),
-            ]);
+            // Computer Vision: bandingkan face scan dengan KTP milik user
+            $reference = Storage::disk('public')->path($user->ktp_photo);
+
+            [$path, $ai] = $this->storeKycUpload(
+                $request->file('face_scan_photo'),
+                'face-scans',
+                'face_scan_'.$user->id.'_'.time(),
+                $faceService,
+                fn (string $realPath) => $faceService->verifyFace($realPath, $reference)
+            );
+
+            $verified = ($ai['success'] ?? false) && ($ai['verified'] ?? false);
+
+            $updateData = array_merge(
+                ['face_scan_photo' => $path],
+                $this->faceVerificationUpdate($user, $ai, (bool) $request->boolean('liveness_completed'))
+            );
+            $user->update($updateData);
 
             return response()->json([
                 'status' => 'success',
-                'message' => __('Face scan berhasil diunggah, identitas terverifikasi'),
+                'message' => $verified
+                    ? __('Identitas berhasil diverifikasi komputer visi')
+                    : __('Face scan disimpan, verifikasi belum berhasil. Coba lagi dengan pencahayaan yang baik.'),
                 'data' => [
-                    'selfie_photo' => $user->selfie_photo,
-                    'selfie_photo_url' => $user->selfie_photo_url,
+                    'face_scan_photo' => $user->face_scan_photo,
+                    'face_scan_photo_url' => $user->face_scan_photo_url,
                     'identity_verified_at' => $user->identity_verified_at,
+                    'face_verified' => (bool) $verified,
+                    'similarity' => $ai['similarity'] ?? null,
+                    'face_reason' => $ai['reason'] ?? ($ai['message'] ?? 'AI_UNAVAILABLE'),
                 ],
             ]);
         } catch (ValidationException $e) {
@@ -594,7 +702,7 @@ class ProfileController extends Controller
                 }
             }
 
-            if (! empty($user->nik) || ! empty($user->passport_number) || ! empty($user->sim_number) || ! empty($user->npwp_number)) {
+            if (! empty($user->ktp_number) || ! empty($user->passport_number) || ! empty($user->sim_number) || ! empty($user->npwp_number)) {
                 $score += 10;
             }
 
@@ -620,7 +728,7 @@ class ProfileController extends Controller
                         'occupation' => ! empty($user->occupation),
                         'income_range' => ! empty($user->income_range),
                         'source_of_funds' => ! empty($user->source_of_funds),
-                        'nik' => ! empty($user->nik) || ! empty($user->passport_number) || ! empty($user->sim_number) || ! empty($user->npwp_number),
+                        'ktp_number' => ! empty($user->ktp_number) || ! empty($user->passport_number) || ! empty($user->sim_number) || ! empty($user->npwp_number),
                         'ktp_photo' => ! empty($user->ktp_photo),
                         'selfie_photo' => ! empty($user->selfie_photo),
                         'identity_verified' => ! empty($user->identity_verified_at),
@@ -654,7 +762,7 @@ class ProfileController extends Controller
                 ], 401);
             }
 
-            $query = $user->wishlists()->with(['package.weddingFlowersDecorasi', 'package.category', 'package.reviews']);
+            $query = $user->wishlists()->with(['package.vendor', 'package.category', 'package.reviews']);
 
             // Apply sorting
             $sortBy = $request->get('sort_by', 'created_at');
@@ -692,5 +800,76 @@ class ProfileController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Susun kolom hasil verifikasi wajah (AI Core) untuk disimpan ke user.
+     * kyc_status direset agar admin melakukan review ulang ketika foto baru diunggah.
+     *
+     * @param  array<string, mixed>  $ai
+     * @return array<string, mixed>
+     */
+    private function faceVerificationUpdate(User $user, array $ai, bool $livenessCompleted): array
+    {
+        $verified = ($ai['success'] ?? false) && ($ai['verified'] ?? false);
+
+        $update = [
+            'liveness_completed' => $livenessCompleted,
+        ];
+
+        if ($ai['success'] ?? false) {
+            $update['kyc_status'] = null;
+            $update['face_similarity'] = $ai['similarity'] ?? null;
+            $update['face_deep_similarity'] = $ai['deep_similarity'] ?? null;
+            $update['face_reason'] = $ai['reason'] ?? null;
+            $update['face_liveness'] = $ai['liveness_checks'] ?? null;
+            $update['face_verified_at'] = $verified ? now() : null;
+            $update['identity_verified_at'] = $verified ? now() : $user->identity_verified_at;
+        }
+
+        return $update;
+    }
+
+    /**
+     * Simpan unggahan KYC (foto atau video). Video diproses AI Core server-side:
+     * frame diekstrak lalu disimpan sebagai gambar kanonik. Mengembalikan [path, ai].
+     *
+     * @return array{0: string, 1: array<string, mixed>}
+     */
+    private function storeKycUpload(UploadedFile $file, string $directory, string $fileNameBase, FaceService $faceService, callable $verify): array
+    {
+        $realPath = $file->getRealPath();
+        $extension = $file->getClientOriginalExtension();
+
+        if ($faceService->isVideoFile($realPath)) {
+            $ai = $verify($realPath);
+            $frame = $faceService->storeVideoFrame($ai['frame_base64_selfie'] ?? $ai['frame_base64'] ?? null, $directory, $fileNameBase.'.jpg');
+
+            return [
+                $frame ?? $file->storeAs($directory, $fileNameBase.'.'.$extension, 'public'),
+                $ai,
+            ];
+        }
+
+        $path = $file->storeAs($directory, $fileNameBase.'.'.$extension, 'public');
+        $ai = $verify($realPath);
+
+        return [$path, $ai];
+    }
+
+    /**
+     * Normalize phone to international format (628xxx).
+     */
+    private function normalizeWhatsapp(string $phone): string
+    {
+        $phone = preg_replace('/\D/', '', $phone);
+        if (empty($phone)) {
+            return '';
+        }
+        if (str_starts_with($phone, '0')) {
+            $phone = '62'.substr($phone, 1);
+        }
+
+        return $phone;
     }
 }

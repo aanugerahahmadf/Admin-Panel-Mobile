@@ -397,8 +397,8 @@ class Register extends BaseRegister
                                 ])
                                 ->default('ktp')
                                 ->columnSpanFull(),
-                            TextInput::make('nik')
-                                ->label(__('Nomer Induk Kependudukan (NIK)'))
+                            TextInput::make('ktp_number')
+                                ->label(__('Nomor KTP'))
                                 ->visible(fn (Get $get) => $get('identity_type') === 'ktp')
                                 ->maxLength(20)
                                 ->columnSpanFull(),
@@ -508,7 +508,7 @@ class Register extends BaseRegister
             'email' => $data['email'],
             'password' => Hash::make($data['password'] ?? ''),
             'whatsapp' => $data['whatsapp'] ?? null,
-            'nik' => $data['nik'] ?? null,
+            'ktp_number' => $data['ktp_number'] ?? null,
             'passport_number' => $data['passport_number'] ?? null,
             'sim_number' => $data['sim_number'] ?? null,
             'npwp_number' => $data['npwp_number'] ?? null,

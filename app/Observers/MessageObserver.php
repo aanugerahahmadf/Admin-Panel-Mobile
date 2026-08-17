@@ -98,7 +98,12 @@ class MessageObserver
                 return;
             }
 
-            $waMessage = "Pesan baru dari {$senderName}\n\n{$preview}\n\nBalas di aplikasi untuk merespons.";
+            $waMessage = PlatformNotificationService::withRecipientLocale(
+                $recipient,
+                fn () => __('whatsapp.new_message_from', ['name' => $senderName])
+                    . $preview
+                    . __('whatsapp.new_message_reply')
+            );
 
             $response = Http::withHeaders(['Authorization' => $token])
                 ->timeout(10)

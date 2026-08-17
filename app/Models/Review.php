@@ -41,13 +41,44 @@ use Illuminate\Support\Carbon;
  */
 class Review extends Model
 {
+    protected $appends = ['photo_url', 'photo_urls'];
+
     protected $fillable = [
         'user_id',
         'package_id',
         'product_id',
         'rating',
+        'title',
         'comment',
+        'photo',
+        'photos',
     ];
+
+    protected $casts = [
+        'photos' => 'array',
+    ];
+
+    public function getPhotoUrlAttribute(): ?string
+    {
+        $urls = $this->getPhotoUrlsAttribute();
+
+        return $urls[0] ?? null;
+    }
+
+    public function getPhotoUrlsAttribute(): array
+    {
+        $paths = $this->photos ?: [];
+
+        // Backward compatibility: ulasan lama hanya punya kolom `photo`
+        if (empty($paths) && $this->photo) {
+            $paths = [$this->photo];
+        }
+
+        return array_values(array_filter(array_map(
+            fn ($p) => $p ? asset('storage/'.$p) : null,
+            (array) $paths
+        )));
+    }
 
     public function user()
     {

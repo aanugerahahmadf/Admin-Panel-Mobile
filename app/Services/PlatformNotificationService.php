@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\RuntimePlatform;
 use App\Models\User;
+use App\Services\FirebaseService;
 use App\Support\Platform\PlatformFeatureRegistry;
 use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Support\Facades\Log;
@@ -58,6 +59,22 @@ class PlatformNotificationService
             } catch (\Throwable $e) {
                 report($e);
             }
+        }
+
+        // 4. FCM push notification (Android / iOS physical device)
+        static::sendFcmPush($user, $title, $body);
+    }
+
+    public static function sendFcmPush(User $user, string $title, string $body, array $data = []): void
+    {
+        if (! $user->fcm_token) {
+            return;
+        }
+        try {
+            $firebase = app(FirebaseService::class);
+            $firebase->sendPushNotification($user->fcm_token, $title, $body, $data);
+        } catch (\Throwable $e) {
+            Log::warning('FCM push skipped', ['error' => $e->getMessage(), 'user_id' => $user->id]);
         }
     }
 

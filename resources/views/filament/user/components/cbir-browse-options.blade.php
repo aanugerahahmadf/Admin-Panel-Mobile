@@ -1,10 +1,13 @@
 @php
     $browseAccept = $browseAccept ?? 'image/jpeg,image/png,image/webp,image/heic,image/heif,video/mp4,video/quicktime,video/x-msvideo,video/x-matroska,.jpg,.jpeg,.png,.webp,.heic,.mp4,.mov,.avi,.mkv,.webm';
     $isNative = $isNative ?? false;
+    // compact: untuk topbar/global search — hanya render input tersembunyi
+    // (dipakai cbir-browse-modal.pickWeb), tanpa kotak drop-zone besar.
+    $compact = $compact ?? false;
 @endphp
 
 <div
-    class="cbir-browse-root relative py-2"
+    class="cbir-browse-root relative {{ $compact ? '' : 'py-2' }}"
     x-data="{
         browseAccept: @js($browseAccept),
         openPicker() {
@@ -33,6 +36,7 @@
         >
     @endunless
 
+    @unless ($compact)
     <div
         class="relative rounded-lg border-2 border-dashed border-gray-300 bg-white px-6 py-8 text-center shadow-sm transition-colors hover:border-primary-400 dark:border-white/10 dark:bg-white/5 dark:hover:border-primary-500"
         x-on:dragover.prevent
@@ -66,4 +70,5 @@
             >{{ __('Jelajahi') }}</span>
         </p>
     </div>
+    @endunless
 </div>

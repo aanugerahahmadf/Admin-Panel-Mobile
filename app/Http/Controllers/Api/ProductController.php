@@ -27,10 +27,14 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Product::with(['category', 'reviews', 'media']);
+            $query = Product::with(['vendor', 'category', 'reviews', 'media']);
 
             if ($request->filled('category_id')) {
                 $query->where('category_id', $request->category_id);
+            }
+
+            if ($request->filled('organizer_id')) {
+                $query->where('vendor_id', $request->organizer_id);
             }
 
             if ($request->filled('theme')) {
@@ -64,7 +68,19 @@ class ProductController extends Controller
             }
 
             $query->orderBy($sortBy, $sortDirection);
-            $products = $query->paginate($request->get('per_page', 10), ['*']);
+
+            $perPage = $request->get('per_page', 'all');
+
+            if ($perPage === 'all') {
+                $products = $query->get();
+
+                return response()->json([
+                    'status' => 'success',
+                    'data' => $this->localizedProducts($products),
+                ]);
+            }
+
+            $products = $query->paginate((int) $perPage, ['*']);
 
             return response()->json([
                 'status' => 'success',
@@ -90,6 +106,7 @@ class ProductController extends Controller
     {
         try {
             $product = Product::with([
+                'vendor:id,store_name,logo,is_active',
                 'category:id,name,description,name_translations,description_translations',
                 'reviews' => function ($query): void {
                     $query->with('user:id,full_name,avatar_url')->latest()->limit(5);
@@ -117,7 +134,7 @@ class ProductController extends Controller
 
     public function featured(Request $request)
     {
-        $products = Product::with(['category', 'reviews', 'media'])
+        $products = Product::with(['vendor', 'category', 'reviews', 'media'])
             ->where('is_featured', true)
             ->paginate($request->get('per_page', 10), ['*']);
 
@@ -136,7 +153,7 @@ class ProductController extends Controller
 
     public function onSale(Request $request)
     {
-        $products = Product::with(['category', 'reviews', 'media'])
+        $products = Product::with(['vendor', 'category', 'reviews', 'media'])
             ->whereNotNull('discount_price')
             ->where('discount_price', '<', 'price')
             ->paginate($request->get('per_page', 10), ['*']);

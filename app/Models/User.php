@@ -185,7 +185,7 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
     public function canAccessPanel(Panel $panel): bool
     {
         if ($panel->getId() === 'admin') {
-            return $this->hasRole('super_admin');
+            return $this->hasRole('super_admin') || $this->hasRole('vendor');
         }
 
         if ($panel->getId() === 'user') {
@@ -212,7 +212,8 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
         'avatar_url',
         'phone',
         'whatsapp',
-        'nik',
+        'whatsapp_verified_at',
+        'ktp_number',
         'passport_number',
         'sim_number',
         'npwp_number',
@@ -220,6 +221,7 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
         'birth_date',
         'ktp_photo',
         'selfie_photo',
+        'face_scan_photo',
         'country',
         'province_id',
         'city_id',
@@ -232,6 +234,16 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
         'postal_code',
         'identity_type',
         'identity_verified_at',
+        'kyc_status',
+        'face_similarity',
+        'face_deep_similarity',
+        'face_reason',
+        'face_liveness',
+        'liveness_completed',
+        'face_verified_at',
+        'kyc_reviewed_by',
+        'kyc_reviewed_at',
+        'kyc_notes',
         'address',
         'ip_address',
         'login_city',
@@ -246,6 +258,7 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
         'event_concept',
         'dream_venue',
         'active_status',
+        'fcm_token',
         'gender',
         'religion',
         'marital_status',
@@ -258,6 +271,14 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
         'otp_code',
         'otp_expires_at',
         'otp_purpose',
+        'app_lock_fingerprint_enabled',
+        'app_lock_face_enabled',
+        'app_lock_pin_enabled',
+        'app_lock_pin_hash',
+        'app_lock_face_enrolled',
+        'app_lock_face_reference',
+        'app_lock_face_enrolled_at',
+        'app_lock_last_unlock_at',
     ];
 
     /**
@@ -268,6 +289,7 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
     protected $appends = [
         'ktp_photo_url',
         'selfie_photo_url',
+        'face_scan_photo_url',
         'is_admin',
         'role_names',
     ];
@@ -280,6 +302,8 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
     protected $hidden = [
         'password',
         'remember_token',
+        'app_lock_pin_hash',
+        'app_lock_face_reference',
     ];
 
     /**
@@ -292,11 +316,22 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
         return [
             'email_verified_at' => 'datetime',
             'identity_verified_at' => 'datetime',
+            'whatsapp_verified_at' => 'datetime',
+            'face_verified_at' => 'datetime',
+            'kyc_reviewed_at' => 'datetime',
+            'face_liveness' => 'array',
+            'liveness_completed' => 'boolean',
             'password' => 'hashed',
             'birth_date' => 'date',
             'wedding_date' => 'date',
             'budget' => 'decimal:2',
             'active_status' => 'boolean',
+            'app_lock_fingerprint_enabled' => 'boolean',
+            'app_lock_face_enabled' => 'boolean',
+            'app_lock_pin_enabled' => 'boolean',
+            'app_lock_face_enrolled' => 'boolean',
+            'app_lock_face_enrolled_at' => 'datetime',
+            'app_lock_last_unlock_at' => 'datetime',
         ];
     }
 
@@ -308,6 +343,11 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
     public function wishlists()
     {
         return $this->hasMany(Wishlist::class);
+    }
+
+    public function kycReviewer()
+    {
+        return $this->belongsTo(User::class, 'kyc_reviewed_by');
     }
 
     /**
@@ -361,6 +401,23 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
     public function getSelfiePhotoUrlAttribute($value): ?string
     {
         $path = $this->attributes['selfie_photo'] ?? null;
+
+        if (! $path) {
+            return null;
+        }
+
+        if (filter_var($path, FILTER_VALIDATE_URL)) {
+            return $path;
+        }
+
+        $cleanPath = ltrim(str_replace('storage/', '', $path), '/');
+
+        return url('media/'.$cleanPath);
+    }
+
+    public function getFaceScanPhotoUrlAttribute($value): ?string
+    {
+        $path = $this->attributes['face_scan_photo'] ?? null;
 
         if (! $path) {
             return null;

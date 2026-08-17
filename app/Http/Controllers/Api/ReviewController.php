@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Storage;
 
 class ReviewController extends Controller
 {
@@ -25,6 +26,9 @@ class ReviewController extends Controller
                 'rating' => 'required|integer|min:1|max:5',
                 'comment' => 'nullable|string|max:1000',
                 'title' => 'nullable|string|max:255',
+                'photo' => 'nullable|file|mimes:jpeg,png,jpg,webp,mp4,mov,m4v,webm,3gp|max:51200',
+                'photos' => 'nullable|array|max:6',
+                'photos.*' => 'file|mimes:jpeg,png,jpg,webp,mp4,mov,m4v,webm,3gp|max:51200',
             ]);
 
             if (! filled($validatedData['package_id'] ?? null) && ! filled($validatedData['product_id'] ?? null)) {
@@ -73,6 +77,16 @@ class ReviewController extends Controller
                 ], 409);
             }
 
+            $photoPaths = [];
+            if ($request->hasFile('photo')) {
+                $photoPaths[] = $request->file('photo')->store('review-photos', 'public');
+            }
+            if ($request->hasFile('photos')) {
+                foreach ((array) $request->file('photos') as $p) {
+                    $photoPaths[] = $p->store('review-photos', 'public');
+                }
+            }
+
             $review = Review::create([
                 'user_id' => Auth::id(),
                 'package_id' => $validatedData['package_id'] ?? null,
@@ -80,6 +94,8 @@ class ReviewController extends Controller
                 'rating' => $validatedData['rating'],
                 'title' => $validatedData['title'] ?? null,
                 'comment' => $validatedData['comment'] ?? null,
+                'photo' => $photoPaths[0] ?? null,
+                'photos' => $photoPaths,
             ]);
 
             // Load relationships for the response
@@ -148,6 +164,46 @@ class ReviewController extends Controller
     }
 
     /**
+     * Get reviews for a specific product
+     */
+    public function getProductReviews($productId, Request $request)
+    {
+        try {
+            $query = Review::with(['user:id,full_name,avatar_url'])
+                ->where('product_id', $productId)
+                ->orderByDesc('created_at');
+
+            if ($request->filled('rating')) {
+                $query->where('rating', $request->rating);
+            }
+
+            if ($request->filled('min_rating')) {
+                $query->where('rating', '>=', $request->min_rating);
+            }
+
+            $reviews = $query->paginate($request->get('per_page', 10));
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $reviews->items(),
+                'pagination' => [
+                    'current_page' => $reviews->currentPage(),
+                    'last_page' => $reviews->lastPage(),
+                    'per_page' => $reviews->perPage(),
+                    'total' => $reviews->total(),
+                    'has_more_pages' => $reviews->hasMorePages(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Gagal mengambil ulasan'),
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Get reviews for a specific organizer
      */
     public function getOrganizerReviews($organizerId, Request $request)
@@ -155,7 +211,7 @@ class ReviewController extends Controller
         try {
             $query = Review::with(['user:id,full_name,avatar_url', 'package:id,name,name_translations'])
                 ->join('packages', 'reviews.package_id', '=', 'packages.id')
-                ->where('packages.wedding_flowers_decorasi_id', $organizerId)
+                ->where('packages.vendor_id', $organizerId)
                 ->select('reviews.*')
                 ->orderByDesc('reviews.created_at');
 
@@ -195,7 +251,7 @@ class ReviewController extends Controller
     public function getUserReviews(Request $request)
     {
         try {
-            $query = Review::with(['package:id,name,price,name_translations', 'product:id,name,price,name_translations'])
+            $query = Review::with(['package.media', 'product.media', 'user:id,full_name,avatar_url'])
                 ->where('user_id', Auth::id())
                 ->orderByDesc('created_at');
 
@@ -222,6 +278,42 @@ class ReviewController extends Controller
     }
 
     /**
+     * Get reviews by a specific user (public)
+     */
+    public function getUserPublicReviews($userId, Request $request)
+    {
+        try {
+            $query = Review::with([
+                'user:id,full_name,avatar_url',
+                'package:id,name,name_translations',
+                'product:id,name,name_translations',
+            ])
+                ->where('user_id', $userId)
+                ->orderByDesc('created_at');
+
+            $reviews = $query->paginate($request->get('per_page', 10));
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $reviews->items(),
+                'pagination' => [
+                    'current_page' => $reviews->currentPage(),
+                    'last_page' => $reviews->lastPage(),
+                    'per_page' => $reviews->perPage(),
+                    'total' => $reviews->total(),
+                    'has_more_pages' => $reviews->hasMorePages(),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Gagal mengambil ulasan pengguna'),
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Update an existing review
      */
     public function update(Request $request, $id)
@@ -235,7 +327,30 @@ class ReviewController extends Controller
                 'rating' => 'sometimes|required|integer|min:1|max:5',
                 'comment' => 'sometimes|nullable|string|max:1000',
                 'title' => 'sometimes|nullable|string|max:255',
+                'photo' => 'nullable|file|mimes:jpeg,png,jpg,webp,mp4,mov,m4v,webm,3gp|max:51200',
+                'photos' => 'nullable|array|max:6',
+                'photos.*' => 'file|mimes:jpeg,png,jpg,webp,mp4,mov,m4v,webm,3gp|max:51200',
             ]);
+
+            $newPhotoPaths = [];
+            if ($request->hasFile('photo')) {
+                $newPhotoPaths[] = $request->file('photo')->store('review-photos', 'public');
+            }
+            if ($request->hasFile('photos')) {
+                foreach ((array) $request->file('photos') as $p) {
+                    $newPhotoPaths[] = $p->store('review-photos', 'public');
+                }
+            }
+
+            if ($newPhotoPaths) {
+                foreach (array_merge([$review->photo], $review->photos ?: []) as $old) {
+                    if ($old) {
+                        Storage::disk('public')->delete($old);
+                    }
+                }
+                $validatedData['photo'] = $newPhotoPaths[0];
+                $validatedData['photos'] = $newPhotoPaths;
+            }
 
             $review->update($validatedData);
 
@@ -276,6 +391,12 @@ class ReviewController extends Controller
             $review = Review::where('id', $id)
                 ->where('user_id', Auth::id())
                 ->firstOrFail(['*']);
+
+            foreach (array_merge([$review->photo], $review->photos ?: []) as $old) {
+                if ($old) {
+                    Storage::disk('public')->delete($old);
+                }
+            }
 
             $review->delete();
 

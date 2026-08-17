@@ -78,11 +78,11 @@ class CategoryController extends Controller
             $category = Category::findOrFail($id, ['*']);
             if ($category->type === 'product') {
                 $category->load(['categoryProducts' => function ($query): void {
-                    $query->with(['weddingFlowersDecorasi', 'reviews'])->limit(10);
+                    $query->with(['vendor', 'reviews'])->limit(10);
                 }])->loadCount('categoryProducts');
             } else {
                 $category->load(['categoryPackages' => function ($query): void {
-                    $query->with(['weddingFlowersDecorasi', 'reviews'])->limit(10);
+                    $query->with(['vendor', 'reviews'])->limit(10);
                 }])->loadCount('categoryPackages');
             }
 
@@ -112,7 +112,7 @@ class CategoryController extends Controller
     {
         try {
             $categories = Category::with(['categoryPackages' => function ($query) use ($request): void {
-                $query->with(['weddingFlowersDecorasi', 'reviews'])
+                $query->with(['vendor', 'reviews'])
                     ->orderBy('price', 'asc')
                     ->limit($request->get('packages_per_category', 5));
             }])->withCount('categoryPackages')->get(['*']);

@@ -19,7 +19,7 @@ class Product extends Model implements HasMedia
 
     public function registerMediaCollections(): void
     {
-        $this->addMediaCollection('product_image')->singleFile();
+        $this->addMediaCollection('product_image');
         $this->addMediaCollection('videos');
     }
 
@@ -121,9 +121,9 @@ class Product extends Model implements HasMedia
         return false;
     }
 
-    public function weddingFlowersDecorasi()
+    public function vendor()
     {
-        return $this->belongsTo(User::class, 'wedding_flowers_decorasi_id');
+        return $this->belongsTo(Vendor::class, 'vendor_id');
     }
 
     public function category()
@@ -144,6 +144,11 @@ class Product extends Model implements HasMedia
     public function wishlists()
     {
         return $this->hasMany(Wishlist::class);
+    }
+
+    public function discounts()
+    {
+        return $this->morphMany(Discount::class, 'discountable');
     }
 
     public function getCategoryColorAttribute(): string

@@ -208,4 +208,30 @@ class UserController extends Controller
             return response()->json(['status' => 'error', 'message' => __('Gagal mengambil roles')], 500);
         }
     }
+
+    /**
+     * Daftar vendor.
+     */
+    public function vendors(): JsonResponse
+    {
+        try {
+            $vendors = \App\Models\Vendor::orderBy('store_name')->get();
+
+            $data = $vendors->map(fn ($v) => [
+                'id' => $v->id,
+                'store_name' => $v->store_name,
+                'contact_person' => $v->contact_person,
+                'no_telp' => $v->no_telp,
+                'is_active' => $v->is_active,
+                'created_at' => $v->created_at?->toISOString(),
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $data,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
 }

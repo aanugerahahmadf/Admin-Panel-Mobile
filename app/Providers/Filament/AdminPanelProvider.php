@@ -15,7 +15,7 @@ use App\Filament\Admin\Widgets\RecentOrders;
 use App\Filament\Admin\Widgets\RevenueChart;
 use App\Filament\Admin\Widgets\StatsOverview;
 use App\Http\Middleware\ClerkFilamentAuth;
-use App\Http\Middleware\MidtransCspMiddleware;
+
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\SuperAdmin;
 use App\Http\Middleware\VerifyCsrfToken;
@@ -108,7 +108,6 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->middleware([
                 ClerkFilamentAuth::class,
-                MidtransCspMiddleware::class,
                 VerifyCsrfToken::class,
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('terms_of_service', function (Blueprint $table) {
             $table->id();
-            $table->string('title')->default('Syarat & Ketentuan');
+            $table->string('title')->default('Ketentuan Layanan');
             $table->json('content'); // JSON Repeater for sections
             $table->timestamps();
         });

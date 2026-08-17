@@ -13,7 +13,7 @@ class ProductController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = Product::with(['category:id,name', 'media']);
+            $query = Product::with(['category:id,name', 'media', 'discounts']);
 
             if ($request->filled('search')) {
                 $s = $request->search;
@@ -50,7 +50,7 @@ class ProductController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $product = Product::with(['category', 'media', 'reviews'])->findOrFail($id);
+            $product = Product::with(['category', 'media', 'reviews', 'discounts'])->findOrFail($id);
             return response()->json(['status' => 'success', 'data' => $product]);
         } catch (\Exception $e) {
             return response()->json(['status' => 'error', 'message' => __('Produk tidak ditemukan')], 404);

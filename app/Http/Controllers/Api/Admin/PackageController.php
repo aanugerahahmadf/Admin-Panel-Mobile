@@ -13,7 +13,7 @@ class PackageController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = Package::with(['category:id,name', 'media']);
+            $query = Package::with(['category:id,name', 'media', 'discounts']);
 
             if ($request->filled('search')) {
                 $s = $request->search;
@@ -50,7 +50,7 @@ class PackageController extends Controller
     public function show(int $id): JsonResponse
     {
         try {
-            $package = Package::with(['category', 'media', 'reviews'])->findOrFail($id);
+            $package = Package::with(['category', 'media', 'reviews', 'discounts'])->findOrFail($id);
             return response()->json(['status' => 'success', 'data' => $package]);
         } catch (\Exception $e) {
             return response()->json(['status' => 'error', 'message' => __('Paket tidak ditemukan')], 404);

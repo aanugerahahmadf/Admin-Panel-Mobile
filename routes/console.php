@@ -11,3 +11,4 @@ Artisan::command('inspire', function (): void {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('app:update-order-status')->everyMinute();
+Schedule::command('app:sync-bri-payments')->everyFiveMinutes();
