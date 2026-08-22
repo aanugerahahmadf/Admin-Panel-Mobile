@@ -107,6 +107,7 @@ class ProductResource extends Resource
     {
         return $table
             ->recordUrl(fn ($record) => static::getUrl('view', ['record' => $record]))
+            ->paginated(false)
             ->poll(NativeServiceProvider::isNativeMobile() ? null : '30s')
             ->emptyStateHeading(__('Belum ada product tersedia'))
             ->emptyStateDescription(function () {

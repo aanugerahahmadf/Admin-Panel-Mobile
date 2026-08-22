@@ -23,11 +23,11 @@ class LegalSeeder extends Seeder
         ];
 
         $enContent = [
-            ['heading' => 'INTRODUCTION', 'body' => 'Welcome to the Wedding Flower Decoration platform. Before using this Site or creating an Account, please read the following Terms of Service carefully to understand your legal rights and obligations regarding our decoration management.', 'is_italic' => false],
-            ['heading' => 'ACCOUNT AND SECURITY', 'body' => 'Wedding Flower Decoration reserves the right to deny access to the Site or Services to protect the integrity of our service schedule. You are responsible for maintaining the confidentiality of your password and account activities. Any action within the account is deemed as your approval.', 'is_italic' => true],
+            ['heading' => 'INTRODUCTION', 'body' => 'Welcome to the Wedding Flower Decorations platform. Before using this Site or creating an Account, please read the following Terms of Service carefully to understand your legal rights and obligations regarding our decoration management.', 'is_italic' => false],
+            ['heading' => 'ACCOUNT AND SECURITY', 'body' => 'Wedding Flower Decorations reserves the right to deny access to the Site or Services to protect the integrity of our service schedule. You are responsible for maintaining the confidentiality of your password and account activities. Any action within the account is deemed as your approval.', 'is_italic' => true],
             ['heading' => 'SERVICES AND TRANSACTIONS', 'body' => 'Product or package orders are considered permanent after Down Payment validation. The Dashboard serves as valid transactional digital evidence. Order detail amendments are only permitted through system confirmation no later than 30 days before the event day.', 'is_italic' => false],
             ['heading' => 'CANCELLATION & REFUND', 'body' => 'DP is non-refundable due to exclusive team scheduling. For Force Majeure (natural disaster/pandemic), rescheduling options will be offered based on our internal calendar availability with the principle of family welfare.', 'is_italic' => true],
-            ['heading' => 'COPYRIGHT & PORTFOLIO', 'body' => 'Flower decoration documentation is the intellectual property of Wedding Flower Decoration and may be used as an official portfolio. Commercial use of our digital assets without written permission is strictly prohibited by law.', 'is_italic' => false],
+            ['heading' => 'COPYRIGHT & PORTFOLIO', 'body' => 'Flower decoration documentation is the intellectual property of Wedding Flower Decorations and may be used as an official portfolio. Commercial use of our digital assets without written permission is strictly prohibited by law.', 'is_italic' => false],
         ];
 
         TermsOfService::updateOrCreate(
@@ -50,10 +50,10 @@ class LegalSeeder extends Seeder
         ];
 
         $enPrivacy = [
-            ['heading' => 'PRIVACY COMMITMENT', 'body' => 'Wedding Flower Decoration handles the responsibility of personal data protection in accordance with the Personal Data Protection Law (UU PDP) very seriously. We are fully committed to protecting the confidentiality of all your decoration data.', 'is_italic' => false],
+            ['heading' => 'PRIVACY COMMITMENT', 'body' => 'Wedding Flower Decorations handles the responsibility of personal data protection in accordance with the Personal Data Protection Law (UU PDP) very seriously. We are fully committed to protecting the confidentiality of all your decoration data.', 'is_italic' => false],
             ['heading' => 'DATA COLLECTION', 'body' => 'We collect real personal data such as full name, email address, event location, and transaction history. Quick authentication data via Google Login is only used for creating a unique digital identity on our decoration portal.', 'is_italic' => true],
             ['heading' => 'USE OF INFORMATION', 'body' => 'We use your information solely for processing flower decoration orders, internal coordination, schedule notifications, and legal protection audits. All internal coordination data remains under our internal audit supervision.', 'is_italic' => false],
-            ['heading' => 'SYSTEM SECURITY', 'body' => 'Our platform uses high-level SSL encryption for all data transmission. Login session security is temporary to ensure real-time privacy protection when you access the Wedding Flower Decoration dashboard.', 'is_italic' => false],
+            ['heading' => 'SYSTEM SECURITY', 'body' => 'Our platform uses high-level SSL encryption for all data transmission. Login session security is temporary to ensure real-time privacy protection when you access the Wedding Flower Decorations dashboard.', 'is_italic' => false],
         ];
 
         PrivacyPolicy::updateOrCreate(

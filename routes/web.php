@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\FirebaseAuthController;
 use App\Http\Controllers\Auth\SocialiteController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\LegalWebController;
@@ -75,6 +76,10 @@ Route::get('/clerk/login', function (Request $request) {
 
     return redirect("/{$panel}");
 })->name('clerk.login');
+
+// Firebase Auth: client sends ID token, backend verifies via REST API
+Route::post('/auth/firebase/callback', [FirebaseAuthController::class, 'callback'])
+    ->name('auth.firebase.callback');
 
 // Google OAuth reverse client ID scheme callback
 // com.googleusercontent.apps.xxx:/oauth2redirect?code=... → /auth/google/oauth2redirect?code=...

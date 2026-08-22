@@ -154,13 +154,24 @@ class BriService
      | -----------------------------------------------------------------*/
 
     /**
-     * Fitur Virtual Account aktif bila SNAP diaktifkan + RSA private key tersedia.
+     * Fitur Virtual Account aktif bila SNAP diaktifkan + credentials tersedia.
+     * HMAC tidak perlu private key; RSA memerlukan private key.
      */
     public function snapEnabled(): bool
     {
-        return config('bri.snap_enabled', false)
-            && config('bri.client_id') !== ''
-            && $this->snapPrivateKey() !== '';
+        if (! config('bri.snap_enabled', false) || config('bri.client_id') === '') {
+            return false;
+        }
+
+        $keyType = config('bri.snap_key_type', 'symmetric');
+
+        // HMAC: hanya perlu client_id + client_secret
+        if ($keyType === 'symmetric') {
+            return config('bri.client_secret') !== '';
+        }
+
+        // RSA: perlu private key
+        return $this->snapPrivateKey() !== '';
     }
 
     private function snapPrivateKey(): string
@@ -174,7 +185,7 @@ class BriService
     }
 
     /**
-     * SNAP menggunakan HMAC-SHA512 dengan client_secret sebagai kunci.
+     * SNAP signature: HMAC-SHA512 dengan client_secret.
      * stringToSign = METHOD:EndpointUrl:AccessToken:lowercase(hex(sha256(body))):Timestamp
      */
     public function snapSignature(string $method, string $url, string $token, string $timestamp, string $body): string
@@ -186,15 +197,83 @@ class BriService
     }
 
     /**
-     * Mendapatkan access token B2B (SNAP). Endpoint ini memakai signature
-     * ASYMETRIS RSA: SHA256withRSA(PrivateKey, stringToSign) dengan
-     * stringToSign = client_ID + "|" + X-TIMESTAMP.
+     * SNAP access token. Supports两种 tipe:
+     * - Asymmetric (RSA): B2B token via SHA256withRSA(PrivateKey, client_ID|timestamp)
+     * - Symmetric (HMAC): B2B token via HMAC-SHA512 signature
      */
     public function snapAccessToken(): ?string
     {
+        if (! config('bri.snap_enabled', false)) {
+            Log::warning('[BRI] SNAP tidak aktif.');
+
+            return null;
+        }
+
+        $keyType = config('bri.snap_key_type', 'symmetric');
+
+        if ($keyType === 'asymmetric') {
+            return $this->snapAccessTokenRSA();
+        }
+
+        return $this->snapAccessTokenHMAC();
+    }
+
+    /**
+     * SNAP B2B token via HMAC (Symmetric).
+     * Signature: HMAC_SHA512(client_secret, "POST:/snap/v1.0/access-token/b2b::{bodyHash}:{timestamp}")
+     */
+    private function snapAccessTokenHMAC(): ?string
+    {
+        return Cache::remember('bri_snap_access_token', now()->addMinutes(14), function (): ?string {
+            $timestamp = $this->iso8601();
+            $body = json_encode(['grantType' => 'client_credentials'], JSON_UNESCAPED_SLASHES);
+            $bodyHash = strtolower(hash('sha256', $body));
+            $endpoint = '/snap/v1.0/access-token/b2b';
+            // AccessToken kosong (kita sedang request token baru)
+            $stringToSign = "POST:{$endpoint}::{$bodyHash}:{$timestamp}";
+
+            $signature = base64_encode(hash_hmac('sha512', $stringToSign, config('bri.client_secret'), true));
+
+            Log::info('[BRI] SNAP HMAC token request', [
+                'timestamp' => $timestamp,
+                'stringToSign' => $stringToSign,
+            ]);
+
+            $response = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'X-TIMESTAMP' => $timestamp,
+                'X-SIGNATURE' => $signature,
+                'X-CLIENT-KEY' => config('bri.client_id'),
+            ])->post(config('bri.snap_token_url'), $body);
+
+            if (! $response->successful()) {
+                Log::error('[BRI] SNAP HMAC token request failed ('.$response->status().'): '.$response->body());
+
+                return null;
+            }
+
+            $token = $response->json('accessToken');
+            if (! $token) {
+                Log::error('[BRI] SNAP HMAC response tanpa accessToken: '.$response->body());
+
+                return null;
+            }
+
+            Log::info('[BRI] SNAP HMAC token obtained successfully');
+
+            return $token;
+        });
+    }
+
+    /**
+     * SNAP B2B token via RSA (Asymmetric) — memerlukan RSA private key.
+     * Public key HARUS terdaftar di portal BRI (Manage Snap Key).
+     */
+    private function snapAccessTokenRSA(): ?string
+    {
         $privateKey = $this->snapPrivateKey();
-        if (! config('bri.snap_enabled', false) || $privateKey === '') {
-            Log::warning('[BRI] SNAP tidak aktif / RSA private key belum dikonfigurasi.');
+        if ($privateKey === '') {
+            Log::warning('[BRI] RSA private key belum dikonfigurasi.');
 
             return null;
         }
@@ -211,26 +290,39 @@ class BriService
             }
 
             $body = json_encode(['grantType' => 'client_credentials'], JSON_UNESCAPED_SLASHES);
+            $sigB64 = base64_encode($signature);
+
+            Log::info('[BRI] SNAP RSA token request', [
+                'timestamp' => $timestamp,
+                'stringToSign' => $stringToSign,
+                'signature_len' => strlen($sigB64),
+            ]);
 
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
                 'X-TIMESTAMP' => $timestamp,
-                'X-SIGNATURE' => base64_encode($signature),
+                'X-SIGNATURE' => $sigB64,
                 'X-CLIENT-KEY' => config('bri.client_id'),
-            ])->post(config('bri.snap_token_url'), $body);
+            ])->timeout(15)->post(config('bri.snap_token_url'), $body);
 
             if (! $response->successful()) {
-                Log::error('[BRI] SNAP B2B token request failed ('.$response->status().'): '.$response->body());
+                $bodyJson = json_decode($response->body(), true);
+                Log::error('[BRI] SNAP RSA token request failed ('.$response->status().')', [
+                    'responseCode' => $bodyJson['responseCode'] ?? 'none',
+                    'responseMessage' => $bodyJson['responseMessage'] ?? $response->body(),
+                ]);
 
                 return null;
             }
 
             $token = $response->json('accessToken');
             if (! $token) {
-                Log::error('[BRI] SNAP B2B response tanpa accessToken: '.$response->body());
+                Log::error('[BRI] SNAP RSA response tanpa accessToken: '.$response->body());
 
                 return null;
             }
+
+            Log::info('[BRI] SNAP RSA token obtained successfully');
 
             return $token;
         });
@@ -286,7 +378,7 @@ class BriService
                 'X-SIGNATURE' => $this->snapSignature('POST', $path, $token, $timestamp, $body),
                 'X-PARTNER-ID' => config('bri.client_id'),
                 'X-EXTERNAL-ID' => $externalId,
-                'CHANNEL-ID' => config('bri.va_channel_id', 'H2H'),
+                'CHANNEL-ID' => config('bri.va_channel_id', '00009'),
                 'Content-Type' => 'application/json',
             ])->post(config('bri.va_create_url'), $body);
 
@@ -381,7 +473,7 @@ class BriService
                 'X-SIGNATURE' => $this->snapSignature('POST', $path, $token, $timestamp, $body),
                 'X-PARTNER-ID' => config('bri.client_id'),
                 'X-EXTERNAL-ID' => $externalId,
-                'CHANNEL-ID' => config('bri.va_channel_id', 'H2H'),
+                'CHANNEL-ID' => config('bri.va_channel_id', '00009'),
                 'Content-Type' => 'application/json',
             ])->post(config('bri.qr_create_url'), $body);
 

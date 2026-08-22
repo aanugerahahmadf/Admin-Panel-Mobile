@@ -6,6 +6,8 @@
     $registerUrl       = '/user/register';
     $loginUrl          = '/user/login';
 @endphp
+{{-- Firebase Auth (GIS + signInWithCredential) — tanpa authorized-domain restriction --}}
+@vite('resources/js/firebase-auth.js')
 <div x-data="{ 
     agreed: $wire.entangle('data.agreement'), 
     remembered: $wire.entangle('data.remember'), 
@@ -58,7 +60,20 @@
             x-on:click="
                 if (!(agreed && remembered)) return;
                 loading = true;
-                window.location.href = googleUrl;
+                if (window.FirebaseAuthLogin) {
+                    window.FirebaseAuthLogin()
+                        .then(() => { /* navigation handled by module */ })
+                        .catch((e) => {
+                            loading = false;
+                            new FilamentNotification()
+                                .title('{{ __('Gagal Masuk') }}')
+                                .body(e && e.message ? e.message : '{{ __('Terjadi kesalahan saat login dengan Google.') }}')
+                                .danger()
+                                .send();
+                        });
+                } else {
+                    window.location.href = googleUrl;
+                }
             "
             x-bind:disabled="!(agreed && remembered) || loading"
             class="flex items-center justify-center gap-3 w-full px-4 py-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm font-semibold shadow-sm transition-all duration-100">

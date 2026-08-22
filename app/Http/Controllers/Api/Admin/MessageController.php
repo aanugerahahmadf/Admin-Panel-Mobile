@@ -68,12 +68,14 @@ class MessageController extends Controller
             return response()->json(['status' => 'success', 'data' => [
                 'id' => $inbox->id,
                 'title' => $inbox->title,
+                'meta' => $inbox->meta,
                 'participants' => $users,
                 'messages' => $inbox->messages->map(fn ($m) => [
                     'id' => $m->id,
                     'user_id' => $m->user_id,
                     'sender_name' => $m->sender?->full_name,
                     'message' => $m->message,
+                    'meta' => $m->meta,
                     'created_at' => $m->created_at?->toISOString(),
                 ]),
             ]]);

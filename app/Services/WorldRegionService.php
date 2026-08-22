@@ -14,7 +14,7 @@ class WorldRegionService
     {
         return Cache::remember('world_countries', 86400, function () {
             try {
-                $res = Http::withOptions(['verify' => false])
+                $res = Http::withOptions(['verify' => !app()->environment('production')])
                     ->timeout(15)
                     ->get("{$this->baseUrl}/countries");
                 $data = $res->json();
@@ -40,7 +40,7 @@ class WorldRegionService
         }
 
         try {
-            $res = Http::withOptions(['verify' => false])
+            $res = Http::withOptions(['verify' => !app()->environment('production')])
                 ->timeout(15)
                 ->post("{$this->baseUrl}/countries/states", [
                     'country' => $country,
@@ -72,7 +72,7 @@ class WorldRegionService
         }
 
         try {
-            $res = Http::withOptions(['verify' => false])
+            $res = Http::withOptions(['verify' => !app()->environment('production')])
                 ->timeout(15)
                 ->post("{$this->baseUrl}/countries/state/cities", [
                     'country' => $country,

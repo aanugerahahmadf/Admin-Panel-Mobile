@@ -39,6 +39,21 @@ class PaymentGatewayResource extends Resource
         return __('Gateway Pembayaran');
     }
 
+    public static function getNavigationBadge(): ?string
+    {
+        return (string) static::getModel()::count();
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'primary';
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return __('Total Gateway Pembayaran');
+    }
+
     public static function canCreate(): bool
     {
         return false;

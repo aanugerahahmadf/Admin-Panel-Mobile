@@ -164,10 +164,6 @@ class ProfileController extends Controller
                 }
             }
 
-            if (isset($validatedData['password'])) {
-                $validatedData['password'] = Hash::make($validatedData['password']);
-            }
-
             $user->update($validatedData);
 
             return response()->json([
@@ -212,12 +208,12 @@ class ProfileController extends Controller
 
             // Delete old avatar if exists
             if ($user->avatar_url) {
-                Storage::disk('public')->delete($user->avatar_url);
+                \App\Services\StorageService::delete($user->avatar_url);
             }
 
             // Store new avatar with unique name
             $fileName = 'avatar_'.$user->id.'_'.time().'.'.$request->file('avatar')->getClientOriginalExtension();
-            $path = $request->file('avatar')->storeAs('avatars', $fileName, 'public');
+            $path = \App\Services\StorageService::uploadWithCustomName($request->file('avatar'), 'avatars', $fileName);
 
             $user->update(['avatar_url' => $path]);
 
@@ -273,7 +269,7 @@ class ProfileController extends Controller
             }
 
             $user->update([
-                'password' => Hash::make($request->new_password),
+                'password' => $request->new_password,
             ]);
 
             return response()->json([
@@ -477,7 +473,7 @@ class ProfileController extends Controller
             ]);
 
             if ($user->ktp_photo) {
-                Storage::disk('public')->delete($user->ktp_photo);
+                \App\Services\StorageService::delete($user->ktp_photo);
             }
 
             [$path, $ai] = $this->storeKycUpload(
@@ -535,13 +531,13 @@ class ProfileController extends Controller
             ]);
 
             if ($user->selfie_photo) {
-                Storage::disk('public')->delete($user->selfie_photo);
+                \App\Services\StorageService::delete($user->selfie_photo);
             }
 
             // Computer Vision: bandingkan selfie dengan KTP milik user (jika ada)
             $reference = null;
             if ($user->ktp_photo) {
-                $absolute = Storage::disk('public')->path($user->ktp_photo);
+                $absolute = \App\Services\StorageService::path($user->ktp_photo);
                 if (file_exists($absolute)) {
                     $reference = $absolute;
                 }
@@ -561,7 +557,7 @@ class ProfileController extends Controller
                 ['selfie_photo' => $path],
                 $this->faceVerificationUpdate($user, $ai, (bool) $request->boolean('liveness_completed'))
             );
-            $user->update($updateData);
+            $user->forceFill($updateData)->save();
 
             return response()->json([
                 'status' => 'success',
@@ -614,11 +610,11 @@ class ProfileController extends Controller
             }
 
             if ($user->face_scan_photo) {
-                Storage::disk('public')->delete($user->face_scan_photo);
+                \App\Services\StorageService::delete($user->face_scan_photo);
             }
 
             // Computer Vision: bandingkan face scan dengan KTP milik user
-            $reference = Storage::disk('public')->path($user->ktp_photo);
+            $reference = \App\Services\StorageService::path($user->ktp_photo);
 
             [$path, $ai] = $this->storeKycUpload(
                 $request->file('face_scan_photo'),
@@ -634,7 +630,7 @@ class ProfileController extends Controller
                 ['face_scan_photo' => $path],
                 $this->faceVerificationUpdate($user, $ai, (bool) $request->boolean('liveness_completed'))
             );
-            $user->update($updateData);
+            $user->forceFill($updateData)->save();
 
             return response()->json([
                 'status' => 'success',
@@ -846,12 +842,12 @@ class ProfileController extends Controller
             $frame = $faceService->storeVideoFrame($ai['frame_base64_selfie'] ?? $ai['frame_base64'] ?? null, $directory, $fileNameBase.'.jpg');
 
             return [
-                $frame ?? $file->storeAs($directory, $fileNameBase.'.'.$extension, 'public'),
+                $frame ?? \App\Services\StorageService::uploadWithCustomName($file, $directory, $fileNameBase.'.'.$extension),
                 $ai,
             ];
         }
 
-        $path = $file->storeAs($directory, $fileNameBase.'.'.$extension, 'public');
+        $path = \App\Services\StorageService::uploadWithCustomName($file, $directory, $fileNameBase.'.'.$extension);
         $ai = $verify($realPath);
 
         return [$path, $ai];

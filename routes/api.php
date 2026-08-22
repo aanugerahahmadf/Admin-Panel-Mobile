@@ -34,6 +34,7 @@ use App\Http\Controllers\PusherAuthController;
 use App\Models\User;
 use App\Providers\NativeServiceProvider;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Route;
 
 // Public: app config (app_name, owner_name, demo_video_url) — data dari backend, bukan template
@@ -76,7 +77,9 @@ Route::get('/ping', function () {
 // NativePHP Mobile DB Proxy — receives SQL queries from the Android/iOS app and executes them
 // against the real MySQL database on the dev machine.
 // ⚠️  Protected by X-DB-PROXY-SECRET header (must match APP_KEY).
-Route::post('/db-proxy', [DatabaseProxyController::class, 'proxy']);
+if (App::environment('local', 'testing')) {
+    Route::post('/db-proxy', [DatabaseProxyController::class, 'proxy']);
+}
 
 // Auth
 Route::post('/register', [AuthController::class, 'register']);
@@ -89,6 +92,7 @@ Route::post('/auth/clerk-sync', [AuthController::class, 'clerkSync']);
 Route::post('/auth/google', [AuthController::class, 'googleLogin']);
 Route::post('/auth/facebook', [AuthController::class, 'facebookLogin']);
 Route::post('/auth/apple', [AuthController::class, 'appleLogin']);
+Route::get('/verify-email', [AuthController::class, 'verifyEmail']);
 
 // Public: dropdown options for KYC/profile fields (from database, not templates)
 Route::get('/dropdown-options', [\App\Http\Controllers\Api\DropdownOptionController::class, 'index']);
@@ -110,6 +114,8 @@ Route::post('/webhooks/fonnte/status', [FonnteWebhookController::class, 'handleM
 Route::post('/midtrans/notification', [PaymentWebhookController::class, 'notification']);
 // BRI Virtual Account (BRIVA) Payment Notification (No auth — verified via X-SIGNATURE)
 Route::post('/webhooks/bri/va', [BriVaWebhookController::class, 'notification']);
+// BRI QRIS MPM Dinamis Payment Notification (No auth — verified via X-SIGNATURE)
+Route::post('/webhooks/bri/qris', [BriVaWebhookController::class, 'qrisNotification']);
 // CBIR - AI Visual Search Public Probing
 
 Route::get('/cbir/stats', [CBIRController::class, 'getStats']);
@@ -141,6 +147,7 @@ Route::get('/firebase/status', [FirebaseController::class, 'status']);
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::delete('/user/account', [AuthController::class, 'deleteAccount']);
+    Route::post('/email/verification/send', [AuthController::class, 'sendVerificationEmail']);
     Route::get('/user', function (Request $request) {
         $user = $request->user();
         return response()->json([
@@ -240,6 +247,12 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/messages/customers', [ChatController::class, 'getCustomersForChat']);
     Route::post('/messages/send', [ChatController::class, 'sendMessage']);
     Route::post('/messages/start', [ChatController::class, 'startConversation']);
+    Route::delete('/messages/{id}/delete', [ChatController::class, 'deleteMessage']);
+    Route::post('/messages/{id}/star', [ChatController::class, 'starMessage']);
+    Route::post('/messages/{id}/forward', [ChatController::class, 'forwardMessage']);
+    Route::post('/messages/{id}/react', [ChatController::class, 'addReaction']);
+    Route::post('/messages/{inboxId}/read', [ChatController::class, 'markInboxAsRead']);
+    Route::post('/messages/{inboxId}/rate', [ChatController::class, 'rateInbox']);
 
     // Bookings / Orders
     Route::get('/bookings', [OrderController::class, 'getOrders']);

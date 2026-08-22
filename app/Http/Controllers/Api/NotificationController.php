@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class NotificationController extends Controller
 {
@@ -32,10 +33,11 @@ class NotificationController extends Controller
                 ],
             ]);
         } catch (\Exception $e) {
+            Log::error('[Notification] index error: '.$e->getMessage());
+
             return response()->json([
                 'status' => 'error',
                 'message' => __('Gagal mengambil notifikasi'),
-                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -71,7 +73,7 @@ class NotificationController extends Controller
         try {
             /** @var User $user */
             $user = Auth::user();
-            $user->unreadNotifications->markAsRead();
+            $user->unreadNotifications()->update(['read_at' => now()]);
 
             return response()->json([
                 'status' => 'success',
@@ -101,10 +103,11 @@ class NotificationController extends Controller
                 'message' => __('Notifikasi berhasil dihapus'),
             ]);
         } catch (\Exception $e) {
+            Log::error('[Notification] destroy error: '.$e->getMessage());
+
             return response()->json([
                 'status' => 'error',
                 'message' => __('Gagal menghapus notifikasi'),
-                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -129,10 +132,11 @@ class NotificationController extends Controller
                 'message' => __('Token FCM berhasil didaftarkan'),
             ]);
         } catch (\Exception $e) {
+            Log::error('[Notification] registerFcmToken error: '.$e->getMessage());
+
             return response()->json([
                 'status' => 'error',
                 'message' => __('Gagal mendaftarkan token FCM'),
-                'error' => $e->getMessage(),
             ], 500);
         }
     }

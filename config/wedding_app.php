@@ -8,14 +8,14 @@ return [
     |--------------------------------------------------------------------------
     | Dikelola dari backend Filament; mobile app wajib ambil dari API /api/settings.
     */
-    'app_name' => env('WEDDING_APP_NAME', 'Dekorasi Bunga Pernikahan'),
+    'app_name' => env('WEDDING_APP_NAME', 'Wedding Flower Decorations'),
 
     /*
     |--------------------------------------------------------------------------
     | Owner / brand name
     |--------------------------------------------------------------------------
     */
-    'owner_name' => env('WEDDING_APP_OWNER_NAME', 'Dekorasi Bunga Pernikahan'),
+    'owner_name' => env('WEDDING_APP_OWNER_NAME', 'Wedding Flower Decorations'),
 
     /*
     |--------------------------------------------------------------------------

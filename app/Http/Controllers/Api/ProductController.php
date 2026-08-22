@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
@@ -72,15 +73,12 @@ class ProductController extends Controller
             $perPage = $request->get('per_page', 'all');
 
             if ($perPage === 'all') {
-                $products = $query->get();
-
-                return response()->json([
-                    'status' => 'success',
-                    'data' => $this->localizedProducts($products),
-                ]);
+                $perPage = 100;
             }
 
-            $products = $query->paginate((int) $perPage, ['*']);
+            $perPage = min((int) $perPage, 100);
+
+            $products = $query->paginate($perPage, ['*']);
 
             return response()->json([
                 'status' => 'success',
@@ -94,10 +92,11 @@ class ProductController extends Controller
                 ],
             ]);
         } catch (\Exception $e) {
+            Log::error('[Product] index error: '.$e->getMessage());
+
             return response()->json([
                 'status' => 'error',
                 'message' => __('Gagal mengambil produk'),
-                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -124,10 +123,11 @@ class ProductController extends Controller
                 'message' => __('Produk tidak ditemukan'),
             ], 404);
         } catch (\Exception $e) {
+            Log::error('[Product] show error: '.$e->getMessage());
+
             return response()->json([
                 'status' => 'error',
                 'message' => __('Gagal mengambil detail produk'),
-                'error' => $e->getMessage(),
             ], 500);
         }
     }

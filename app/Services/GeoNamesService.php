@@ -32,7 +32,7 @@ class GeoNamesService
 
         return Cache::rememberForever($key, function () use ($countryName) {
             try {
-                $res = Http::withOptions(['verify' => false])
+                $res = Http::withOptions(['verify' => !app()->environment('production')])
                     ->timeout(10)
                     ->get("{$this->baseUrl}/searchJSON", [
                         'q' => $countryName,
@@ -146,7 +146,7 @@ class GeoNamesService
 
         return Cache::remember($key, 86400, function () use ($countryName, $placeName, $maxRows) {
             try {
-                $res = Http::withOptions(['verify' => false])
+                $res = Http::withOptions(['verify' => !app()->environment('production')])
                     ->timeout(10)
                     ->get("{$this->baseUrl}/postalCodeSearchJSON", [
                         'placename' => $placeName,
@@ -187,7 +187,7 @@ class GeoNamesService
                     $params['featureCode'] = $featureCode;
                 }
 
-                $res = Http::withOptions(['verify' => false])
+                $res = Http::withOptions(['verify' => !app()->environment('production')])
                     ->timeout(10)
                     ->get("{$this->baseUrl}/childrenJSON", $params);
                 $data = $res->json();

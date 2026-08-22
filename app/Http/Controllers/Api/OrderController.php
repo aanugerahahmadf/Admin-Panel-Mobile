@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
+use App\Events\OrderStatusUpdated;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Package;
@@ -21,6 +22,7 @@ use Dompdf\Dompdf;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -168,27 +170,24 @@ class OrderController extends Controller
                 $product = Product::with('category')->findOrFail($validatedData['product_id']);
             }
 
-            // 1. Stock validation
+            // 1. Atomic stock decrement
             $quantity = (int) ($validatedData['quantity'] ?? 1);
-            $stock = $package?->stock ?? $product?->stock ?? 0;
-            if ($stock <= 0) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => __('Stok tidak tersedia'),
-                ], 400);
-            }
-            if ($quantity > $stock) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => __('Stok tidak mencukupi. Tersedia: :stock', ['stock' => $stock]),
-                ], 400);
-            }
-
-            // 2. Decrement stock
             if ($package) {
-                $package->decrement('stock', $quantity);
+                $affected = DB::table('packages')
+                    ->where('id', $package->id)
+                    ->where('stock', '>=', $quantity)
+                    ->decrement('stock', $quantity);
             } else {
-                $product->decrement('stock', $quantity);
+                $affected = DB::table('products')
+                    ->where('id', $product->id)
+                    ->where('stock', '>=', $quantity)
+                    ->decrement('stock', $quantity);
+            }
+            if (! $affected) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => __('Stok tidak mencukupi'),
+                ], 400);
             }
 
             // 3. Calculate prices with voucher
@@ -815,6 +814,14 @@ class OrderController extends Controller
                     'payment_status' => OrderPaymentStatus::PAID,
                 ]);
 
+                event(new \App\Events\OrderStatusUpdated([
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'status' => $order->status->value ?? $order->status,
+                    'payment_status' => OrderPaymentStatus::PAID->value,
+                    'updated_at' => now()->toISOString(),
+                ], $order->user_id));
+
                 $this->sendPaymentNotifications($order);
 
                 return response()->json([
@@ -832,6 +839,14 @@ class OrderController extends Controller
             $order->update([
                 'payment_status' => OrderPaymentStatus::PENDING,
             ]);
+
+            event(new \App\Events\OrderStatusUpdated([
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'status' => $order->status->value ?? $order->status,
+                'payment_status' => OrderPaymentStatus::PENDING->value,
+                'updated_at' => now()->toISOString(),
+            ], $order->user_id));
 
             $this->sendPendingPaymentNotifications($order);
 
@@ -939,14 +954,14 @@ class OrderController extends Controller
                 // Simpan: video memakai frame hasil AI bila tersedia (fallback video asli).
                 if ($isVideo) {
                     $path = $faceService->storeVideoFrame($ai['frame_base64'] ?? null, 'payment-proofs', $fileNameBase.'.jpg')
-                        ?? $file->storeAs('payment-proofs', $fileNameBase.'.'.$ext, 'public');
+                        ?? \App\Services\StorageService::uploadWithCustomName($file, 'payment-proofs', $fileNameBase.'.'.$ext);
                 } else {
-                    $path = $file->storeAs('payment-proofs', $fileNameBase.'.'.$ext, 'public');
+                    $path = \App\Services\StorageService::uploadWithCustomName($file, 'payment-proofs', $fileNameBase.'.'.$ext);
                 }
 
                 $storedProofs[] = [
                     'path'        => $path,
-                    'url'         => url(Storage::disk('public')->url($path)),
+                    'url'         => url(\App\Services\StorageService::url($path)),
                     'type'        => $isVideo ? 'video' : (in_array($ext, ['pdf'], true) ? 'document' : 'image'),
                     'verified'    => $isVerified,
                     'ai_reason'   => $ai['reason'] ?? ($ai['message'] ?? null),
@@ -1023,10 +1038,11 @@ class OrderController extends Controller
                 'message' => __('Pesanan tidak ditemukan atau bukan milik Anda'),
             ], 404);
         } catch (\Exception $e) {
+            Log::error('[Order] trackOrder error: '.$e->getMessage());
+
             return response()->json([
                 'status' => 'error',
                 'message' => __('Gagal melacak pesanan'),
-                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -1056,10 +1072,11 @@ class OrderController extends Controller
                 'message' => __('Pesanan tidak ditemukan atau bukan milik Anda'),
             ], 404);
         } catch (\Exception $e) {
+            Log::error('[Order] show error: '.$e->getMessage());
+
             return response()->json([
                 'status' => 'error',
                 'message' => __('Gagal mengambil detail pesanan'),
-                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -1069,14 +1086,24 @@ class OrderController extends Controller
      */
     private function paymentMethodsForResponse(): array
     {
-        $gatewayEnabled = app(MidtransService::class)->isEnabled();
+        $midtransEnabled = app(MidtransService::class)->isEnabled();
+        $briEnabled = app(\App\Services\BriService::class)->enabled();
 
         return PaymentMethod::where('is_active', true)
             ->orderBy('sort_order')
             ->get()
-            ->map(function (PaymentMethod $m) use ($gatewayEnabled) {
+            ->map(function (PaymentMethod $m) use ($midtransEnabled, $briEnabled) {
+                $gatewayEnabled = false;
+                if ($m->type === 'virtual_account') {
+                    $gatewayEnabled = $briEnabled;
+                } elseif ($m->type === 'qris') {
+                    $gatewayEnabled = $briEnabled && config('bri.qr_enabled', false);
+                } else {
+                    $gatewayEnabled = $midtransEnabled && in_array($m->type, ['e_wallet', 'credit_card', 'bank_transfer']);
+                }
+
                 return array_merge($m->toArray(), [
-                    'gateway_enabled' => $gatewayEnabled && in_array($m->type, ['e_wallet', 'qris', 'credit_card', 'bank_transfer']),
+                    'gateway_enabled' => $gatewayEnabled,
                 ]);
             })
             ->all();
@@ -1181,6 +1208,14 @@ class OrderController extends Controller
                 'cancelled_at' => now(),
             ]);
 
+            event(new OrderStatusUpdated([
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'status' => 'cancelled',
+                'payment_status' => (string) $order->payment_status,
+                'updated_at' => now()->toISOString(),
+            ], $order->user_id));
+
             return response()->json([
                 'status' => 'success',
                 'message' => __('Pesanan berhasil dibatalkan'),
@@ -1192,10 +1227,11 @@ class OrderController extends Controller
                 'message' => __('Pesanan tidak ditemukan atau bukan milik Anda'),
             ], 404);
         } catch (\Exception $e) {
+            Log::error('[Order] cancelOrder error: '.$e->getMessage());
+
             return response()->json([
                 'status' => 'error',
                 'message' => __('Gagal membatalkan pesanan'),
-                'error' => $e->getMessage(),
             ], 500);
         }
     }

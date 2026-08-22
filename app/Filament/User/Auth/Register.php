@@ -533,7 +533,7 @@ class Register extends BaseRegister
         ]);
 
         if (! empty($data['selfie_photo'])) {
-            $user->update(['identity_verified_at' => now()]);
+            $user->forceFill(['identity_verified_at' => now()])->save();
         }
 
         $customerRole = Role::where('name', 'customer')->first(['*']);

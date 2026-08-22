@@ -416,7 +416,15 @@ class PersonalInfoComponent extends Component implements HasForms
                 $data['identity_verified_at'] = now();
             }
 
+            // Remove non-fillable sensitive fields and apply via forceFill
+            $sensitiveKeys = ['identity_verified_at'];
+            $sensitive = array_intersect_key($data, array_flip($sensitiveKeys));
+            $data = array_diff_key($data, $sensitive);
+
             $user->update($data);
+            if ($sensitive) {
+                $user->forceFill($sensitive)->save();
+            }
 
             Notification::make()
                 ->title(__('Profil berhasil diperbarui!'))

@@ -85,6 +85,14 @@ class OrderController extends Controller
                 $order->update(['notes' => $validated['notes']]);
             }
 
+            \App\Events\OrderStatusUpdated::dispatch([
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'status' => $order->status->value ?? $order->status,
+                'payment_status' => $order->payment_status->value ?? $order->payment_status,
+                'updated_at' => now()->toISOString(),
+            ], $order->user_id);
+
             return response()->json([
                 'status' => 'success',
                 'message' => __('Status pesanan berhasil diperbarui'),

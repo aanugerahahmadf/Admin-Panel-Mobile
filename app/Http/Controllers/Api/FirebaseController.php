@@ -8,6 +8,7 @@ use App\Services\FirebaseService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 
 class FirebaseController extends Controller
 {
@@ -32,9 +33,11 @@ class FirebaseController extends Controller
                 'timestamp' => now()->toIso8601String(),
             ]);
         } catch (\Exception $e) {
+            Log::error('[Firebase] status error: '.$e->getMessage());
+
             return response()->json([
                 'status' => 'error',
-                'message' => $e->getMessage(),
+                'message' => __('Terjadi kesalahan server'),
             ], 500);
         }
     }
@@ -63,9 +66,11 @@ class FirebaseController extends Controller
                 'data' => $data,
             ]);
         } catch (\Exception $e) {
+            Log::error('[Firebase] read error: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => __('Gagal membaca data'),
             ], 400);
         }
     }
@@ -92,9 +97,11 @@ class FirebaseController extends Controller
                 'message' => 'Data written successfully',
             ]);
         } catch (\Exception $e) {
+            Log::error('[Firebase] write error: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => __('Gagal menulis data'),
             ], 400);
         }
     }
@@ -121,9 +128,11 @@ class FirebaseController extends Controller
                 'message' => 'Data updated successfully',
             ]);
         } catch (\Exception $e) {
+            Log::error('[Firebase] update error: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => __('Gagal memperbarui data'),
             ], 400);
         }
     }
@@ -148,9 +157,11 @@ class FirebaseController extends Controller
                 'message' => 'Data deleted successfully',
             ]);
         } catch (\Exception $e) {
+            Log::error('[Firebase] delete error: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => __('Gagal menghapus data'),
             ], 400);
         }
     }
@@ -178,9 +189,11 @@ class FirebaseController extends Controller
                 'message' => 'Data pushed successfully',
             ]);
         } catch (\Exception $e) {
+            Log::error('[Firebase] push error: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => __('Gagal push data'),
             ], 400);
         }
     }
@@ -205,9 +218,11 @@ class FirebaseController extends Controller
                 'children' => $children,
             ]);
         } catch (\Exception $e) {
+            Log::error('[Firebase] children error: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => __('Gagal mengambil data'),
             ], 400);
         }
     }
@@ -231,9 +246,11 @@ class FirebaseController extends Controller
                 'exists' => $exists,
             ]);
         } catch (\Exception $e) {
+            Log::error('[Firebase] exists error: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => __('Gagal memeriksa data'),
             ], 400);
         }
     }
@@ -268,9 +285,11 @@ class FirebaseController extends Controller
                 'order_id' => $orderId,
             ]);
         } catch (\Exception $e) {
+            Log::error('[Firebase] syncOrder error: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => __('Gagal sync pesanan'),
             ], 400);
         }
     }
@@ -305,9 +324,11 @@ class FirebaseController extends Controller
                 'message_id' => $messageId,
             ]);
         } catch (\Exception $e) {
+            Log::error('[Firebase] syncMessage error: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => __('Gagal sync pesan'),
             ], 400);
         }
     }
@@ -337,9 +358,11 @@ class FirebaseController extends Controller
                 'message' => $message,
             ]);
         } catch (\Exception $e) {
+            Log::error('[Firebase] clearCache error: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => __('Gagal menghapus cache'),
             ], 400);
         }
     }

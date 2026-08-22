@@ -11,9 +11,12 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
+use Firebase\JWT\JWK;
+use Firebase\JWT\JWT;
 
 class AuthController extends Controller
 {
@@ -131,33 +134,41 @@ class AuthController extends Controller
             'income_range' => $request->income_range,
             'source_of_funds' => $request->source_of_funds,
             'address' => $request->address,
-            'password' => Hash::make($request->password),
+            'password' => $request->password,
             'ip_address' => $request->ip(),
         ];
 
         if ($request->hasFile('ktp_photo')) {
-            $userData['ktp_photo'] = $request->file('ktp_photo')->store('ktp-photos', 'public');
+            $userData['ktp_photo'] = \App\Services\StorageService::upload($request->file('ktp_photo'), 'ktp-photos');
         }
 
         if ($request->hasFile('selfie_photo')) {
-            $userData['selfie_photo'] = $request->file('selfie_photo')->store('selfies', 'public');
-            $userData['identity_verified_at'] = now();
+            $userData['selfie_photo'] = \App\Services\StorageService::upload($request->file('selfie_photo'), 'selfies');
         }
 
         if ($request->hasFile('face_scan_photo')) {
-            $userData['face_scan_photo'] = $request->file('face_scan_photo')->store('face-scans', 'public');
+            $userData['face_scan_photo'] = \App\Services\StorageService::upload($request->file('face_scan_photo'), 'face-scans');
         }
 
         $userData['liveness_completed'] = $request->boolean('liveness_completed');
 
         if ($request->hasFile('profile_photo')) {
-            $path = $request->file('profile_photo')->store('avatars', 'public');
+            $path = \App\Services\StorageService::upload($request->file('profile_photo'), 'avatars');
             $userData['avatar_url'] = $path;
         } elseif ($request->filled('avatar_url')) {
             $userData['avatar_url'] = $request->avatar_url;
         }
 
+        // Remove non-fillable sensitive fields; set them via forceFill after create
+        $sensitiveFields = array_intersect_key($userData, array_flip([
+            'liveness_completed',
+        ]));
+        $userData = array_diff_key($userData, $sensitiveFields);
+
         $user = User::create($userData);
+        if ($sensitiveFields) {
+            $user->forceFill($sensitiveFields)->save();
+        }
 
         $user->assignRole('user');
 
@@ -239,7 +250,7 @@ class AuthController extends Controller
         $user = User::where('email', $request->email)->first(['*']);
 
         if (! $user) {
-            return response()->json(['status' => 'error', 'message' => 'Email tidak terdaftar.'], 404);
+            return response()->json(['status' => 'success', 'message' => 'Jika email terdaftar, OTP telah dikirim.'], 200);
         }
 
         $otp = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
@@ -278,7 +289,7 @@ class AuthController extends Controller
         }
 
         $user->update([
-            'password' => Hash::make($request->password),
+            'password' => $request->password,
             'otp_code' => null,
             'otp_expires_at' => null,
             'otp_purpose' => null,
@@ -290,27 +301,13 @@ class AuthController extends Controller
         ]);
     }
 
-    public function socialLogin(Request $request)
-    {
-        $request->validate([
-            'provider' => 'required|string',
-            'token' => 'required|string',
-        ]);
-
-        // In a real app, verify the token with the provider (Google/Facebook)
-        // For now, we simulate success or find user by email if token contains it
-        return response()->json([
-            'status' => 'success',
-            'message' => __('Login sosial berhasil (simulasi)'),
-            'data' => [
-                'token' => 'SOCIAL-TOKEN-'.Str::random(40),
-                'user' => Auth::user() ?: User::first(['*']), // Fallback for simulation
-            ],
-        ]);
-    }
-
     public function clerkSync(Request $request)
     {
+        $secret = config('services.clerk_sync_secret', env('CLERK_SYNC_SECRET', ''));
+        if ($secret === '' || $request->header('X-CLERK-SYNC-SECRET') !== $secret) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
+
         $request->validate([
             'clerk_id' => 'required|string',
             'email' => 'required|email',
@@ -377,6 +374,17 @@ class AuthController extends Controller
             'whatsapp' => 'required_without:email|string',
             'purpose' => 'required|string|in:google_register,forgot_password,verify_email,reset_app_lock,verify_whatsapp',
         ]);
+
+        $target = $request->whatsapp ?? $request->email ?? '';
+        $rateKey = 'otp_' . preg_replace('/\D/', '', $target);
+        if (RateLimiter::tooManyAttempts($rateKey, 5)) {
+            $seconds = RateLimiter::availableIn($rateKey);
+            return response()->json([
+                'status' => 'error',
+                'message' => "Terlalu banyak percobaan. Silakan coba lagi dalam {$seconds} detik.",
+            ], 429);
+        }
+        RateLimiter::hit($rateKey, 300);
 
         // WhatsApp OTP (verify_whatsapp)
         if ($request->filled('whatsapp')) {
@@ -767,26 +775,29 @@ class AuthController extends Controller
             'identity_token' => 'required|string',
         ]);
 
-        // Decode Apple's identity token (JWT) to get user info
-        // Apple's JWT is signed with their public keys, verified via their JWKS endpoint
-        $tokenParts = explode('.', $request->identity_token);
-        if (count($tokenParts) !== 3) {
+        $token = $request->input('identity_token');
+
+        try {
+            $appleKeys = Http::timeout(10)->get('https://appleid.apple.com/auth/keys')->json();
+            $publicKey = JWK::parseKeySet($appleKeys);
+            $decoded = JWT::decode($token, $publicKey, ['RS256']);
+            $appleId = $decoded->sub;
+            $email = $decoded->email ?? null;
+        } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => __('Token Apple tidak valid'),
             ], 401);
         }
 
-        $payload = json_decode(base64_decode($tokenParts[1]), true);
-        if (! $payload || ! isset($payload['sub'])) {
+        if (! $appleId) {
             return response()->json([
                 'status' => 'error',
                 'message' => __('Token Apple tidak valid'),
             ], 401);
         }
 
-        $appleId = $payload['sub'];
-        $email = $payload['email'] ?? 'apple_' . $appleId . '@apple.com';
+        $email = $email ?? 'apple_' . $appleId . '@apple.com';
 
         $user = User::where('social_id', $appleId)
             ->orWhere('email', $email)
@@ -904,7 +915,7 @@ class AuthController extends Controller
         $data = $validator->validated();
 
         if ($request->hasFile('profile_photo')) {
-            $path = $request->file('profile_photo')->store('profile-photos', 'public');
+            $path = \App\Services\StorageService::upload($request->file('profile_photo'), 'profile-photos');
             $data['avatar_url'] = $path;
         }
 
@@ -920,8 +931,19 @@ class AuthController extends Controller
 
     public function deleteAccount(Request $request)
     {
+        $request->validate([
+            'password' => 'required',
+        ]);
+
         /** @var User $user */
         $user = Auth::user();
+
+        if (! Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => __('Password tidak valid'),
+            ], 422);
+        }
 
         // Revoke all tokens
         $user->tokens()->delete();
@@ -933,6 +955,52 @@ class AuthController extends Controller
             'status' => 'success',
             'message' => __('Akun berhasil dihapus'),
         ]);
+    }
+
+    public function sendVerificationEmail(Request $request)
+    {
+        /** @var User $user */
+        $user = $request->user();
+
+        if ($user->email_verified_at) {
+            return response()->json(['status' => 'success', 'message' => 'Email sudah diverifikasi']);
+        }
+
+        $token = Str::random(64);
+        $user->update(['email_verification_token' => $token]);
+
+        Mail::raw(
+            "Verifikasi email kamu: " . config('app.url') . "/api/verify-email?token={$token}&email={$user->email}",
+            function ($message) use ($user) {
+                $message->to($user->email)
+                    ->subject('Verifikasi Email - Wedding Flower Decorations');
+            }
+        );
+
+        return response()->json(['status' => 'success', 'message' => 'Email verifikasi terkirim']);
+    }
+
+    public function verifyEmail(Request $request)
+    {
+        $request->validate([
+            'token' => 'required|string',
+            'email' => 'required|email',
+        ]);
+
+        $user = User::where('email', $request->email)
+            ->where('email_verification_token', $request->token)
+            ->first();
+
+        if (! $user) {
+            return response()->json(['status' => 'error', 'message' => 'Token tidak valid'], 422);
+        }
+
+        $user->update([
+            'email_verified_at' => now(),
+            'email_verification_token' => null,
+        ]);
+
+        return response()->json(['status' => 'success', 'message' => 'Email berhasil diverifikasi']);
     }
 
     /**

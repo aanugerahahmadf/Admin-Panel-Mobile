@@ -150,15 +150,11 @@
         }
 
         /* ══════════════════════════════════════════════════════════════
-           FIX: Topbar sticky + bottom nav fixed saat scroll di mobile
-           
-           Masalah: <body> scroll container + .fi-main-ctn tidak punya
-           constrained height → sticky topbar tidak bekerja.
-           
-           Solusi: jadikan html/body fixed (no scroll), .fi-layout dan
-           .fi-main-ctn jadi 100dvh, lalu .fi-main-ctn yang scroll.
-           Topbar sticky bekerja karena scroll container-nya sekarang
-           adalah .fi-main-ctn (bukan body).
+           FIX: Bottom nav fixed + .fi-main-ctn jadi scroll container
+           saat scroll di mobile.
+
+           Topbar dibuat position:fixed oleh app.css (semua panel) —
+           tidak di-override di sini agar tidak konflik.
         ══════════════════════════════════════════════════════════════ */
         html, body {
             height: 100% !important;
@@ -180,13 +176,6 @@
             -webkit-overflow-scrolling: touch !important;
             /* Padding bawah agar konten tidak tertutup bottom nav */
             padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px)) !important;
-        }
-
-        /* Topbar sticky sekarang bekerja karena parent scroll = .fi-main-ctn */
-        .fi-topbar {
-            position: sticky !important;
-            top: 0 !important;
-            z-index: 30 !important;
         }
     }
 </style>

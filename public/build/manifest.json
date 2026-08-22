@@ -4,7 +4,7 @@
     "name": "popper"
   },
   "resources/css/app.css": {
-    "file": "assets/app-do_T0GlG.css",
+    "file": "assets/app-CW_elVAK.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -26,6 +26,12 @@
     "file": "assets/echo-BXRmpxmk.js",
     "name": "echo",
     "src": "resources/js/echo.js",
+    "isEntry": true
+  },
+  "resources/js/firebase-auth.js": {
+    "file": "assets/firebase-auth-CBat9K1T.js",
+    "name": "firebase-auth",
+    "src": "resources/js/firebase-auth.js",
     "isEntry": true
   },
   "vendor/nativephp/mobile/resources/js/phpProtocolAdapter.js": {

@@ -58,7 +58,8 @@ html, body {
  * break position:sticky.  position:fixed is immune to ancestor overflow values and
  * guarantees the bar never scrolls away on any platform (web, Android, iOS).
  */
-.fi-panel-user .fi-topbar {
+.fi-panel-user .fi-topbar,
+.fi-panel-admin .fi-topbar {
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
@@ -73,7 +74,8 @@ html, body {
  * Filament renders .fi-layout as the direct sibling of .fi-topbar inside
  * .fi-panel — give it top-padding equal to the topbar height (≈ 3.5rem / 56px).
  */
-.fi-panel-user .fi-layout {
+.fi-panel-user .fi-layout,
+.fi-panel-admin .fi-layout {
     padding-top: 3.5rem !important;
 }
 
@@ -93,7 +95,8 @@ html, body {
 
 /* Mobile: tambahkan safe area padding untuk notch/status bar */
 @media (max-width: 768px) {
-    .fi-panel-user .fi-topbar {
+    .fi-panel-user .fi-topbar,
+    .fi-panel-admin .fi-topbar {
         padding-top: var(--inset-top, env(safe-area-inset-top, 0px)) !important;
     }
 }

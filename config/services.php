@@ -52,4 +52,10 @@ return [
     'geonames' => [
         'username' => env('GEONAMES_USERNAME'),
     ],
+
+    'clerk_sync_secret' => env('CLERK_SYNC_SECRET', ''),
+
+    'firebase' => [
+        'server_key' => env('FIREBASE_SERVER_KEY', ''),
+    ],
 ];

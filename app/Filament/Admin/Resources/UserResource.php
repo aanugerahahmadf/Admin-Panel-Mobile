@@ -944,13 +944,13 @@ class UserResource extends Resource
                     ->modalDescription(__('Setujui hasil verifikasi identitas pengguna ini. Status KYC akan menjadi "Disetujui".'))
                     ->visible(fn (User $record): bool => $record->kyc_status !== 'verified' && ($record->ktp_photo || $record->selfie_photo || $record->face_scan_photo))
                     ->action(function (User $record): void {
-                        $record->update([
+                        $record->forceFill([
                             'kyc_status' => 'verified',
                             'kyc_reviewed_by' => auth()->id(),
                             'kyc_reviewed_at' => now(),
                             'kyc_notes' => null,
                             'identity_verified_at' => $record->identity_verified_at ?? now(),
-                        ]);
+                        ])->save();
                         Notification::make()
                             ->success()
                             ->title(__('KYC disetujui'))
@@ -974,13 +974,13 @@ class UserResource extends Resource
                     ->modalSubmitActionLabel(__('Tolak KYC'))
                     ->visible(fn (User $record): bool => $record->kyc_status !== 'rejected' && ($record->ktp_photo || $record->selfie_photo || $record->face_scan_photo))
                     ->action(function (User $record, array $data): void {
-                        $record->update([
+                        $record->forceFill([
                             'kyc_status' => 'rejected',
                             'kyc_reviewed_by' => auth()->id(),
                             'kyc_reviewed_at' => now(),
                             'kyc_notes' => $data['kyc_notes'] ?? null,
                             'identity_verified_at' => null,
-                        ]);
+                        ])->save();
                         Notification::make()
                             ->danger()
                             ->title(__('KYC ditolak'))

@@ -32,9 +32,11 @@ class VoucherController extends Controller
 
         $vouchers = $query->get();
 
-        $vouchers->transform(function ($voucher) use ($locale, $user) {
+        $claimedVoucherIds = $user->vouchers()->pluck('vouchers.id')->toArray();
+
+        $vouchers->transform(function ($voucher) use ($locale, $claimedVoucherIds) {
             $voucher->description = $voucher->trans('description', $locale);
-            $isClaimed = $voucher->users()->where('users.id', $user->id)->exists();
+            $isClaimed = in_array($voucher->id, $claimedVoucherIds);
             $voucher->setAttribute('is_claimed', $isClaimed);
             if (! $isClaimed) {
                 $voucher->setAttribute('code', null);

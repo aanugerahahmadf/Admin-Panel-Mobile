@@ -33,7 +33,7 @@ class FonnteWebhookController extends Controller
             $token = $request->header('Authorization') ?? $request->input('token');
             $expectedToken = config('services.fonnte_token');
 
-            if ($token !== $expectedToken) {
+            if (!hash_equals((string)$expectedToken, (string)($token ?? ''))) {
                 Log::warning('[Fonnte Webhook] Invalid token', ['received' => $token]);
 
                 return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
@@ -133,6 +133,15 @@ class FonnteWebhookController extends Controller
      */
     public function handleConnectionStatus(Request $request)
     {
+        $token = $request->header('Authorization') ?? $request->input('token');
+        $expectedToken = config('services.fonnte_token');
+
+        if ($token !== $expectedToken) {
+            Log::warning('[Fonnte Webhook] Connection status: invalid token');
+
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
+
         Log::info('[Fonnte Webhook] Connection status', $request->all());
 
         return response()->json(['status' => 'received'], 200);
@@ -143,10 +152,16 @@ class FonnteWebhookController extends Controller
      */
     public function handleMessageStatus(Request $request)
     {
-        Log::info('[Fonnte Webhook] Message status', $request->all());
+        $token = $request->header('Authorization') ?? $request->input('token');
+        $expectedToken = config('services.fonnte_token');
 
-        // Bisa digunakan untuk update status pesan (terkirim/dibaca)
-        // Tapi untuk saat ini cukup log saja
+        if ($token !== $expectedToken) {
+            Log::warning('[Fonnte Webhook] Message status: invalid token');
+
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
+
+        Log::info('[Fonnte Webhook] Message status', $request->all());
 
         return response()->json(['status' => 'received'], 200);
     }
@@ -176,7 +191,7 @@ class FonnteWebhookController extends Controller
             'full_name' => $name,
             'username' => 'wa_'.substr($phone, -8),
             'email' => 'wa_'.substr($phone, -8).'@guest.local',
-            'password' => bcrypt(str()->random(32)),
+            'password' => str()->random(32),
             'phone' => $phone,
             'whatsapp' => $phone,
         ]);

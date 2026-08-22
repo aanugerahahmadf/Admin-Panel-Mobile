@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class CategoryController extends Controller
 {
@@ -64,10 +65,11 @@ class CategoryController extends Controller
                 ],
             ]);
         } catch (\Exception $e) {
+            Log::error('[Category] index error: '.$e->getMessage());
+
             return response()->json([
                 'status' => 'error',
                 'message' => __('Gagal mengambil kategori'),
-                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -100,10 +102,11 @@ class CategoryController extends Controller
                 'message' => __('Kategori tidak ditemukan'),
             ], 404);
         } catch (\Exception $e) {
+            Log::error('[Category] show error: '.$e->getMessage());
+
             return response()->json([
                 'status' => 'error',
                 'message' => __('Gagal mengambil detail kategori'),
-                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -129,10 +132,11 @@ class CategoryController extends Controller
                 'data' => $data,
             ]);
         } catch (\Exception $e) {
+            Log::error('[Category] withTopPackages error: '.$e->getMessage());
+
             return response()->json([
                 'status' => 'error',
                 'message' => __('Gagal mengambil kategori dan paket'),
-                'error' => $e->getMessage(),
             ], 500);
         }
     }

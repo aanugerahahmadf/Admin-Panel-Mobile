@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\RuntimePlatform;
+use App\Events\NotificationBroadcast;
 use App\Models\User;
 use App\Services\FirebaseService;
 use App\Support\Platform\PlatformFeatureRegistry;
@@ -32,6 +33,14 @@ class PlatformNotificationService
             ->body($body)
             ->warning()
             ->sendToDatabase($user);
+
+        // 2. Broadcast via WebSocket (real-time push to connected clients)
+        event(new NotificationBroadcast([
+            'title' => $title,
+            'message' => $body,
+            'type' => 'notification',
+            'created_at' => now()->toISOString(),
+        ], $user->id));
 
         // Resolve the current runtime platform once (may be null).
         $runtimePlatform = static::resolveRuntimePlatform();
@@ -121,6 +130,13 @@ class PlatformNotificationService
             ->body($body)
             ->warning()
             ->sendToDatabase($user);
+
+        event(new NotificationBroadcast([
+            'title' => $title,
+            'message' => $body,
+            'type' => 'notification',
+            'created_at' => now()->toISOString(),
+        ], $user->id));
     }
 
     /**

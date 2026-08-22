@@ -26,7 +26,7 @@ The `EnvironmentManager` handles this merging during application bootstrap, befo
 The base `.env` file contains settings shared across all platforms: database credentials, mail configuration, third-party API keys, and default values for session, cache, and queue drivers.
 
 ```dotenv
-APP_NAME="Dekorasi Bunga Pernikahan"
+APP_NAME="Wedding Flower Decorations"
 APP_ENV=local
 APP_URL=http://127.0.0.1:8000
 APP_PORT=8000

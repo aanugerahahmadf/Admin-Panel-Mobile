@@ -1,4 +1,4 @@
-name: Backend CI
+name: CI/CD Pipeline
 
 on:
   push:
@@ -11,11 +11,12 @@ permissions:
   issues: write
 
 concurrency:
-  group: backend-${{ github.ref }}
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   lint:
+    name: PHP Lint & Static Analysis
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -54,6 +55,7 @@ jobs:
         run: ./vendor/bin/rector process --dry-run --no-progress-bar 2>&1 || true
 
   test:
+    name: PHP Tests (PHP ${{ matrix.php-version }} / ${{ matrix.db }})
     needs: lint
     runs-on: ubuntu-latest
     strategy:
@@ -148,6 +150,7 @@ jobs:
           fail_ci_if_error: false
 
   security:
+    name: Security Audit
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -173,8 +176,41 @@ jobs:
       - name: Dependency version check
         run: composer outdated --direct --minor-only 2>&1 || true
 
+  flutter:
+    name: Flutter Analyze
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile_app
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos
+
+  deploy:
+    name: Deploy to Production
+    needs: [lint, test, security, flutter]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to production
+        run: echo "Add your deploy script here (e.g., Forge, Vapor, SSH)"
+
   notify:
-    needs: [lint, test, security]
+    name: Failure Notification
+    needs: [lint, test, security, flutter]
     if: failure() && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
@@ -185,6 +221,6 @@ jobs:
             github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: '🚨 CI Failure on main',
+              title: 'CI Failure on main',
               body: `Workflow run failed: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
             })

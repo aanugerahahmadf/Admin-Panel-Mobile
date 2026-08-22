@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Package;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class PackageController extends Controller
 {
@@ -67,15 +68,12 @@ class PackageController extends Controller
             $perPage = $request->get('per_page', 'all');
 
             if ($perPage === 'all') {
-                $packages = $query->get();
-
-                return response()->json([
-                    'status' => 'success',
-                    'data' => $packages,
-                ]);
+                $perPage = 100;
             }
 
-            $packages = $query->paginate((int) $perPage, ['*']);
+            $perPage = min((int) $perPage, 100);
+
+            $packages = $query->paginate($perPage, ['*']);
 
             return response()->json([
                 'status' => 'success',
@@ -89,10 +87,11 @@ class PackageController extends Controller
                 ],
             ]);
         } catch (\Exception $e) {
+            Log::error('[Package] index error: '.$e->getMessage());
+
             return response()->json([
                 'status' => 'error',
                 'message' => __('Gagal mengambil paket'),
-                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -122,10 +121,11 @@ class PackageController extends Controller
                 'message' => __('Paket tidak ditemukan'),
             ], 404);
         } catch (\Exception $e) {
+            Log::error('[Package] show error: '.$e->getMessage());
+
             return response()->json([
                 'status' => 'error',
                 'message' => __('Gagal mengambil detail paket'),
-                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -152,10 +152,11 @@ class PackageController extends Controller
                 ],
             ]);
         } catch (\Exception $e) {
+            Log::error('[Package] featured error: '.$e->getMessage());
+
             return response()->json([
                 'status' => 'error',
                 'message' => __('Gagal mengambil paket unggulan'),
-                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -183,10 +184,11 @@ class PackageController extends Controller
                 ],
             ]);
         } catch (\Exception $e) {
+            Log::error('[Package] onSale error: '.$e->getMessage());
+
             return response()->json([
                 'status' => 'error',
                 'message' => __('Gagal mengambil paket diskon'),
-                'error' => $e->getMessage(),
             ], 500);
         }
     }

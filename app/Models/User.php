@@ -233,17 +233,6 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
         'village_name',
         'postal_code',
         'identity_type',
-        'identity_verified_at',
-        'kyc_status',
-        'face_similarity',
-        'face_deep_similarity',
-        'face_reason',
-        'face_liveness',
-        'liveness_completed',
-        'face_verified_at',
-        'kyc_reviewed_by',
-        'kyc_reviewed_at',
-        'kyc_notes',
         'address',
         'ip_address',
         'login_city',
@@ -259,6 +248,7 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
         'dream_venue',
         'active_status',
         'fcm_token',
+        'email_verification_token',
         'gender',
         'religion',
         'marital_status',
@@ -268,9 +258,6 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
         'source_of_funds',
         'social_id',
         'social_type',
-        'otp_code',
-        'otp_expires_at',
-        'otp_purpose',
         'app_lock_fingerprint_enabled',
         'app_lock_face_enabled',
         'app_lock_pin_enabled',
@@ -290,9 +277,9 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
         'ktp_photo_url',
         'selfie_photo_url',
         'face_scan_photo_url',
-        'is_admin',
-        'role_names',
     ];
+
+    protected $with = ['roles'];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -304,6 +291,7 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
         'remember_token',
         'app_lock_pin_hash',
         'app_lock_face_reference',
+        'email_verification_token',
     ];
 
     /**
@@ -466,11 +454,33 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
 
     public function getIsAdminAttribute(): bool
     {
-        return $this->roles()->where('name', 'super_admin')->exists();
+        return $this->roles->contains('name', 'super_admin');
     }
 
     public function getRoleNamesAttribute(): array
     {
-        return $this->roles()->pluck('name')->toArray();
+        return $this->roles->pluck('name')->toArray();
+    }
+
+    public function isProfileComplete(): bool
+    {
+        $required = [
+            'first_name',
+            'mid_name',
+            'last_name',
+            'whatsapp',
+            'gender',
+            'address',
+            'occupation',
+            'identity_type',
+        ];
+
+        foreach ($required as $field) {
+            if (blank($this->{$field})) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

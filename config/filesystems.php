@@ -60,6 +60,13 @@ return [
             'report' => false,
         ],
 
+        'cloudinary' => [
+            'driver' => 'local',
+            'root' => storage_path('app/public'),
+            'url' => env('CLOUDINARY_URL'),
+            'visibility' => 'public',
+        ],
+
     ],
 
     /*

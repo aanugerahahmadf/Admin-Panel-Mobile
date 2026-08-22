@@ -12,6 +12,7 @@ use App\Filament\User\Pages\Dashboard;
 use App\Filament\User\Pages\EditProfilePage;
 use App\Filament\User\Pages\MessagesPage;
 use App\Filament\User\Pages\ProfilePage;
+use App\Filament\User\Pages\CompleteProfilePage;
 use App\Filament\User\Resources\CartResource;
 use App\Filament\User\Resources\OrderResource;
 use App\Http\Middleware\ClerkFilamentAuth;
@@ -88,6 +89,7 @@ class UserPanelProvider extends PanelProvider
             ->discoverPages(in: app_path('Filament/User/Pages'), for: 'App\\Filament\\User\\Pages')
             ->pages([
                 Dashboard::class,
+                CompleteProfilePage::class,
             ])
             ->discoverWidgets(in: app_path('Filament/User/Widgets'), for: 'App\\Filament\\User\\Widgets')
             ->widgets([])

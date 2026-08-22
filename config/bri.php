@@ -9,28 +9,31 @@ return [
     | Kredensial dibuat di https://developers.bri.co.id (bmr.bri.co.id),
     | menu Aplikasi Saya -> Aplikasi BRI API.
     |
-    | Signature yang dipakai adalah HMAC-SHA512 dengan client_secret sebagai
-    | kunci, format payload:
+    | Legacy BRI API: HMAC-SHA512 dengan payload:
     |   path={path}&verb={verb}&token={token}&timestamp={timestamp}&body={body}
+    | SNAP BI: B2B token via RSA (asymmetric), SNAP API calls via HMAC-SHA512.
     |
     */
 
-    // Aktifkan integrasi BRI API. Saat true, pembayaran manual (QRIS/transfer)
-    // akan dicek otomatis ke rekening BRI dan ditandai LUNAS tanpa verifikasi admin.
     'enabled' => (bool) env('BRI_ENABLED', false),
 
     'client_id' => env('BRI_CLIENT_ID', ''),
     'client_secret' => env('BRI_CLIENT_SECRET', ''),
+
+    // Tipe Snap Key: "asymmetric" (RSA) atau "symmetric" (HMAC).
+    // Symmetric hanya butuh client_secret, asymmetric perlu RSA private key.
+    'snap_key_type' => env('BRI_SNAP_KEY_TYPE', 'symmetric'),
 
     // Nominminal rekening admin yang dipantau. BRI API mengharuskan 15 digit
     // (tambahkan 0 di depan bila kurang dari 15 digit).
     'account_number' => env('BRI_ACCOUNT_NUMBER', '421201032041536'),
     'account_holder' => env('BRI_ACCOUNT_HOLDER', 'Anugerah Ahmad Fachrurochim'),
 
-    // Base URL. Sandbox di developers.bri.co.id, Production di bmr.bri.co.id.
+    // Base URL. Sandbox: https://sandbox.partner.api.bri.co.id
+    // Production: https://partner.api.bri.co.id
     'base_url' => env('BRI_BASE_URL', 'https://sandbox.partner.api.bri.co.id'),
 
-    // Endpoint
+    // Endpoint (otomatis mengikuti base_url)
     'token_url' => env('BRI_BASE_URL', 'https://sandbox.partner.api.bri.co.id').'/oauth/client_credential/accesstoken',
     'statement_url' => env('BRI_BASE_URL', 'https://sandbox.partner.api.bri.co.id').'/v2.0/statement',
     'inquiry_url' => env('BRI_BASE_URL', 'https://sandbox.partner.api.bri.co.id').'/v2/inquiry',
@@ -62,7 +65,11 @@ return [
     // Aktifkan fitur Virtual Account (BRIVA).
     'snap_enabled' => (bool) env('BRI_SNAP_ENABLED', false),
 
-    // Path ke RSA private key (.pem) untuk signature endpoint B2B token.
+    // When true, webhook signature verification is ALWAYS enforced regardless of snapEnabled().
+    // Set to true in production to prevent accepting unverified webhook payloads.
+    'webhook_require_signature' => (bool) env('BRI_WEBHOOK_REQUIRE_SIGNATURE', true),
+
+    // Path ke RSA private key (.pem) untuk signature endpoint B2B token (hanya untuk tipe asymmetric).
     // Contoh: base_path('storage/keys/snap-private.pem')
     'snap_private_key' => env('BRI_SNAP_PRIVATE_KEY', ''),
 
@@ -70,8 +77,10 @@ return [
     // gunakan 8808. Di production diganti kode BRIVA yang didaftarkan.
     'va_partner_service_id' => env('BRI_VA_PARTNER_SERVICE_ID', '8808'),
 
-    // Channel ID SNAP untuk VA (H2H = Host To Host / API).
-    'va_channel_id' => env('BRI_VA_CHANNEL_ID', 'H2H'),
+    // Channel ID SNAP untuk VA (5-digit numeric). Referensi:
+    // 00001: teller, 00002: ATM, 00003: IB/NBMB/Brilink Mobile,
+    // 00009: API (Host To Host).
+    'va_channel_id' => env('BRI_VA_CHANNEL_ID', '00009'),
 
     // Masa berlaku nomor VA (jam).
     'va_expiry_hours' => (int) env('BRI_VA_EXPIRY_HOURS', 24),

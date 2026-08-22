@@ -49,7 +49,7 @@ VITE_PLATFORM=mobile
 
 # NativePHP Mobile app identity
 NATIVEPHP_APP_ID=com.yourcompany.weddingorganizer
-NATIVEPHP_APP_NAME="Wedding Flowers Decorasi"
+NATIVEPHP_APP_NAME="Wedding Flower Decorations"
 NATIVEPHP_APP_VERSION=1.0.0
 NATIVEPHP_APP_VERSION_CODE=1
 ```

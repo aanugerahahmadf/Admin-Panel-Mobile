@@ -91,7 +91,7 @@ class OtpEmailVerificationPrompt extends EmailVerificationPrompt
 
             Notification::make()->title(__('Email berhasil diverifikasi!'))->success()->send();
 
-            $this->redirect(Filament::getUrl());
+            $this->redirect(route('filament.user.pages.complete-profile'));
         } else {
             Notification::make()
                 ->title(__('Kode verifikasi tidak valid atau telah kadaluarsa.'))

@@ -79,11 +79,11 @@ class ReviewController extends Controller
 
             $photoPaths = [];
             if ($request->hasFile('photo')) {
-                $photoPaths[] = $request->file('photo')->store('review-photos', 'public');
+                $photoPaths[] = \App\Services\StorageService::upload($request->file('photo'), 'review-photos');
             }
             if ($request->hasFile('photos')) {
                 foreach ((array) $request->file('photos') as $p) {
-                    $photoPaths[] = $p->store('review-photos', 'public');
+                    $photoPaths[] = \App\Services\StorageService::upload($p, 'review-photos');
                 }
             }
 
@@ -334,18 +334,18 @@ class ReviewController extends Controller
 
             $newPhotoPaths = [];
             if ($request->hasFile('photo')) {
-                $newPhotoPaths[] = $request->file('photo')->store('review-photos', 'public');
+                $newPhotoPaths[] = \App\Services\StorageService::upload($request->file('photo'), 'review-photos');
             }
             if ($request->hasFile('photos')) {
                 foreach ((array) $request->file('photos') as $p) {
-                    $newPhotoPaths[] = $p->store('review-photos', 'public');
+                    $newPhotoPaths[] = \App\Services\StorageService::upload($p, 'review-photos');
                 }
             }
 
             if ($newPhotoPaths) {
                 foreach (array_merge([$review->photo], $review->photos ?: []) as $old) {
                     if ($old) {
-                        Storage::disk('public')->delete($old);
+                        \App\Services\StorageService::delete($old);
                     }
                 }
                 $validatedData['photo'] = $newPhotoPaths[0];
@@ -394,7 +394,7 @@ class ReviewController extends Controller
 
             foreach (array_merge([$review->photo], $review->photos ?: []) as $old) {
                 if ($old) {
-                    Storage::disk('public')->delete($old);
+                    \App\Services\StorageService::delete($old);
                 }
             }
 

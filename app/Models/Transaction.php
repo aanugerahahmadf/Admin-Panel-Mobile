@@ -6,6 +6,7 @@ use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
 use App\Enums\PaymentStatus;
 use App\Enums\TransactionType;
+use App\Events\OrderStatusUpdated;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -59,36 +60,50 @@ class Transaction extends Model
 
     public function markAsSuccess(): void
     {
-        $this->update([
-            'status' => 'success',
-            'paid_at' => now(),
-        ]);
+        DB::transaction(function () {
+            $transaction = static::lockForUpdate()->find($this->id);
+            if (! $transaction || $transaction->status === 'success') {
+                return;
+            }
 
-        if ($this->type === TransactionType::TOPUP) {
-            $this->user->increment('balance', $this->amount);
-        } elseif ($this->type === TransactionType::ORDER && $this->order) {
-            $this->order->update([
-                'status' => OrderStatus::CONFIRMED,
-                'payment_status' => OrderPaymentStatus::PAID,
+            $transaction->update([
+                'status' => 'success',
+                'paid_at' => now(),
             ]);
 
-            // Mark voucher as used if exists — gunakan Eloquent bukan DB::table()
-            try {
-                $voucherLink = DB::table('user_vouchers')
-                    ->where('order_id', $this->order_id)
-                    ->where('user_id', $this->user_id)
-                    ->first();
+            if ($transaction->type === TransactionType::TOPUP) {
+                $transaction->user->increment('balance', $transaction->amount);
+            } elseif ($transaction->type === TransactionType::ORDER && $transaction->order) {
+                $transaction->order->update([
+                    'status' => OrderStatus::CONFIRMED,
+                    'payment_status' => OrderPaymentStatus::PAID,
+                ]);
 
-                if ($voucherLink && $voucherLink->voucher_id) {
-                    $voucher = Voucher::find($voucherLink->voucher_id);
-                    if ($voucher) {
-                        $voucher->markAsUsedBy($this->user_id, $this->order_id);
+                event(new OrderStatusUpdated([
+                    'order_id' => $transaction->order_id,
+                    'order_number' => $transaction->order->order_number,
+                    'status' => 'confirmed',
+                    'payment_status' => 'paid',
+                    'updated_at' => now()->toISOString(),
+                ], $transaction->user_id));
+
+                try {
+                    $voucherLink = DB::table('user_vouchers')
+                        ->where('order_id', $transaction->order_id)
+                        ->where('user_id', $transaction->user_id)
+                        ->first();
+
+                    if ($voucherLink && $voucherLink->voucher_id) {
+                        $voucher = Voucher::find($voucherLink->voucher_id);
+                        if ($voucher) {
+                            $voucher->markAsUsedBy($transaction->user_id, $transaction->order_id);
+                        }
                     }
+                } catch (\Throwable $e) {
+                    Log::warning('[Transaction] Voucher mark failed: '.$e->getMessage());
                 }
-            } catch (\Throwable $e) {
-                Log::warning('[Transaction] Voucher mark failed: '.$e->getMessage());
             }
-        }
+        });
     }
 
     public function markAsFailed(?string $reason = null): void
@@ -102,6 +117,14 @@ class Transaction extends Model
             $this->order->update([
                 'payment_status' => OrderPaymentStatus::FAILED,
             ]);
+
+            event(new OrderStatusUpdated([
+                'order_id' => $this->order_id,
+                'order_number' => $this->order->order_number,
+                'status' => (string) $this->order->status,
+                'payment_status' => 'failed',
+                'updated_at' => now()->toISOString(),
+            ], $this->user_id));
         }
     }
 }
