@@ -254,6 +254,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/messages/{inboxId}/read', [ChatController::class, 'markInboxAsRead']);
     Route::post('/messages/{inboxId}/rate', [ChatController::class, 'rateInbox']);
 
+    // Reports
+    Route::get('/reports', [\App\Http\Controllers\Api\ReportController::class, 'index']);
+    Route::post('/reports', [\App\Http\Controllers\Api\ReportController::class, 'store']);
+
     // Bookings / Orders
     Route::get('/bookings', [OrderController::class, 'getOrders']);
     Route::post('/bookings', [OrderController::class, 'createOrder']);
@@ -466,5 +470,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
         // Wishlists
         Route::get('/wishlists', [\App\Http\Controllers\Api\Admin\WishlistController::class, 'index']);
         Route::delete('/wishlists/{id}', [\App\Http\Controllers\Api\Admin\WishlistController::class, 'destroy']);
+
+        // Reports
+        Route::get('/reports', [\App\Http\Controllers\Api\Admin\ReportController::class, 'index']);
+        Route::get('/reports/stats', [\App\Http\Controllers\Api\Admin\ReportController::class, 'stats']);
+        Route::get('/reports/{id}', [\App\Http\Controllers\Api\Admin\ReportController::class, 'show']);
+        Route::put('/reports/{id}/status', [\App\Http\Controllers\Api\Admin\ReportController::class, 'updateStatus']);
     });
 });

@@ -333,6 +333,11 @@ class User extends Authenticatable implements FilamentUser, HasAvatar, HasName, 
         return $this->hasMany(Wishlist::class);
     }
 
+    public function reports()
+    {
+        return $this->hasMany(Report::class);
+    }
+
     public function kycReviewer()
     {
         return $this->belongsTo(User::class, 'kyc_reviewed_by');
